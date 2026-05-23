@@ -62,6 +62,15 @@ export async function ensureUserOrganization(opts: {
   return orgId;
 }
 
+// `BETTER_AUTH_SECRET` é opcional em env.ts pra permitir que o worker rode
+// sem essa variável (ele nunca importa este módulo). Aqui, no boot do HTTP
+// server, exigimos explicitamente — falha cedo com mensagem clara.
+if (!env.BETTER_AUTH_SECRET) {
+  throw new Error(
+    "BETTER_AUTH_SECRET é obrigatório no servidor HTTP — defina a env var antes de subir o serviço.",
+  );
+}
+
 export const auth = betterAuth({
   secret: env.BETTER_AUTH_SECRET,
   baseURL: env.BETTER_AUTH_URL,

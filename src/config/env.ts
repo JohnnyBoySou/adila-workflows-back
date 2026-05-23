@@ -27,7 +27,9 @@ const EnvSchema = Type.Object({
 
   REDIS_URL: Type.String({ default: "redis://127.0.0.1:6379" }),
 
-  BETTER_AUTH_SECRET: Type.String({ minLength: 1 }),
+  // Obrigatório no servidor HTTP; o worker não carrega `lib/auth` e por
+  // isso roda sem essa variável. A checagem dura mora em `lib/auth.ts`.
+  BETTER_AUTH_SECRET: Type.Optional(Type.String({ minLength: 1 })),
   BETTER_AUTH_URL: Type.String({ default: "http://localhost:3000" }),
 
   // Chave simétrica para AES-256-GCM (criptografia de secrets em repouso).
