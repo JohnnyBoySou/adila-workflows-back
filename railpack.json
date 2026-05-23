@@ -1,6 +1,5 @@
 {
   "$schema": "https://schema.railpack.com",
-  "provider": "bun",
   "packages": {
     "bun": "1.3"
   }
