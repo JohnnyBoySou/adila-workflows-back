@@ -1,6 +1,29 @@
+import { createHash } from "node:crypto";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { type NewWorkflowVersion, workflowVersions, workflows } from "../../db/schema";
+
+/**
+ * Serializa recursivamente com chaves ordenadas em todos os níveis.
+ * Determinístico: mesma estrutura → mesma string, independente de ordem de inserção.
+ */
+function stableStringify(val: unknown): string {
+  if (val === null || typeof val !== "object") return JSON.stringify(val);
+  if (Array.isArray(val)) return "[" + val.map(stableStringify).join(",") + "]";
+  const keys = Object.keys(val as object).sort();
+  return (
+    "{" +
+    keys
+      .map((k) => JSON.stringify(k) + ":" + stableStringify((val as Record<string, unknown>)[k]))
+      .join(",") +
+    "}"
+  );
+}
+
+/** SHA-256 do definition com chaves ordenadas recursivamente. */
+export function hashDefinition(definition: Record<string, unknown>): string {
+  return createHash("sha256").update(stableStringify(definition)).digest("hex");
+}
 
 export const workflowVersionsRepository = {
   async list(organizationId: string, workflowId: string) {
@@ -75,11 +98,12 @@ export const workflowVersionsRepository = {
    * colisão sob concorrência, mas o índice único (workflow_id, version)
    * faz o segundo insert falhar e o caller retenta se quiser.
    */
-  async create(data: Omit<NewWorkflowVersion, "version">) {
+  async create(data: Omit<NewWorkflowVersion, "version" | "definitionHash">) {
     const [row] = await db
       .insert(workflowVersions)
       .values({
         ...data,
+        definitionHash: hashDefinition(data.definition),
         version: sql<number>`COALESCE((
           SELECT MAX(${workflowVersions.version}) + 1
           FROM ${workflowVersions}

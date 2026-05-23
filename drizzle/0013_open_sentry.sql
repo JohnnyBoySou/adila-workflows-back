@@ -1,0 +1,1 @@
+ALTER TABLE "workflow_versions" ADD COLUMN "definition_hash" text;

@@ -1,0 +1,1 @@
+CREATE INDEX "triggers_workflow_version_id_idx" ON "triggers" USING btree ("workflow_version_id");

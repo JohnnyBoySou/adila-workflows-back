@@ -85,6 +85,20 @@
       "when": 1779559209026,
       "tag": "0011_add_invitation_created_at",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1779562129036,
+      "tag": "0012_smart_mockingbird",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1779562186405,
+      "tag": "0013_open_sentry",
+      "breakpoints": true
     }
   ]
 }

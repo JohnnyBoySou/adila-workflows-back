@@ -44,20 +44,25 @@ export const workflowVersionsRouter = new Elysia({
         body,
       );
       if ("error" in result) return status(404, { error: result.error });
-      await auditLog({
-        organizationId,
-        actorUserId: user.id,
-        action: "workflow_version.published",
-        resourceType: "workflow_version",
-        resourceId: result.version.id,
-        metadata: {
-          workflowId: params.id,
-          version: result.version.version,
-          name: result.version.name,
-        },
-        request,
-      });
-      return status(201, result.version);
+      // Só registra audit quando uma versão nova foi criada.
+      if (!result.alreadyExisted) {
+        await auditLog({
+          organizationId,
+          actorUserId: user.id,
+          action: "workflow_version.published",
+          resourceType: "workflow_version",
+          resourceId: result.version.id,
+          metadata: {
+            workflowId: params.id,
+            version: result.version.version,
+            name: result.version.name,
+          },
+          request,
+        });
+      }
+      // `alreadyExisted` no body permite o front dar feedback sem depender do status HTTP.
+      const httpStatus = result.alreadyExisted ? 200 : 201;
+      return status(httpStatus, { ...result.version, alreadyExisted: result.alreadyExisted });
     },
     {
       params: workflowVersionsListParams,

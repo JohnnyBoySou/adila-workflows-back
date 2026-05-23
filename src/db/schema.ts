@@ -105,8 +105,13 @@ export const workflowVersions = pgTable(
     version: integer("version").notNull(),
     // Rótulo opcional ("v1.0", "produção quinta-feira").
     name: text("name"),
+    // Notas da versão / changelog (Markdown aceito).
+    notes: text("notes"),
     // Snapshot — nunca é atualizado depois da criação.
     definition: jsonb("definition").$type<Record<string, unknown>>().notNull(),
+    // SHA-256 do definition serializado com chaves ordenadas. Permite
+    // detectar publishes idempotentes (mesmo draft → mesma versão).
+    definitionHash: text("definition_hash"),
     createdBy: text("created_by")
       .notNull()
       .references(() => user.id, { onDelete: "restrict" }),
@@ -282,7 +287,10 @@ export const triggers = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [uniqueIndex("triggers_webhook_token_uq").on(t.webhookToken)],
+  (t) => [
+    uniqueIndex("triggers_webhook_token_uq").on(t.webhookToken),
+    index("triggers_workflow_version_id_idx").on(t.workflowVersionId),
+  ],
 );
 
 export type Trigger = typeof triggers.$inferSelect;

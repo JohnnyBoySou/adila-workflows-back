@@ -1,5 +1,5 @@
 import { workflowsRepository } from "../workflows/repository";
-import { workflowVersionsRepository } from "./repository";
+import { hashDefinition, workflowVersionsRepository } from "./repository";
 import type { PublishVersionBody } from "./schema";
 
 export const workflowVersionsController = {
@@ -15,7 +15,9 @@ export const workflowVersionsController = {
 
   /**
    * Publica uma nova versão imutável a partir do `definition` atual do workflow.
-   * O número da versão é monotônico por workflow (1, 2, 3…).
+   * Idempotente: sem `body.name` explícito, se o draft for byte-idêntico à
+   * última versão publicada (mesmo hash), reutiliza ela sem criar nova linha.
+   * Com `body.name` sempre cria — o usuário quer registrar um marco nomeado.
    */
   async publish(
     organizationId: string,
@@ -26,13 +28,20 @@ export const workflowVersionsController = {
     const workflow = await workflowsRepository.findById(organizationId, workflowId);
     if (!workflow) return { error: "workflow_not_found" as const };
 
+    if (!body?.name) {
+      const latest = await workflowVersionsRepository.findLatest(workflowId);
+      if (latest?.definitionHash === hashDefinition(workflow.definition)) {
+        return { version: latest, alreadyExisted: true as const };
+      }
+    }
+
     const version = await workflowVersionsRepository.create({
       workflowId,
       name: body?.name ?? null,
       definition: workflow.definition,
       createdBy: userId,
     });
-    return { version };
+    return { version, alreadyExisted: false as const };
   },
 
   /**
