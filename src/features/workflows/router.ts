@@ -120,6 +120,7 @@ export const workflowsRouter = new Elysia({ prefix: "/workflows" })
       const result = await workflowsController.run(organizationId, params.id, user.id, {
         environmentId: body?.environmentId,
         input: body?.input,
+        pinnedData: body?.pinnedData,
       });
       if ("error" in result) {
         return status(result.error === "not_found" ? 404 : 400, { error: result.error });

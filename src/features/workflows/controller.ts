@@ -92,7 +92,12 @@ export const workflowsController = {
     organizationId: string,
     id: string,
     triggeredBy: string | null,
-    opts: { environmentId?: string | null; input?: Record<string, unknown> } = {},
+    opts: {
+      environmentId?: string | null;
+      input?: Record<string, unknown>;
+      /** Outputs pinados pelo editor — pulam o handler do nó correspondente. */
+      pinnedData?: Record<string, Record<string, unknown>>;
+    } = {},
   ) {
     const workflow = await workflowsRepository.findById(organizationId, id);
     if (!workflow) return { error: "not_found" as const };
@@ -131,6 +136,9 @@ export const workflowsController = {
         organizationId,
         environmentId: opts.environmentId ?? null,
         input: opts.input ?? {},
+        // Pinned data não persistimos no run — é por-disparo. Vai direto pro
+        // job e some quando o BullMQ limpa.
+        pinnedData: opts.pinnedData ?? {},
       },
       { removeOnComplete: 1000, removeOnFail: 5000 },
     );

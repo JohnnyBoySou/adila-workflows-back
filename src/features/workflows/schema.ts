@@ -42,6 +42,11 @@ export const runWorkflowBody = t.Optional(
   t.Object({
     environmentId: t.Optional(t.String({ format: "uuid" })),
     input: t.Optional(t.Record(t.String(), t.Unknown())),
+    // Saídas pinadas localmente no editor — o executor pula o handler
+    // e usa o output fornecido pelo cliente, escrevendo o step como sucesso.
+    // Útil pra desenvolvimento: não dispara API externa, não consome créditos
+    // de AI, etc. Chave = nodeId; valor = output completo do nó.
+    pinnedData: t.Optional(t.Record(t.String(), t.Record(t.String(), t.Unknown()))),
   }),
 );
 
