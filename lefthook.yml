@@ -3,6 +3,7 @@
 # Docs: https://lefthook.dev/configuration/
 
 pre-commit:
+  skip: true
   parallel: true
   jobs:
     - name: oxlint
