@@ -7,6 +7,12 @@ const baseFields = {
   name: t.String({ minLength: 1, maxLength: 120 }),
   environmentId: t.Optional(t.Union([t.String({ format: "uuid" }), t.Null()])),
   enabled: t.Optional(t.Boolean()),
+  /**
+   * ID do node no canvas que representa este trigger. Opcional para
+   * compatibilidade com triggers gerenciados puramente via API, mas
+   * recomendado quando criado a partir do editor.
+   */
+  nodeId: t.Optional(t.Union([t.String({ minLength: 1, maxLength: 128 }), t.Null()])),
 };
 
 const cronFields = {
@@ -32,6 +38,7 @@ export const updateTriggerBody = t.Object({
   name: t.Optional(t.String({ minLength: 1, maxLength: 120 })),
   enabled: t.Optional(t.Boolean()),
   environmentId: t.Optional(t.Union([t.String({ format: "uuid" }), t.Null()])),
+  nodeId: t.Optional(t.Union([t.String({ minLength: 1, maxLength: 128 }), t.Null()])),
   // Atualizar cron só faz sentido em triggers do tipo cron — validamos no controller.
   cronExpression: t.Optional(t.String({ minLength: 1, maxLength: 120 })),
   timezone: t.Optional(t.String({ maxLength: 64 })),

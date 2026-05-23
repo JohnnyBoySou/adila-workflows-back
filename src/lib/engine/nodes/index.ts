@@ -23,11 +23,13 @@ import { stickyNoteHandler } from "./sticky-note";
 import { switchHandler } from "./switch";
 import { vectorStoreHandler } from "./vector-store";
 import { waitHandler } from "./wait";
+import { webhookTriggerHandler } from "./webhook-trigger";
 import type { NodeHandler, NodeType } from "../types";
 
 /** Tabela de despacho — type → handler. */
 export const nodeHandlers: Record<NodeType, NodeHandler> = {
   start: startHandler,
+  webhook_trigger: webhookTriggerHandler,
   end: endHandler,
   set_variable: setVariableHandler,
   http_request: httpRequestHandler,

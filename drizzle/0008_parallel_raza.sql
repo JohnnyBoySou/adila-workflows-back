@@ -1,0 +1,1 @@
+ALTER TABLE "triggers" ADD COLUMN "node_id" text;

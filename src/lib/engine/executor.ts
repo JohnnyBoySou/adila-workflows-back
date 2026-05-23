@@ -24,6 +24,7 @@ import type {
 
 /** Tipo do callback de sub-workflow — espelha o de `ExecutionContext`. */
 type SubWorkflowRunner = NonNullable<ExecutionContext["subWorkflowRunner"]>;
+type ConnectionResolver = NonNullable<ExecutionContext["resolveConnection"]>;
 import { nodeTypes, visualNodeTypes } from "./types";
 
 // Suporta loops controlados (split_in_batches). 1000 cobre arrays típicos;
@@ -58,6 +59,13 @@ export interface RunExecutionInput {
   input: Record<string, unknown>;
   env: Record<string, string>;
   /**
+   * Outputs pinados pelo editor — chave por `nodeId`. Quando definido,
+   * o executor pula o handler do nó e usa o output fornecido (step gravado
+   * como sucesso com `durationMs: 0`). Útil pra dev e testes — não dispara
+   * chamadas externas (API, AI, DB). Vazio = comportamento normal.
+   */
+  pinnedData?: Record<string, Record<string, unknown>>;
+  /**
    * Polling cooperativo de cancelamento. Chamado antes de cada nó —
    * se devolve true, o executor lança `CancelledError`.
    */
@@ -73,6 +81,12 @@ export interface RunExecutionInput {
    * worker (orquestrador real); ausente em testes do executor puro.
    */
   subWorkflowRunner?: SubWorkflowRunner;
+  /**
+   * Resolve connections de DB nomeadas pelo id (workflow-scoped).
+   * Injetado pelo worker — quando ausente, handlers que dependem dele
+   * (postgres/redis) falham com mensagem clara.
+   */
+  resolveConnection?: ConnectionResolver;
 }
 
 export interface RunExecutionResult {
@@ -125,9 +139,10 @@ export function normalizeDefinition(raw: unknown): WorkflowDefinition {
   return { nodes, edges };
 }
 
-/** Acha o nó de start; aceita explícito (type=start) ou inferido (sem aresta entrando). */
+/** Acha o nó de start; aceita explícito (type=start ou webhook_trigger) ou inferido. */
 function findStart(def: WorkflowDefinition): WorkflowNode | null {
-  const explicit = def.nodes.find((n) => n.type === "start");
+  // Trigger nodes têm prioridade — são os entry points "nomeados" do canvas.
+  const explicit = def.nodes.find((n) => n.type === "start" || n.type === "webhook_trigger");
   if (explicit) return explicit;
   // Visuais (sticky_note, container) não devem ser elegíveis como start —
   // eles vivem soltos no canvas sem edges de entrada.
@@ -168,9 +183,11 @@ export async function executeRun(args: RunExecutionInput): Promise<RunExecutionR
     steps: {},
     loopState: {},
     subWorkflowRunner: args.subWorkflowRunner,
+    resolveConnection: args.resolveConnection,
   };
 
   const byId = new Map(def.nodes.map((n) => [n.id, n]));
+  const pinnedData = args.pinnedData ?? {};
   let current: WorkflowNode | undefined = start;
   let stepsExecuted = 0;
   let finalOutput: Record<string, unknown> = {};
@@ -214,10 +231,17 @@ export async function executeRun(args: RunExecutionInput): Promise<RunExecutionR
     });
 
     try {
-      const result = await handler({ node, context: ctx });
+      // Pinned data: curto-circuita o handler. Mantemos o step (status=success
+      // com `durationMs: 0`) pra que UI e auditoria vejam o nó como executado;
+      // `nextLabel` fica `undefined` — caminho default. Ramos condicionais
+      // (if/switch) precisam ser pinados sabendo disso ou trocados temporariamente.
+      const pinned = pinnedData[node.id];
+      const result = pinned
+        ? { output: pinned }
+        : await handler({ node, context: ctx });
       const finishedAt = new Date();
       ctx.steps[node.id] = result.output;
-      if (result.vars) Object.assign(ctx.vars, result.vars);
+      if ("vars" in result && result.vars) Object.assign(ctx.vars, result.vars);
 
       const durationMs = finishedAt.getTime() - startedAt.getTime();
       await db
@@ -246,7 +270,8 @@ export async function executeRun(args: RunExecutionInput): Promise<RunExecutionR
         break;
       }
 
-      const nextEdge = pickNextEdge(def.edges, node.id, result.nextLabel);
+      const nextLabel = "nextLabel" in result ? result.nextLabel : undefined;
+      const nextEdge = pickNextEdge(def.edges, node.id, nextLabel);
       if (!nextEdge) {
         // Sem saída — termina com o output do último nó.
         finalOutput = result.output;

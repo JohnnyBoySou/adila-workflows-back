@@ -5,6 +5,7 @@
  * Em produção, escale com várias instâncias — BullMQ distribui via Redis.
  */
 import type { Job } from "bullmq";
+import { databaseConnectionsRepository } from "../src/features/database-connections/repository";
 import { environmentVariablesController } from "../src/features/environment-variables/controller";
 import { triggersRepository } from "../src/features/triggers/repository";
 import { resyncEnabledCronTriggers } from "../src/features/triggers/scheduler";
@@ -29,7 +30,8 @@ const cronLog = logger.child({ component: "cron-worker" });
 
 // ── Workflows ─────────────────────────────────────────────────────────
 async function processWorkflow(job: Job<WorkflowJob>) {
-  const { runId, workflowId, workflowVersionId, organizationId, environmentId, input } = job.data;
+  const { runId, workflowId, workflowVersionId, organizationId, environmentId, input, pinnedData } =
+    job.data;
   const log = workflowLog.child({
     runId,
     workflowId,
@@ -69,12 +71,20 @@ async function processWorkflow(job: Job<WorkflowJob>) {
       definition,
       input: input ?? {},
       env: variables,
+      pinnedData: pinnedData ?? {},
       subWorkflowRunner: (args) =>
         runSubWorkflow({
           parentOrganizationId: organizationId,
           parentRunId: runId,
           ...args,
         }),
+      // Bound ao workflowId atual — handlers postgres/redis chamam isto pra
+      // obter a URL decifrada da connection nomeada que o usuário escolheu.
+      resolveConnection: async (connectionId) => {
+        const row = await databaseConnectionsRepository.resolve(workflowId, connectionId);
+        if (!row) return null;
+        return { connectionString: row.connectionString, kind: row.kind };
+      },
       // Polling cooperativo do flag `cancelRequested` entre nós.
       checkCancelled: async () => {
         const r = await workflowRunsRepository.findByIdRaw(runId);

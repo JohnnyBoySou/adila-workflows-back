@@ -15,6 +15,7 @@ export type NodeId = string;
 /** Tipos de nó suportados pelo MVP do motor. */
 export const nodeTypes = [
   "start",
+  "webhook_trigger",
   "end",
   "set_variable",
   "http_request",
@@ -104,6 +105,17 @@ export interface ExecutionContext {
     status: "success" | "failed" | "cancelled" | "timeout";
     output?: Record<string, unknown>;
   }>;
+  /**
+   * Resolve uma connection nomeada (DB) pelo id. Já vem decifrada — uso só
+   * dentro do worker. Os handlers `postgres`/`redis` chamam isto pra
+   * obter a URL sem nunca tocar em material cifrado.
+   *
+   * Ausente em testes unitários do executor; nesses contextos pode-se
+   * stubar este callback diretamente.
+   */
+  resolveConnection?: (
+    connectionId: string,
+  ) => Promise<{ connectionString: string; kind: "postgres" | "redis" } | null>;
 }
 
 /**

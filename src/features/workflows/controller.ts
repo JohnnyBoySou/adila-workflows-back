@@ -25,6 +25,7 @@ export const workflowsController = {
       organizationId,
       status: query.status,
       folderId: parseFolderFilter(query.folderId),
+      q: query.q,
       limit: query.limit ?? 20,
       offset: query.offset ?? 0,
     });

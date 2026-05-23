@@ -251,6 +251,13 @@ export const triggers = pgTable(
 
     // Webhook — token único usado na URL pública /hooks/:token.
     webhookToken: text("webhook_token").unique(),
+    /**
+     * ID do node no `definition.nodes[]` ao qual este trigger está associado
+     * (tipicamente um `webhook_trigger` ou `cron_trigger`). Nulo em triggers
+     * legacy criados antes do modelo trigger-como-node. Texto porque IDs de
+     * node no canvas são strings opacas geradas pelo editor.
+     */
+    nodeId: text("node_id"),
     // 'async' (default): responde 202 imediatamente.
     // 'sync': aguarda o run terminar e devolve o output (ou um respond_to_webhook node).
     webhookResponseMode: text("webhook_response_mode").$type<"async" | "sync">().default("async"),
@@ -306,3 +313,53 @@ export const auditLogs = pgTable(
 
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type NewAuditLog = typeof auditLogs.$inferInsert;
+
+// ──────────────────────── database_connections ────────────────────────
+// Registro de conexões nomeadas (Postgres/Redis) por workflow.
+// Nodes do canvas referenciam por `connectionId` e nunca veem a URL.
+//
+// Escopo:
+//   - (workflowId, environmentId, name) único.
+//   - environmentId NULL = fallback default usado quando o run roda num
+//     environment sem override específico.
+//
+// Segurança:
+//   - `connectionString` cifrado em repouso via AES-256-GCM (helper em
+//     lib/crypto.ts). Chave em ENCRYPTION_KEY env var, idêntica entre back
+//     e worker.
+
+export const databaseConnectionKind = ["postgres", "redis"] as const;
+export type DatabaseConnectionKind = (typeof databaseConnectionKind)[number];
+
+export const databaseConnections = pgTable(
+  "database_connections",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    workflowId: uuid("workflow_id")
+      .notNull()
+      .references(() => workflows.id, { onDelete: "cascade" }),
+    // NULL = fallback default (usado quando não há override pro env do run).
+    environmentId: uuid("environment_id").references(() => environments.id, {
+      onDelete: "cascade",
+    }),
+    name: text("name").notNull(),
+    kind: text("kind").$type<DatabaseConnectionKind>().notNull(),
+    // Cifrado em repouso. Nunca expor cru via API.
+    encryptedConnectionString: text("encrypted_connection_string").notNull(),
+    createdBy: text("created_by")
+      .notNull()
+      .references(() => user.id, { onDelete: "restrict" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    // Trata env null como valor único — Postgres considera NULL ≠ NULL em
+    // unique constraint, então isso aqui não bloqueia múltiplos defaults com
+    // o mesmo nome. Resolvido na aplicação (service rejeita duplicatas).
+    uniqueIndex("db_connections_wf_env_name_uq").on(t.workflowId, t.environmentId, t.name),
+    index("db_connections_workflow_idx").on(t.workflowId),
+  ],
+);
+
+export type DatabaseConnection = typeof databaseConnections.$inferSelect;
+export type NewDatabaseConnection = typeof databaseConnections.$inferInsert;

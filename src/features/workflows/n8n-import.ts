@@ -131,6 +131,26 @@ export function importN8nWorkflow(raw: unknown): ImportResult | { error: string 
     }
   }
 
+  // Posições do n8n vêm em coordenadas absolutas muito distantes da origem
+  // (ex: [6624, 2944]). O editor abre com viewport em (0,0) e o usuário
+  // não enxerga nada. Normalizamos transladando todas pra começarem perto
+  // de (0,0), preservando o layout relativo.
+  const positions = wf.nodes
+    .map((n) => n?.position)
+    .filter((p): p is [number, number] => Array.isArray(p) && p.length === 2);
+  const offsetX = positions.length > 0 ? Math.min(...positions.map((p) => p[0])) : 0;
+  const offsetY = positions.length > 0 ? Math.min(...positions.map((p) => p[1])) : 0;
+
+  const buildEditor = (n: N8nNode): Record<string, unknown> => {
+    const editor: Record<string, unknown> = {
+      position: n.position
+        ? { x: n.position[0] - offsetX, y: n.position[1] - offsetY }
+        : { x: 0, y: 0 },
+      title: n.name,
+    };
+    return editor;
+  };
+
   const nodes: WorkflowDefinition["nodes"] = [];
   for (const n of wf.nodes) {
     if (!n || typeof n.id !== "string" || typeof n.type !== "string") continue;
@@ -141,6 +161,38 @@ export function importN8nWorkflow(raw: unknown): ImportResult | { error: string 
     const mapped = TYPE_MAP[n.type];
     if (mapped) {
       const translated = translateN8nParameters(mapped, n.parameters, nameToId);
+      const editor = buildEditor(n);
+
+      // Sticky note: o editor espera `text` (não `content`) e width/height
+      // em `_editor`, não no top-level. Também mapeia color numérica n8n → nome.
+      if (mapped === "sticky_note") {
+        const t = translated as Record<string, unknown>;
+        if (typeof t.width === "number") editor.width = t.width;
+        if (typeof t.height === "number") editor.height = t.height;
+        // n8n sticky color: 1=yellow, 2=orange, 3=red, 4=blue, 5=cyan, 6=green, 7=purple
+        const colorName =
+          typeof t.color === "number"
+            ? (["yellow", "orange", "red", "blue", "cyan", "green", "purple"][t.color - 1] ??
+              "yellow")
+            : typeof t.color === "string"
+              ? t.color
+              : undefined;
+        nodes.push({
+          id: n.id,
+          type: mapped,
+          config: {
+            text: typeof t.content === "string" ? t.content : "",
+            ...(colorName !== undefined && { color: colorName }),
+            n8nName: n.name,
+            originalType: n.type,
+            ...(n.disabled && { disabled: true }),
+            _editor: editor,
+          },
+        });
+        summary.mapped++;
+        continue;
+      }
+
       nodes.push({
         id: n.id,
         type: mapped,
@@ -148,8 +200,8 @@ export function importN8nWorkflow(raw: unknown): ImportResult | { error: string 
           ...translated,
           n8nName: n.name,
           originalType: n.type,
-          ...(n.position && { position: n.position }),
           ...(n.disabled && { disabled: true }),
+          _editor: editor,
         },
       });
       summary.mapped++;
@@ -163,7 +215,7 @@ export function importN8nWorkflow(raw: unknown): ImportResult | { error: string 
           n8nName: n.name,
           originalType: n.type,
           parameters: n.parameters ?? {},
-          ...(n.position && { position: n.position }),
+          _editor: buildEditor(n),
         },
       });
       summary.unsupported++;

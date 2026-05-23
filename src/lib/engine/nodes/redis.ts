@@ -6,14 +6,16 @@ import type { NodeHandler } from "../types";
  * Operações Redis com whitelist de comandos seguros.
  *
  * Config:
- *   - connectionString: string (templatable; ex: `{{ env.MY_REDIS_URL }}`)
- *   - operation: "get"|"set"|"del"|"incr"|"decr"|"expire"|"ttl"|"exists"|"hget"|"hset"|"hdel"
+ *   - connectionId: string (uuid)   — id de uma database_connection registrada
+ *   - operation: "get"|"set"|"del"|"incr"|"decr"|"expire"|"ttl"|"exists"
+ *                |"hget"|"hset"|"hdel"|"lpush"|"rpush"|"lpop"|"rpop"|"llen"|"lrange"
  *   - args: unknown[]   — argumentos posicionais do comando (chave, valor, etc)
  *
  * Output:
  *   { operation, result }
  *
  * Comandos perigosos (EVAL, CONFIG, FLUSHDB, SCRIPT, DEBUG…) são rejeitados.
+ * URL crua nunca vive na config — só o id da connection nomeada.
  */
 const ALLOWED_OPERATIONS = new Set([
   "get",
@@ -38,10 +40,21 @@ const ALLOWED_OPERATIONS = new Set([
 export const redisHandler: NodeHandler = async ({ node, context }) => {
   const cfg = renderTemplate(node.config, context) as Record<string, unknown>;
 
-  const connectionString = cfg.connectionString;
-  if (typeof connectionString !== "string" || !connectionString) {
-    throw new Error("redis: config.connectionString é obrigatório");
+  const connectionId = cfg.connectionId;
+  if (typeof connectionId !== "string" || !connectionId) {
+    throw new Error("redis: config.connectionId é obrigatório (uuid de uma connection registrada)");
   }
+  if (!context.resolveConnection) {
+    throw new Error("redis: resolveConnection ausente do contexto — execute via worker");
+  }
+  const resolved = await context.resolveConnection(connectionId);
+  if (!resolved) {
+    throw new Error(`redis: connection ${connectionId} não encontrada no workflow`);
+  }
+  if (resolved.kind !== "redis") {
+    throw new Error(`redis: connection ${connectionId} é do tipo ${resolved.kind}, esperado redis`);
+  }
+  const connectionString = resolved.connectionString;
 
   const operation = typeof cfg.operation === "string" ? cfg.operation.toLowerCase() : "";
   if (!ALLOWED_OPERATIONS.has(operation)) {

@@ -2,7 +2,9 @@ import { Elysia } from "elysia";
 import { cors } from "@elysiajs/cors";
 import { swagger } from "@elysiajs/swagger";
 import { env } from "./config/env";
+import { aiRouter } from "./features/ai/router";
 import { auditLogsRouter } from "./features/audit-logs/router";
+import { databaseConnectionsRouter } from "./features/database-connections/router";
 import { environmentVariablesRouter } from "./features/environment-variables/router";
 import { environmentsRouter } from "./features/environments/router";
 import { foldersRouter } from "./features/folders/router";
@@ -85,7 +87,9 @@ const app = new Elysia()
   .use(workflowVersionsRouter)
   .use(workflowRunsRouter)
   .use(triggersRouter)
+  .use(databaseConnectionsRouter)
   .use(auditLogsRouter)
+  .use(aiRouter)
   // Webhook é público (sem requireOrganization) — fica mountado na raiz.
   .use(webhookRouter)
   .listen(env.PORT);

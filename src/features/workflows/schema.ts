@@ -22,6 +22,8 @@ export const listWorkflowsQuery = t.Object({
   status: t.Optional(statusEnum),
   // `null` ou "root" => sem pasta. UUID => filtra pela pasta.
   folderId: t.Optional(t.Union([t.String(), t.Null()])),
+  // Busca textual por nome (case-insensitive, substring).
+  q: t.Optional(t.String({ maxLength: 120 })),
   limit: t.Optional(t.Numeric({ minimum: 1, maximum: 100, default: 20 })),
   offset: t.Optional(t.Numeric({ minimum: 0, default: 0 })),
 });

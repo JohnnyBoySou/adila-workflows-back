@@ -12,6 +12,11 @@ export interface WorkflowJob {
   organizationId: string;
   environmentId: string | null;
   input: Record<string, unknown>;
+  /**
+   * Outputs pinados pelo editor — por `nodeId`. O executor pula o handler
+   * desses nós e usa o output fornecido. Opcional pra compat com jobs antigos.
+   */
+  pinnedData?: Record<string, Record<string, unknown>>;
 }
 
 export const workflowQueue = new Queue<WorkflowJob>("workflows", { connection });

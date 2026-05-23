@@ -1,4 +1,4 @@
-import { and, count, desc, eq, isNull } from "drizzle-orm";
+import { and, count, desc, eq, ilike, isNull } from "drizzle-orm";
 import { db } from "../../db";
 import { workflows, type NewWorkflow, type WorkflowStatus } from "../../db/schema";
 
@@ -7,16 +7,24 @@ export interface ListWorkflowsFilters {
   status?: WorkflowStatus;
   /** `undefined` lista tudo, `null` lista raiz, string lista os de uma pasta. */
   folderId?: string | null;
+  /** Busca substring case-insensitive sobre `name`. */
+  q?: string;
   limit: number;
   offset: number;
 }
 
 export const workflowsRepository = {
-  async list({ organizationId, status, folderId, limit, offset }: ListWorkflowsFilters) {
+  async list({ organizationId, status, folderId, q, limit, offset }: ListWorkflowsFilters) {
     const conditions = [eq(workflows.organizationId, organizationId)];
     if (status) conditions.push(eq(workflows.status, status));
     if (folderId === null) conditions.push(isNull(workflows.folderId));
     else if (typeof folderId === "string") conditions.push(eq(workflows.folderId, folderId));
+    if (q && q.trim().length > 0) {
+      // ilike é o `LIKE` case-insensitive do postgres; escape de `%`/`_` evita
+      // que o usuário "se machuque" digitando esses caracteres por acidente.
+      const safe = q.trim().replace(/[\\%_]/g, (m) => `\\${m}`);
+      conditions.push(ilike(workflows.name, `%${safe}%`));
+    }
 
     const where = and(...conditions);
 

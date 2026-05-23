@@ -38,6 +38,7 @@ export const triggersController = {
       type: body.type,
       enabled: body.enabled ?? true,
       environmentId: body.environmentId ?? null,
+      nodeId: body.nodeId ?? null,
       cronExpression: body.type === "cron" ? body.cronExpression : null,
       timezone: body.type === "cron" ? (body.timezone ?? "UTC") : null,
       webhookToken: body.type === "webhook" ? generateWebhookToken() : null,
@@ -84,6 +85,7 @@ export const triggersController = {
       ...(body.name !== undefined && { name: body.name }),
       ...(body.enabled !== undefined && { enabled: body.enabled }),
       ...(body.environmentId !== undefined && { environmentId: body.environmentId }),
+      ...(body.nodeId !== undefined && { nodeId: body.nodeId }),
       ...(body.cronExpression !== undefined && { cronExpression: body.cronExpression }),
       ...(body.timezone !== undefined && { timezone: body.timezone }),
       ...(body.webhookResponseMode !== undefined && {
