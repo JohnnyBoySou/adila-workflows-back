@@ -5,6 +5,7 @@ import { organization } from "better-auth/plugins";
 import { env } from "../config/env";
 import { db } from "../db";
 import * as authSchema from "../db/auth-schema";
+import { buildInvitationAcceptUrl, sendOrganizationInvitationEmail } from "./mail";
 
 const trustedOrigins = env.CORS_ORIGINS.split(",")
   .map((o) => o.trim())
@@ -139,6 +140,21 @@ export const auth = betterAuth({
       allowUserToCreateOrganization: true,
       // Convites por e-mail expiram em 48h por padrão.
       invitationExpiresIn: 60 * 60 * 48,
+      // O app ainda não exige verificação de e-mail no cadastro.
+      requireEmailVerificationOnInvitation: false,
+      async sendInvitationEmail(data) {
+        const inviteLink = buildInvitationAcceptUrl(data.id);
+        const inviterName =
+          data.inviter.user.name?.trim() || data.inviter.user.email || "Um membro da equipe";
+        await sendOrganizationInvitationEmail({
+          to: data.email,
+          organizationName: data.organization.name,
+          inviterName,
+          role: data.role,
+          inviteLink,
+          expiresInHours: 48,
+        });
+      },
     }),
   ],
 });

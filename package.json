@@ -34,12 +34,14 @@
     "drizzle-orm": "^0.45.2",
     "elysia": "latest",
     "ioredis": "^5.10.1",
+    "nodemailer": "^8.0.7",
     "pino": "^10.3.1",
     "postgres": "^3.4.9"
   },
   "devDependencies": {
     "@testcontainers/postgresql": "^12.0.0",
     "@testcontainers/redis": "^12.0.0",
+    "@types/nodemailer": "^8.0.0",
     "@typescript/native-preview": "^7.0.0-dev.20260522.1",
     "bun-types": "latest",
     "drizzle-kit": "^0.31.10",

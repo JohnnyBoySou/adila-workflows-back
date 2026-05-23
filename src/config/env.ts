@@ -40,6 +40,16 @@ const EnvSchema = Type.Object({
   // Aceita uma lista separada por vírgula. Em dev, default cobre o Vite (5173).
   CORS_ORIGINS: Type.String({ default: "http://localhost:5173" }),
 
+  // URL pública do front (links em e-mails). Se omitido, usa a primeira origem de CORS_ORIGINS.
+  FRONTEND_URL: Type.Optional(Type.String({ minLength: 1 })),
+
+  // SMTP (Nodemailer) — convites de organização. Se SMTP_HOST estiver vazio, e-mails não são enviados.
+  SMTP_HOST: Type.Optional(Type.String({ minLength: 1 })),
+  SMTP_PORT: Type.Optional(Type.Number({ default: 465 })),
+  SMTP_USER: Type.Optional(Type.String({ minLength: 1 })),
+  SMTP_PASS: Type.Optional(Type.String({ minLength: 1 })),
+  SMTP_FROM: Type.Optional(Type.String({ minLength: 1 })),
+
   ANTHROPIC_API_KEY: Type.Optional(Type.String()),
   OPENAI_API_KEY: Type.Optional(Type.String()),
 });
