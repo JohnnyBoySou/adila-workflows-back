@@ -1,4 +1,5 @@
 import { workflowQueue } from "../../lib/queue";
+import { workflowsRepository } from "../workflows/repository";
 import { workflowRunsRepository } from "./repository";
 
 /**
@@ -35,5 +36,54 @@ export const workflowRunsController = {
     // status === "running": sinal cooperativo.
     const updated = await workflowRunsRepository.requestCancel(runId);
     return { run: updated! };
+  },
+
+  /**
+   * Reexecuta um run *terminal* (success/failed/cancelled) preservando
+   * `workflowVersionId` + `input` originais. Não muta o run velho — cria
+   * um novo, com `triggeredBy` apontando pra quem clicou rerun.
+   *
+   * Decisão: só permite rerun de runs terminados. Rerodar um queued/running
+   * abriria janela pra dupla-execução; melhor cancelar o atual antes.
+   */
+  async rerun(organizationId: string, workflowId: string, runId: string, triggeredBy: string) {
+    const original = await workflowRunsRepository.findById(organizationId, workflowId, runId);
+    if (!original) return { error: "not_found" as const };
+    if (
+      original.status !== "success" &&
+      original.status !== "failed" &&
+      original.status !== "cancelled"
+    ) {
+      return { error: "not_rerunnable" as const, status: original.status };
+    }
+    // Salvaguarda: se o workflow foi apagado, não roda.
+    const workflow = await workflowsRepository.findById(organizationId, workflowId);
+    if (!workflow) return { error: "workflow_not_found" as const };
+
+    const newRun = await workflowRunsRepository.create({
+      organizationId,
+      workflowId,
+      workflowVersionId: original.workflowVersionId,
+      environmentId: original.environmentId,
+      status: "queued",
+      input: original.input,
+      triggeredBy,
+    });
+
+    const job = await workflowQueue.add(
+      "execute",
+      {
+        runId: newRun.id,
+        workflowId,
+        workflowVersionId: original.workflowVersionId,
+        organizationId,
+        environmentId: original.environmentId,
+        input: original.input,
+      },
+      { removeOnComplete: 1000, removeOnFail: 5000 },
+    );
+    if (job.id) await workflowRunsRepository.update(newRun.id, { jobId: job.id });
+
+    return { run: newRun, sourceRunId: runId };
   },
 };

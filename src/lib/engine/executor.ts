@@ -21,9 +21,11 @@ import type {
   WorkflowEdge,
   WorkflowNode,
 } from "./types";
-import { nodeTypes } from "./types";
+import { nodeTypes, visualNodeTypes } from "./types";
 
-const MAX_STEPS = 100;
+// Suporta loops controlados (split_in_batches). 1000 cobre arrays típicos;
+// proteção real contra loop runaway fica no próprio handler de batches.
+const MAX_STEPS = 1000;
 
 /**
  * Erro lançado quando um cancelamento cooperativo é detectado entre nós.
@@ -36,6 +38,17 @@ export class CancelledError extends Error {
   }
 }
 
+export interface StepEvent {
+  type: "step-start" | "step-success" | "step-failed";
+  index: number;
+  nodeId: string;
+  nodeType: string;
+  status: "running" | "success" | "failed";
+  output?: Record<string, unknown> | null;
+  error?: Record<string, unknown> | null;
+  durationMs?: number | null;
+}
+
 export interface RunExecutionInput {
   runId: string;
   definition: unknown;
@@ -46,6 +59,12 @@ export interface RunExecutionInput {
    * se devolve true, o executor lança `CancelledError`.
    */
   checkCancelled?: () => Promise<boolean>;
+  /**
+   * Notificação de cada transição de step. Worker usa pra publicar em
+   * Redis pub/sub e a API encaminha por SSE. Best-effort — erros aqui
+   * não interrompem a execução.
+   */
+  onStepEvent?: (event: StepEvent) => void | Promise<void>;
 }
 
 export interface RunExecutionResult {
@@ -102,8 +121,10 @@ export function normalizeDefinition(raw: unknown): WorkflowDefinition {
 function findStart(def: WorkflowDefinition): WorkflowNode | null {
   const explicit = def.nodes.find((n) => n.type === "start");
   if (explicit) return explicit;
+  // Visuais (sticky_note, container) não devem ser elegíveis como start —
+  // eles vivem soltos no canvas sem edges de entrada.
   const targets = new Set(def.edges.map((e) => e.to));
-  return def.nodes.find((n) => !targets.has(n.id)) ?? null;
+  return def.nodes.find((n) => !visualNodeTypes.has(n.type) && !targets.has(n.id)) ?? null;
 }
 
 /** Escolhe a próxima aresta a partir de `from`, opcionalmente filtrando por label. */
@@ -137,6 +158,7 @@ export async function executeRun(args: RunExecutionInput): Promise<RunExecutionR
     vars: {},
     env: args.env ?? {},
     steps: {},
+    loopState: {},
   };
 
   const byId = new Map(def.nodes.map((n) => [n.id, n]));
@@ -174,21 +196,40 @@ export async function executeRun(args: RunExecutionInput): Promise<RunExecutionR
       })
       .returning({ id: workflowRunSteps.id });
 
+    await emitStep(args.onStepEvent, {
+      type: "step-start",
+      index: stepsExecuted,
+      nodeId: node.id,
+      nodeType: node.type,
+      status: "running",
+    });
+
     try {
       const result = await handler({ node, context: ctx });
       const finishedAt = new Date();
       ctx.steps[node.id] = result.output;
       if (result.vars) Object.assign(ctx.vars, result.vars);
 
+      const durationMs = finishedAt.getTime() - startedAt.getTime();
       await db
         .update(workflowRunSteps)
         .set({
           status: "success",
           output: result.output,
           finishedAt,
-          durationMs: finishedAt.getTime() - startedAt.getTime(),
+          durationMs,
         })
         .where(eqStepId(stepRow!.id));
+
+      await emitStep(args.onStepEvent, {
+        type: "step-success",
+        index: stepsExecuted,
+        nodeId: node.id,
+        nodeType: node.type,
+        status: "success",
+        output: result.output,
+        durationMs,
+      });
 
       // Nó end → encerra o run com o output dele.
       if (node.type === "end") {
@@ -210,15 +251,26 @@ export async function executeRun(args: RunExecutionInput): Promise<RunExecutionR
     } catch (err) {
       const e = err as Error;
       const finishedAt = new Date();
+      const durationMs = finishedAt.getTime() - startedAt.getTime();
+      const errorPayload = { message: e.message, stack: e.stack };
       await db
         .update(workflowRunSteps)
         .set({
           status: "failed",
-          error: { message: e.message, stack: e.stack },
+          error: errorPayload,
           finishedAt,
-          durationMs: finishedAt.getTime() - startedAt.getTime(),
+          durationMs,
         })
         .where(eqStepId(stepRow!.id));
+      await emitStep(args.onStepEvent, {
+        type: "step-failed",
+        index: stepsExecuted,
+        nodeId: node.id,
+        nodeType: node.type,
+        status: "failed",
+        error: errorPayload,
+        durationMs,
+      });
       throw err;
     }
   }
@@ -228,4 +280,13 @@ export async function executeRun(args: RunExecutionInput): Promise<RunExecutionR
 
 function eqStepId(id: string) {
   return eq(workflowRunSteps.id, id);
+}
+
+async function emitStep(cb: RunExecutionInput["onStepEvent"], event: StepEvent): Promise<void> {
+  if (!cb) return;
+  try {
+    await cb(event);
+  } catch {
+    // Best-effort: falha de notificação não derruba execução.
+  }
 }

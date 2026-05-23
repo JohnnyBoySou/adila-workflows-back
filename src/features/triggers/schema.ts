@@ -14,11 +14,18 @@ const cronFields = {
   timezone: t.Optional(t.String({ maxLength: 64 })),
 };
 
+// Campos específicos de webhook — `responseMode: sync` faz o endpoint /hooks/:token
+// aguardar o run terminar e devolver o output (ou um `respond_to_webhook` node).
+const webhookFields = {
+  webhookResponseMode: t.Optional(t.Union([t.Literal("async"), t.Literal("sync")])),
+  webhookResponseTimeoutMs: t.Optional(t.Integer({ minimum: 1000, maximum: 120_000 })),
+};
+
 // Body de criação: union discriminada por `type`.
 // Cron exige cronExpression; webhook ignora ambos.
 export const createTriggerBody = t.Union([
   t.Object({ type: t.Literal("cron"), ...baseFields, ...cronFields }),
-  t.Object({ type: t.Literal("webhook"), ...baseFields }),
+  t.Object({ type: t.Literal("webhook"), ...baseFields, ...webhookFields }),
 ]);
 
 export const updateTriggerBody = t.Object({
@@ -28,6 +35,7 @@ export const updateTriggerBody = t.Object({
   // Atualizar cron só faz sentido em triggers do tipo cron — validamos no controller.
   cronExpression: t.Optional(t.String({ minLength: 1, maxLength: 120 })),
   timezone: t.Optional(t.String({ maxLength: 64 })),
+  ...webhookFields,
 });
 
 export const triggerListParams = t.Object({

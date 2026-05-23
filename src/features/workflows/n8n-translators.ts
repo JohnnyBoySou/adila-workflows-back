@@ -235,6 +235,86 @@ function translateSwitch({ params, nameToId }: Ctx): Params {
   return { value, cases, default: "default" };
 }
 
+function translateCode({ params }: Ctx): Params {
+  // O n8n usa `$input.item.json.X` e `$('Node').item.json.X` *dentro* do código;
+  // não dá pra reescrever expressões em JS arbitrário. Mantemos o código cru —
+  // o usuário precisa adaptar pra ler de `input`, `vars`, `steps`, `env`.
+  const code = typeof params.jsCode === "string" ? params.jsCode : "";
+  return { code };
+}
+
+function translateSplitInBatches({ params, nameToId }: Ctx): Params {
+  const batchSizeRaw = params.batchSize;
+  const batchSize =
+    typeof batchSizeRaw === "number"
+      ? batchSizeRaw
+      : Number.parseInt(String(batchSizeRaw ?? "1"), 10);
+  return {
+    items: rewriteDeep(params.items ?? [], nameToId),
+    batchSize: Number.isFinite(batchSize) && batchSize > 0 ? batchSize : 1,
+  };
+}
+
+function translateEmbeddings({ params }: Ctx): Params {
+  const modelValue = (params.model as Params | undefined)?.value;
+  return {
+    // text/texts não vem do n8n (a SDK do n8n liga via conexão ai_embedding).
+    // O usuário precisa ligar manualmente no editor.
+    model: typeof modelValue === "string" ? modelValue : "text-embedding-3-small",
+  };
+}
+
+function translateVectorStore({ params }: Ctx): Params {
+  // mode do n8n: "insert" | "load" | "retrieve" | "retrieve-as-tool".
+  // No nosso engine só temos "insert" e "search".
+  const rawMode = String(params.mode ?? "search");
+  const operation = rawMode === "insert" ? "insert" : "search";
+  const tableName = typeof params.tableName === "string" ? params.tableName : "documents";
+  const topK = (params.options as Params | undefined)?.topK;
+  return {
+    connectionString: "{{ env.POSTGRES_URL }}",
+    table: tableName,
+    operation,
+    ...(operation === "search" && typeof topK === "number" && { topK }),
+    // `embedding` e `content`/`metadata` são ligados via outras conexões no n8n —
+    // o usuário precisa preencher manualmente no editor (referenciando o nó de embeddings).
+    _n8n: { ...params, _note: "ligue embedding/content/metadata manualmente" },
+  };
+}
+
+function translateChatMemory({ params, nameToId }: Ctx): Params {
+  const sessionKey = rewriteDeep(params.sessionKey, nameToId);
+  const tableName = typeof params.tableName === "string" ? params.tableName : "chat_messages";
+  return {
+    connectionString: "{{ env.POSTGRES_URL }}",
+    table: tableName,
+    sessionId: typeof sessionKey === "string" ? sessionKey : String(sessionKey ?? ""),
+    // n8n combina load+append no mesmo nó implicitamente; aqui o usuário escolhe.
+    operation: "load",
+    ...(typeof params.contextWindowLength === "number" && { limit: params.contextWindowLength }),
+  };
+}
+
+function translateDocumentLoader({ params, nameToId }: Ctx): Params {
+  const text = rewriteDeep(params.jsonData ?? params.textData ?? "", nameToId);
+  const opts = (params.options as Params | undefined) ?? {};
+  const meta = (opts.metadata as Params | undefined)?.metadataValues;
+  const metadata: Record<string, unknown> = {};
+  if (Array.isArray(meta)) {
+    for (const raw of meta) {
+      if (!raw || typeof raw !== "object") continue;
+      const m = raw as Params;
+      if (typeof m.name === "string") metadata[m.name] = rewriteDeep(m.value, nameToId);
+    }
+  }
+  return {
+    text: typeof text === "string" ? text : String(text ?? ""),
+    ...(typeof opts.chunkSize === "number" && { chunkSize: opts.chunkSize }),
+    ...(typeof opts.chunkOverlap === "number" && { chunkOverlap: opts.chunkOverlap }),
+    ...(Object.keys(metadata).length > 0 && { metadata }),
+  };
+}
+
 function translateAiChat({ params, nameToId }: Ctx): Params {
   // n8n agent/lmChatOpenAi guardam texto em locais diferentes.
   let prompt: unknown = params.text ?? params.prompt ?? "";
@@ -254,7 +334,12 @@ function translateAiChat({ params, nameToId }: Ctx): Params {
 }
 
 // ── dispatch ───────────────────────────────────────────────────────────
-type MappedType =
+/**
+ * Tipos que o importer sabe mapear. Fonte única — `n8n-import.ts` reusa esse tipo
+ * em vez de duplicar a união, então adicionar entrada no TYPE_MAP de lá força
+ * registro do tradutor aqui (typecheck garante).
+ */
+export type MappedType =
   | "start"
   | "set_variable"
   | "http_request"
@@ -264,7 +349,28 @@ type MappedType =
   | "wait"
   | "switch"
   | "postgres"
-  | "redis";
+  | "redis"
+  | "code"
+  | "split_in_batches"
+  | "embeddings"
+  | "vector_store"
+  | "chat_memory"
+  | "document_loader"
+  | "sticky_note";
+
+function translateStickyNote({ params }: Ctx): Params {
+  // n8n stickyNote.parameters: { content (markdown), height, width, color (number 1-7) }
+  const content = typeof params.content === "string" ? params.content : "";
+  const width = typeof params.width === "number" ? params.width : undefined;
+  const height = typeof params.height === "number" ? params.height : undefined;
+  const color = typeof params.color === "number" ? params.color : undefined;
+  return {
+    content,
+    ...(width !== undefined && { width }),
+    ...(height !== undefined && { height }),
+    ...(color !== undefined && { color }),
+  };
+}
 
 const TRANSLATORS: Record<MappedType, (ctx: Ctx) => Params> = {
   start: translateStart,
@@ -277,6 +383,13 @@ const TRANSLATORS: Record<MappedType, (ctx: Ctx) => Params> = {
   postgres: translatePostgres,
   switch: translateSwitch,
   ai_chat: translateAiChat,
+  code: translateCode,
+  split_in_batches: translateSplitInBatches,
+  embeddings: translateEmbeddings,
+  vector_store: translateVectorStore,
+  chat_memory: translateChatMemory,
+  document_loader: translateDocumentLoader,
+  sticky_note: translateStickyNote,
 };
 
 /**
@@ -289,8 +402,10 @@ export function translateN8nParameters(
   nameToId: Map<string, string>,
 ): Params {
   const params = parameters ?? {};
+  // Fallback defensivo: se um dia o TYPE_MAP ganhar entrada sem tradutor
+  // (drift entre arquivos), em vez de explodir mantemos o cru e o editor mostra.
   const translator = TRANSLATORS[mappedType];
-  const config = translator({ params, nameToId });
+  const config = translator ? translator({ params, nameToId }) : { _n8n: params };
   // Mantém parâmetros originais pra debug/editor (sem sobrescrever campos traduzidos).
   if (!("_n8n" in config)) config._n8n = params;
   return config;

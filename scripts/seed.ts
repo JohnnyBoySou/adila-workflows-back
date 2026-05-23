@@ -5,7 +5,7 @@
  * Idempotente: se o usuário já existir, apenas avisa e sai 0.
  */
 import { eq } from "drizzle-orm";
-import { auth } from "../src/lib/auth";
+import { auth, ensureUserOrganization } from "../src/lib/auth";
 import { db } from "../src/db";
 import { user } from "../src/db/auth-schema";
 import { logger } from "../src/lib/logger";
@@ -26,7 +26,14 @@ async function main() {
     .limit(1);
 
   if (existing.length > 0) {
-    log.info({ userId: existing[0]!.id, email: SEED_USER.email }, "user already exists, skipping");
+    const userId = existing[0]!.id;
+    log.info({ userId, email: SEED_USER.email }, "user already exists, ensuring organization");
+    const orgId = await ensureUserOrganization({
+      userId,
+      email: SEED_USER.email,
+      name: SEED_USER.name,
+    });
+    log.info({ userId, orgId }, "organization ready");
     return;
   }
 

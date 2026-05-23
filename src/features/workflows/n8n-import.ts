@@ -17,6 +17,7 @@
  * usando o `id` (uuid) que o n8n já gera por nó.
  */
 import type { WorkflowDefinition } from "../../lib/engine/types";
+import { type MappedType, translateN8nParameters } from "./n8n-translators";
 
 // ── shapes parciais do JSON do n8n (validamos só o que usamos) ─────────
 interface N8nNode {
@@ -53,18 +54,8 @@ export interface N8nWorkflow {
 }
 
 // ── tabela de mapeamento ───────────────────────────────────────────────
-type MappedType =
-  | "start"
-  | "set_variable"
-  | "http_request"
-  | "if"
-  | "ai_chat"
-  | "noop"
-  | "wait"
-  | "switch"
-  | "postgres"
-  | "redis";
-
+// MappedType é exportado por n8n-translators — fonte única. Adicionar entrada
+// aqui sem registrar tradutor lá é capturado pelo typecheck do TRANSLATORS.
 const TYPE_MAP: Record<string, MappedType> = {
   "n8n-nodes-base.webhook": "start",
   "@n8n/n8n-nodes-langchain.chatTrigger": "start",
@@ -80,10 +71,18 @@ const TYPE_MAP: Record<string, MappedType> = {
   "n8n-nodes-base.switch": "switch",
   "n8n-nodes-base.postgres": "postgres",
   "n8n-nodes-base.redis": "redis",
+  "n8n-nodes-base.code": "code",
+  "n8n-nodes-base.splitInBatches": "split_in_batches",
+  "@n8n/n8n-nodes-langchain.embeddingsOpenAi": "embeddings",
+  "@n8n/n8n-nodes-langchain.vectorStorePGVector": "vector_store",
+  "@n8n/n8n-nodes-langchain.memoryPostgresChat": "chat_memory",
+  "@n8n/n8n-nodes-langchain.documentDefaultDataLoader": "document_loader",
+  "n8n-nodes-base.stickyNote": "sticky_note",
 };
 
-// Tipos puramente visuais — descartados.
-const SKIPPED_TYPES = new Set(["n8n-nodes-base.stickyNote"]);
+// Tipos puramente visuais — descartados no import (nenhum hoje, ficou só
+// como ponto de extensão).
+const SKIPPED_TYPES = new Set<string>();
 
 export interface ImportSummary {
   total: number;
@@ -136,13 +135,14 @@ export function importN8nWorkflow(raw: unknown): ImportResult | { error: string 
     }
     const mapped = TYPE_MAP[n.type];
     if (mapped) {
+      const translated = translateN8nParameters(mapped, n.parameters, nameToId);
       nodes.push({
         id: n.id,
         type: mapped,
         config: {
+          ...translated,
           n8nName: n.name,
           originalType: n.type,
-          parameters: n.parameters ?? {},
           ...(n.position && { position: n.position }),
           ...(n.disabled && { disabled: true }),
         },

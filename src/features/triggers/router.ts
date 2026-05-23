@@ -17,6 +17,7 @@ const ERROR_TO_STATUS: Record<string, number> = {
   environment_not_found: 400,
   invalid_cron: 400,
   cron_fields_on_webhook: 400,
+  webhook_fields_on_cron: 400,
   not_webhook: 400,
 };
 

@@ -14,6 +14,7 @@ import { workflowsController } from "../src/features/workflows/controller";
 import { workflowsRepository } from "../src/features/workflows/repository";
 import { CancelledError, executeRun } from "../src/lib/engine";
 import { logger } from "../src/lib/logger";
+import { publishRunEvent } from "../src/lib/run-events";
 import {
   createCronSchedulerWorker,
   createWorkflowWorker,
@@ -37,6 +38,7 @@ async function processWorkflow(job: Job<WorkflowJob>) {
 
   log.info("start");
   await workflowRunsRepository.markRunning(runId, job.id ?? "");
+  await publishRunEvent({ type: "run-start", runId, at: new Date().toISOString() });
 
   try {
     // Executa contra o snapshot imutável quando disponível; fallback para o
@@ -70,20 +72,52 @@ async function processWorkflow(job: Job<WorkflowJob>) {
         const r = await workflowRunsRepository.findByIdRaw(runId);
         return Boolean(r?.cancelRequested);
       },
+      onStepEvent: (event) =>
+        publishRunEvent({
+          type: event.type,
+          runId,
+          at: new Date().toISOString(),
+          step: {
+            index: event.index,
+            nodeId: event.nodeId,
+            nodeType: event.nodeType,
+            status: event.status,
+            output: event.output ?? null,
+            error: event.error ?? null,
+            durationMs: event.durationMs ?? null,
+          },
+        }),
     });
 
     await workflowRunsRepository.markSuccess(runId, result.output);
+    await publishRunEvent({
+      type: "run-success",
+      runId,
+      at: new Date().toISOString(),
+      data: { output: result.output, stepsExecuted: result.stepsExecuted },
+    });
     log.info({ steps: result.stepsExecuted }, "success");
     return result.output;
   } catch (err) {
     if (err instanceof CancelledError) {
       await workflowRunsRepository.markCancelled(runId);
+      await publishRunEvent({
+        type: "run-cancelled",
+        runId,
+        at: new Date().toISOString(),
+      });
       log.info("cancelled");
       return { cancelled: true };
     }
     const e = err as Error;
     const payload = { message: e.message, stack: e.stack };
     await workflowRunsRepository.markFailed(runId, payload);
+    await publishRunEvent({
+      type: "run-failed",
+      runId,
+      at: new Date().toISOString(),
+      data: payload,
+    });
     log.error({ err: payload }, "failed");
     throw err;
   }

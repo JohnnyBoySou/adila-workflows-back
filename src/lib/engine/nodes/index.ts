@@ -1,13 +1,22 @@
 import { aiChatHandler } from "./ai-chat";
+import { chatMemoryHandler } from "./chat-memory";
+import { codeHandler } from "./code";
+import { containerHandler } from "./container";
+import { documentLoaderHandler } from "./document-loader";
+import { embeddingsHandler } from "./embeddings";
 import { endHandler } from "./end";
 import { httpRequestHandler } from "./http-request";
 import { ifHandler } from "./if";
 import { noopHandler } from "./noop";
 import { postgresHandler } from "./postgres";
 import { redisHandler } from "./redis";
+import { respondToWebhookHandler } from "./respond-to-webhook";
 import { setVariableHandler } from "./set-variable";
+import { splitInBatchesHandler } from "./split-in-batches";
 import { startHandler } from "./start";
+import { stickyNoteHandler } from "./sticky-note";
 import { switchHandler } from "./switch";
+import { vectorStoreHandler } from "./vector-store";
 import { waitHandler } from "./wait";
 import type { NodeHandler, NodeType } from "../types";
 
@@ -24,4 +33,13 @@ export const nodeHandlers: Record<NodeType, NodeHandler> = {
   switch: switchHandler,
   postgres: postgresHandler,
   redis: redisHandler,
+  code: codeHandler,
+  split_in_batches: splitInBatchesHandler,
+  embeddings: embeddingsHandler,
+  vector_store: vectorStoreHandler,
+  chat_memory: chatMemoryHandler,
+  document_loader: documentLoaderHandler,
+  sticky_note: stickyNoteHandler,
+  container: containerHandler,
+  respond_to_webhook: respondToWebhookHandler,
 };

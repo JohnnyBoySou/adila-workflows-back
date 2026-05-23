@@ -1,10 +1,12 @@
 import { Elysia } from "elysia";
 import { cors } from "@elysiajs/cors";
+import { swagger } from "@elysiajs/swagger";
 import { env } from "./config/env";
 import { auditLogsRouter } from "./features/audit-logs/router";
 import { environmentVariablesRouter } from "./features/environment-variables/router";
 import { environmentsRouter } from "./features/environments/router";
 import { foldersRouter } from "./features/folders/router";
+import { healthRouter } from "./features/health/router";
 import { triggersRouter } from "./features/triggers/router";
 import { webhookRouter } from "./features/triggers/webhook-router";
 import { workflowRunsRouter } from "./features/workflow-runs/router";
@@ -33,6 +35,27 @@ const app = new Elysia()
     }),
   )
   .use(httpLogger)
+  // OpenAPI auto-gerado a partir dos schemas TypeBox de cada rota.
+  // /docs (Scalar UI) e /docs/json (raw OpenAPI). Em produção, restrinja se preciso.
+  .use(
+    swagger({
+      path: "/docs",
+      documentation: {
+        info: {
+          title: "Adila Workflows API",
+          version: "0.1.0",
+          description: "Backend de orquestração de workflows (Bun + Elysia + Drizzle + BullMQ).",
+        },
+        tags: [
+          { name: "workflows", description: "CRUD e execução de workflows" },
+          { name: "runs", description: "Histórico, cancelamento e rerun de execuções" },
+          { name: "triggers", description: "Cron e webhook" },
+          { name: "environments", description: "Ambientes e variáveis" },
+          { name: "health", description: "Liveness e readiness" },
+        ],
+      },
+    }),
+  )
   // Better Auth expõe todas as rotas em /api/auth/* — repassamos o Request nativo.
   .all("/api/auth/*", async ({ request, server, status, set }) => {
     const url = new URL(request.url);
@@ -54,7 +77,7 @@ const app = new Elysia()
     return auth.handler(request);
   })
   .get("/", () => "Hello Elysia")
-  .get("/health", () => ({ status: "ok" }))
+  .use(healthRouter)
   .use(foldersRouter)
   .use(environmentsRouter)
   .use(environmentVariablesRouter)

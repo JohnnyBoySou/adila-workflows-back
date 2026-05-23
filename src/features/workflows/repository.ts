@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, count, desc, eq, isNull } from "drizzle-orm";
 import { db } from "../../db";
 import { workflows, type NewWorkflow, type WorkflowStatus } from "../../db/schema";
 
@@ -18,13 +18,27 @@ export const workflowsRepository = {
     if (folderId === null) conditions.push(isNull(workflows.folderId));
     else if (typeof folderId === "string") conditions.push(eq(workflows.folderId, folderId));
 
-    return db
-      .select()
-      .from(workflows)
-      .where(and(...conditions))
-      .orderBy(desc(workflows.updatedAt))
-      .limit(limit)
-      .offset(offset);
+    const where = and(...conditions);
+
+    // Disparamos count e select em paralelo — uma round-trip extra, mas evita
+    // tunar o select com window function só pra pegar total.
+    const [items, [totalRow]] = await Promise.all([
+      db
+        .select()
+        .from(workflows)
+        .where(where)
+        .orderBy(desc(workflows.updatedAt))
+        .limit(limit)
+        .offset(offset),
+      db.select({ value: count() }).from(workflows).where(where),
+    ]);
+
+    return {
+      items,
+      total: Number(totalRow?.value ?? 0),
+      limit,
+      offset,
+    };
   },
 
   async findById(organizationId: string, id: string) {

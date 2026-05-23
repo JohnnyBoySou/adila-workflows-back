@@ -38,7 +38,8 @@ describe("workflows CRUD", () => {
     const id = created.workflow.id;
 
     const list = await workflowsController.list(orgId, { limit: 20, offset: 0 });
-    expect(list.some((w) => w.id === id)).toBe(true);
+    expect(list.items.some((w) => w.id === id)).toBe(true);
+    expect(list.total).toBeGreaterThan(0);
 
     const updated = await workflowsController.update(orgId, id, {
       name: "smoke-renamed",

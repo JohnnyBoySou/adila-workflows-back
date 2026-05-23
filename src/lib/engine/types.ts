@@ -25,8 +25,24 @@ export const nodeTypes = [
   "switch",
   "postgres",
   "redis",
+  "code",
+  "split_in_batches",
+  "embeddings",
+  "vector_store",
+  "chat_memory",
+  "document_loader",
+  "sticky_note",
+  "container",
+  "respond_to_webhook",
 ] as const;
 export type NodeType = (typeof nodeTypes)[number];
+
+/**
+ * Tipos puramente visuais — não executam, servem só pra editor (anotações,
+ * agrupamentos no estilo Figma frame). O executor pula esses ao escolher
+ * start e qualquer aresta apontando pra eles é tratada como no-op.
+ */
+export const visualNodeTypes = new Set<NodeType>(["sticky_note", "container"]);
 
 export interface WorkflowNode {
   id: NodeId;
@@ -63,6 +79,11 @@ export interface ExecutionContext {
   vars: Record<string, unknown>;
   env: Record<string, string>;
   steps: Record<NodeId, Record<string, unknown>>;
+  /**
+   * Estado opaco compartilhado entre handlers iterativos (split_in_batches).
+   * Não usar fora deles — não é parte do template engine.
+   */
+  loopState?: Record<NodeId, { cursor: number; items: unknown[] }>;
 }
 
 /**

@@ -1,4 +1,4 @@
-import { Queue, Worker, type Processor } from "bullmq";
+import { Queue, QueueEvents, Worker, type Processor } from "bullmq";
 import { connection } from "./redis";
 
 // ─── Workflows ──────────────────────────────────────────────
@@ -15,6 +15,13 @@ export interface WorkflowJob {
 }
 
 export const workflowQueue = new Queue<WorkflowJob>("workflows", { connection });
+
+/**
+ * Listener compartilhado pra `job.waitUntilFinished(events, timeout)` —
+ * usado pelo webhook sync. Instanciar QueueEvents é caro (mantém um
+ * pub/sub subscriber no Redis); compartilhar é o padrão recomendado.
+ */
+export const workflowQueueEvents = new QueueEvents("workflows", { connection });
 
 export function createWorkflowWorker(processor: Processor<WorkflowJob>) {
   return new Worker<WorkflowJob>("workflows", processor, { connection });

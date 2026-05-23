@@ -41,6 +41,10 @@ export const triggersController = {
       cronExpression: body.type === "cron" ? body.cronExpression : null,
       timezone: body.type === "cron" ? (body.timezone ?? "UTC") : null,
       webhookToken: body.type === "webhook" ? generateWebhookToken() : null,
+      // Defaults sãos pra triggers webhook; ignorados pra cron.
+      webhookResponseMode: body.type === "webhook" ? (body.webhookResponseMode ?? "async") : null,
+      webhookResponseTimeoutMs:
+        body.type === "webhook" ? (body.webhookResponseTimeoutMs ?? 30_000) : null,
     });
 
     if (trigger.type === "cron" && trigger.enabled && trigger.cronExpression) {
@@ -63,6 +67,13 @@ export const triggersController = {
     if (existing.type !== "cron" && (body.cronExpression || body.timezone)) {
       return { error: "cron_fields_on_webhook" as const };
     }
+    // Inverso: campos de webhook só em triggers webhook.
+    if (
+      existing.type !== "webhook" &&
+      (body.webhookResponseMode !== undefined || body.webhookResponseTimeoutMs !== undefined)
+    ) {
+      return { error: "webhook_fields_on_cron" as const };
+    }
 
     const tz = body.timezone ?? existing.timezone ?? "UTC";
     if (body.cronExpression && !isValidCron(body.cronExpression, tz)) {
@@ -75,6 +86,12 @@ export const triggersController = {
       ...(body.environmentId !== undefined && { environmentId: body.environmentId }),
       ...(body.cronExpression !== undefined && { cronExpression: body.cronExpression }),
       ...(body.timezone !== undefined && { timezone: body.timezone }),
+      ...(body.webhookResponseMode !== undefined && {
+        webhookResponseMode: body.webhookResponseMode,
+      }),
+      ...(body.webhookResponseTimeoutMs !== undefined && {
+        webhookResponseTimeoutMs: body.webhookResponseTimeoutMs,
+      }),
     });
     if (!updated) return { error: "not_found" as const };
 

@@ -251,6 +251,11 @@ export const triggers = pgTable(
 
     // Webhook — token único usado na URL pública /hooks/:token.
     webhookToken: text("webhook_token").unique(),
+    // 'async' (default): responde 202 imediatamente.
+    // 'sync': aguarda o run terminar e devolve o output (ou um respond_to_webhook node).
+    webhookResponseMode: text("webhook_response_mode").$type<"async" | "sync">().default("async"),
+    // Limite máximo de espera em modo sync. Default 30s; suficiente pra request-response típico.
+    webhookResponseTimeoutMs: integer("webhook_response_timeout_ms").default(30_000),
 
     lastTriggeredAt: timestamp("last_triggered_at", { withTimezone: true }),
     lastRunId: uuid("last_run_id").references(() => workflowRuns.id, {
