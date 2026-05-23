@@ -4,6 +4,7 @@ import { auditLog } from "../audit-logs/service";
 import { triggersController } from "./controller";
 import {
   createTriggerBody,
+  promoteTriggerBody,
   triggerListParams,
   triggerListQuery,
   triggerParams,
@@ -15,6 +16,7 @@ const adminOnly = requireRole("owner", "admin");
 const ERROR_TO_STATUS: Record<string, number> = {
   not_found: 404,
   environment_not_found: 400,
+  workflow_version_not_found: 400,
   invalid_cron: 400,
   cron_fields_on_webhook: 400,
   webhook_fields_on_cron: 400,
@@ -115,6 +117,36 @@ export const triggersRouter = new Elysia({ prefix: "/workflows/:id/triggers" })
       return status(204, null);
     },
     { params: triggerParams, beforeHandle: adminOnly },
+  )
+
+  .post(
+    "/:triggerId/promote",
+    async ({ organizationId, user, params, body, status, request }) => {
+      const result = await triggersController.promote(
+        organizationId,
+        params.id,
+        params.triggerId,
+        body.workflowVersionId,
+      );
+      if ("error" in result) return status(statusFor(result.error), { error: result.error });
+      await auditLog({
+        organizationId,
+        actorUserId: user.id,
+        // Verbo distinto de `trigger.updated` pra dashboard de release ficar
+        // limpo — quem audita uma promoção quer só essas linhas.
+        action: "trigger.promoted",
+        resourceType: "trigger",
+        resourceId: result.trigger.id,
+        metadata: {
+          workflowId: params.id,
+          from: result.previousWorkflowVersionId,
+          to: body.workflowVersionId,
+        },
+        request,
+      });
+      return result.trigger;
+    },
+    { params: triggerParams, body: promoteTriggerBody, beforeHandle: adminOnly },
   )
 
   .post(

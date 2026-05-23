@@ -8,6 +8,12 @@ const baseFields = {
   environmentId: t.Optional(t.Union([t.String({ format: "uuid" }), t.Null()])),
   enabled: t.Optional(t.Boolean()),
   /**
+   * Pin opcional: id de um `workflow_versions` específico que o trigger
+   * deve disparar. NULL/ausente = comportamento legado (latest/auto-publica).
+   * É o que faz o promote profissional: prod aponta pra v17, stage pra v18.
+   */
+  workflowVersionId: t.Optional(t.Union([t.String({ format: "uuid" }), t.Null()])),
+  /**
    * ID do node no canvas que representa este trigger. Opcional para
    * compatibilidade com triggers gerenciados puramente via API, mas
    * recomendado quando criado a partir do editor.
@@ -38,6 +44,7 @@ export const updateTriggerBody = t.Object({
   name: t.Optional(t.String({ minLength: 1, maxLength: 120 })),
   enabled: t.Optional(t.Boolean()),
   environmentId: t.Optional(t.Union([t.String({ format: "uuid" }), t.Null()])),
+  workflowVersionId: t.Optional(t.Union([t.String({ format: "uuid" }), t.Null()])),
   nodeId: t.Optional(t.Union([t.String({ minLength: 1, maxLength: 128 }), t.Null()])),
   // Atualizar cron só faz sentido em triggers do tipo cron — validamos no controller.
   cronExpression: t.Optional(t.String({ minLength: 1, maxLength: 120 })),
@@ -57,6 +64,13 @@ export const triggerParams = t.Object({
 export const webhookParams = t.Object({
   token: t.String({ minLength: 16, maxLength: 128 }),
 });
+
+// Body do endpoint de promote — explícito e separado do update genérico
+// pra rastrear como ação distinta no audit log.
+export const promoteTriggerBody = t.Object({
+  workflowVersionId: t.Union([t.String({ format: "uuid" }), t.Null()]),
+});
+export type PromoteTriggerBody = typeof promoteTriggerBody.static;
 
 export const triggerListQuery = t.Object({
   type: t.Optional(typeEnum),

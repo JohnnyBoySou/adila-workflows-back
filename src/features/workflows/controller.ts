@@ -2,6 +2,7 @@ import { environmentsRepository } from "../environments/repository";
 import { foldersRepository } from "../folders/repository";
 import { workflowRunsRepository } from "../workflow-runs/repository";
 import { workflowVersionsController } from "../workflow-versions/controller";
+import { workflowVersionsRepository } from "../workflow-versions/repository";
 import { workflowQueue } from "../../lib/queue";
 import { importN8nWorkflow } from "./n8n-import";
 import { workflowsRepository } from "./repository";
@@ -98,6 +99,12 @@ export const workflowsController = {
       input?: Record<string, unknown>;
       /** Outputs pinados pelo editor — pulam o handler do nó correspondente. */
       pinnedData?: Record<string, Record<string, unknown>>;
+      /**
+       * Versão pinada (ex.: vinda de `triggers.workflowVersionId`). Quando
+       * setado, ignora ensureLatest e dispara exatamente este snapshot. Erra
+       * se a versão não existir ou pertencer a outro workflow.
+       */
+      workflowVersionId?: string | null;
     } = {},
   ) {
     const workflow = await workflowsRepository.findById(organizationId, id);
@@ -108,14 +115,24 @@ export const workflowsController = {
       if (!env) return { error: "environment_not_found" as const };
     }
 
-    // Resolve a versão imutável que vai rodar: latest published, ou auto-publica
-    // a versão 1 com o draft atual se ainda não houver nenhuma.
-    const version = await workflowVersionsController.ensureLatest(
-      workflow.id,
-      triggeredBy,
-      workflow.definition,
-      workflow.createdBy,
-    );
+    // Resolve a versão imutável que vai rodar:
+    //  - opts.workflowVersionId setado → busca direto (modo "pinned by trigger")
+    //  - senão → latest published, ou auto-publica a v1 com o draft atual
+    let version: { id: string };
+    if (opts.workflowVersionId) {
+      const pinned = await workflowVersionsRepository.findByIdRaw(opts.workflowVersionId);
+      if (!pinned || pinned.workflowId !== workflow.id) {
+        return { error: "workflow_version_not_found" as const };
+      }
+      version = pinned;
+    } else {
+      version = await workflowVersionsController.ensureLatest(
+        workflow.id,
+        triggeredBy,
+        workflow.definition,
+        workflow.createdBy,
+      );
+    }
 
     // Cria o run primeiro (status=queued) — fica registrado mesmo se o enqueue falhar.
     const run = await workflowRunsRepository.create({

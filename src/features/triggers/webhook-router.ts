@@ -70,6 +70,9 @@ export const webhookRouter = new Elysia().post(
 
     const result = await workflowsController.run(trigger.organizationId, trigger.workflowId, null, {
       environmentId: trigger.environmentId,
+      // Mesma semântica do path cron: se o trigger tem versão pinada, ela
+      // ganha — independente do `definition` corrente do workflow.
+      workflowVersionId: trigger.workflowVersionId,
       input: (body ?? {}) as Record<string, unknown>,
     });
     if ("error" in result) return status(400, { error: result.error });

@@ -106,7 +106,10 @@ export interface ExecutionContext {
     output?: Record<string, unknown>;
   }>;
   /**
-   * Resolve uma connection nomeada (DB) pelo id. Já vem decifrada — uso só
+   * Resolve uma connection (DB) por referência. `ref` pode ser um UUID
+   * (legado, pinned na linha específica) ou um nome lógico (`"db_main"`,
+   * resolvido pela closure do worker contra `(workflowId, name,
+   * environmentId)` com fallback default). Já vem decifrada — uso só
    * dentro do worker. Os handlers `postgres`/`redis` chamam isto pra
    * obter a URL sem nunca tocar em material cifrado.
    *
@@ -114,7 +117,7 @@ export interface ExecutionContext {
    * stubar este callback diretamente.
    */
   resolveConnection?: (
-    connectionId: string,
+    ref: string,
   ) => Promise<{ connectionString: string; kind: "postgres" | "redis" } | null>;
 }
 

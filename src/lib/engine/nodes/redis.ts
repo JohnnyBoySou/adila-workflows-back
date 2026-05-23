@@ -40,19 +40,23 @@ const ALLOWED_OPERATIONS = new Set([
 export const redisHandler: NodeHandler = async ({ node, context }) => {
   const cfg = renderTemplate(node.config, context) as Record<string, unknown>;
 
-  const connectionId = cfg.connectionId;
-  if (typeof connectionId !== "string" || !connectionId) {
-    throw new Error("redis: config.connectionId é obrigatório (uuid de uma connection registrada)");
+  // `connectionRef` é o canônico (nome lógico ou uuid); `connectionId`
+  // é o alias legado preservado por compat.
+  const rawRef = (cfg.connectionRef ?? cfg.connectionId) as unknown;
+  if (typeof rawRef !== "string" || !rawRef) {
+    throw new Error(
+      "redis: config.connectionRef é obrigatório (nome lógico ou uuid de uma connection registrada)",
+    );
   }
   if (!context.resolveConnection) {
     throw new Error("redis: resolveConnection ausente do contexto — execute via worker");
   }
-  const resolved = await context.resolveConnection(connectionId);
+  const resolved = await context.resolveConnection(rawRef);
   if (!resolved) {
-    throw new Error(`redis: connection ${connectionId} não encontrada no workflow`);
+    throw new Error(`redis: connection ${rawRef} não encontrada no workflow`);
   }
   if (resolved.kind !== "redis") {
-    throw new Error(`redis: connection ${connectionId} é do tipo ${resolved.kind}, esperado redis`);
+    throw new Error(`redis: connection ${rawRef} é do tipo ${resolved.kind}, esperado redis`);
   }
   const connectionString = resolved.connectionString;
 

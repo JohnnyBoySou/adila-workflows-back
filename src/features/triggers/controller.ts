@@ -1,8 +1,25 @@
 import { randomBytes } from "node:crypto";
 import { environmentsRepository } from "../environments/repository";
+import { workflowVersionsRepository } from "../workflow-versions/repository";
 import { triggersRepository } from "./repository";
 import { isValidCron, removeCronTrigger, upsertCronTrigger } from "./scheduler";
 import type { CreateTriggerBody, UpdateTriggerBody } from "./schema";
+
+/**
+ * Garante que o `workflowVersionId` pertence ao mesmo workflow. Sem isso, um
+ * trigger de `wfA` poderia ser apontado pra uma versão de `wfB` — quebrando
+ * o invariante de "trigger sempre dispara o workflow dono".
+ */
+async function ensureVersionBelongsToWorkflow(
+  workflowId: string,
+  workflowVersionId: string,
+): Promise<true | { error: "workflow_version_not_found" }> {
+  const version = await workflowVersionsRepository.findByIdRaw(workflowVersionId);
+  if (!version || version.workflowId !== workflowId) {
+    return { error: "workflow_version_not_found" as const };
+  }
+  return true;
+}
 
 function generateWebhookToken() {
   // 32 bytes → 64 chars hex. Suficiente como segredo de URL.
@@ -24,6 +41,11 @@ export const triggersController = {
       if (!env) return { error: "environment_not_found" as const };
     }
 
+    if (body.workflowVersionId) {
+      const check = await ensureVersionBelongsToWorkflow(workflowId, body.workflowVersionId);
+      if (check !== true) return check;
+    }
+
     if (body.type === "cron") {
       const tz = body.timezone ?? "UTC";
       if (!isValidCron(body.cronExpression, tz)) {
@@ -38,6 +60,7 @@ export const triggersController = {
       type: body.type,
       enabled: body.enabled ?? true,
       environmentId: body.environmentId ?? null,
+      workflowVersionId: body.workflowVersionId ?? null,
       nodeId: body.nodeId ?? null,
       cronExpression: body.type === "cron" ? body.cronExpression : null,
       timezone: body.type === "cron" ? (body.timezone ?? "UTC") : null,
@@ -64,6 +87,11 @@ export const triggersController = {
       if (!env) return { error: "environment_not_found" as const };
     }
 
+    if (body.workflowVersionId) {
+      const check = await ensureVersionBelongsToWorkflow(workflowId, body.workflowVersionId);
+      if (check !== true) return check;
+    }
+
     // Cron fields só fazem sentido em triggers cron.
     if (existing.type !== "cron" && (body.cronExpression || body.timezone)) {
       return { error: "cron_fields_on_webhook" as const };
@@ -85,6 +113,9 @@ export const triggersController = {
       ...(body.name !== undefined && { name: body.name }),
       ...(body.enabled !== undefined && { enabled: body.enabled }),
       ...(body.environmentId !== undefined && { environmentId: body.environmentId }),
+      ...(body.workflowVersionId !== undefined && {
+        workflowVersionId: body.workflowVersionId,
+      }),
       ...(body.nodeId !== undefined && { nodeId: body.nodeId }),
       ...(body.cronExpression !== undefined && { cronExpression: body.cronExpression }),
       ...(body.timezone !== undefined && { timezone: body.timezone }),
@@ -114,6 +145,35 @@ export const triggersController = {
     if (!removed) return null;
     if (removed.type === "cron") await removeCronTrigger(removed.id);
     return removed;
+  },
+
+  /**
+   * Move o pino de versão do trigger. `workflowVersionId = null` despinpina e
+   * volta ao comportamento legado (latest/auto-publish). O caller (router)
+   * registra `trigger.promoted` no audit log com o diff de versões.
+   */
+  async promote(
+    organizationId: string,
+    workflowId: string,
+    id: string,
+    workflowVersionId: string | null,
+  ) {
+    const existing = await triggersRepository.findById(organizationId, workflowId, id);
+    if (!existing) return { error: "not_found" as const };
+
+    if (workflowVersionId) {
+      const check = await ensureVersionBelongsToWorkflow(workflowId, workflowVersionId);
+      if (check !== true) return check;
+    }
+
+    const updated = await triggersRepository.update(organizationId, workflowId, id, {
+      workflowVersionId,
+    });
+    if (!updated) return { error: "not_found" as const };
+    return {
+      trigger: updated,
+      previousWorkflowVersionId: existing.workflowVersionId,
+    };
   },
 
   /** Rotaciona o token de webhook — invalida URLs antigas. */

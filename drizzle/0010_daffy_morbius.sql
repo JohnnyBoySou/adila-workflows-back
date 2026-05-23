@@ -1,0 +1,2 @@
+ALTER TABLE "triggers" ADD COLUMN "workflow_version_id" uuid;--> statement-breakpoint
+ALTER TABLE "triggers" ADD CONSTRAINT "triggers_workflow_version_id_workflow_versions_id_fk" FOREIGN KEY ("workflow_version_id") REFERENCES "public"."workflow_versions"("id") ON DELETE set null ON UPDATE no action;

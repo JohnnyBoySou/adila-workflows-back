@@ -78,10 +78,13 @@ async function processWorkflow(job: Job<WorkflowJob>) {
           parentRunId: runId,
           ...args,
         }),
-      // Bound ao workflowId atual — handlers postgres/redis chamam isto pra
-      // obter a URL decifrada da connection nomeada que o usuário escolheu.
-      resolveConnection: async (connectionId) => {
-        const row = await databaseConnectionsRepository.resolve(workflowId, connectionId);
+      // Bound ao workflowId + environmentId atuais. O `ref` pode ser um UUID
+      // (legado, pinned na linha) ou um nome lógico ("db_main") — o
+      // repository.resolve() distingue por formato e aplica fallback
+      // env-específico → default (env=NULL) automaticamente. Isso é o que
+      // permite promover a mesma versão entre envs sem editar a definition.
+      resolveConnection: async (ref) => {
+        const row = await databaseConnectionsRepository.resolve(workflowId, ref, environmentId);
         if (!row) return null;
         return { connectionString: row.connectionString, kind: row.kind };
       },
@@ -221,7 +224,13 @@ async function processCron(job: Job<CronTriggerJob>) {
     trigger.organizationId,
     trigger.workflowId,
     null, // disparo do sistema
-    { environmentId: trigger.environmentId, input: {} },
+    {
+      environmentId: trigger.environmentId,
+      // Pin de versão: se o trigger aponta pra uma versão específica, é ela
+      // que roda. Permite "prod tá em v17, stage em v18" sem mexer no draft.
+      workflowVersionId: trigger.workflowVersionId,
+      input: {},
+    },
   );
 
   if ("error" in result) {

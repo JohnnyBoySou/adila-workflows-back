@@ -39,18 +39,20 @@ import type { NodeHandler } from "../types";
  *   - "orm": expõe `db` (Drizzle), `sql`, helpers e column builders no sandbox.
  *
  * Config (sql):
- *   - connectionId: string (uuid)     — id de uma database_connection registrada
- *   - query: string                   — SQL com placeholders $1, $2…
- *   - params?: unknown[]              — valores parametrizados
+ *   - connectionRef: string            — UUID (legado) OU nome lógico ("db_main").
+ *                                        Nome resolve com fallback de env no worker.
+ *   - connectionId: string             — alias legado de connectionRef (compat).
+ *   - query: string                    — SQL com placeholders $1, $2…
+ *   - params?: unknown[]               — valores parametrizados
  *
  * Config (orm):
- *   - connectionId: string (uuid)
- *   - code: string                    — corpo da função; tem acesso a `db`, `sql`,
- *                                       `ctx`, helpers e column builders
- *   - timeoutMs?: number              — timeout (default 5000, máx 30000)
+ *   - connectionRef: string            — idem acima
+ *   - code: string                     — corpo da função; tem acesso a `db`, `sql`,
+ *                                        `ctx`, helpers e column builders
+ *   - timeoutMs?: number               — timeout (default 5000, máx 30000)
  *
  * Segurança:
- *   - URL crua nunca aparece na config — só o `connectionId`. Resolução é feita
+ *   - URL crua nunca aparece na config — só a referência. Resolução é feita
  *     via `context.resolveConnection` (worker-only). Em dry-runs sem worker
  *     o handler falha cedo com mensagem clara.
  *   - A connection nomeada é proibida de apontar pro DB do app (checado já no
@@ -63,20 +65,24 @@ const MAX_ORM_TIMEOUT_MS = 30_000;
 export const postgresHandler: NodeHandler = async ({ node, context }) => {
   const cfg = renderTemplate(node.config, context) as Record<string, unknown>;
 
-  const connectionId = cfg.connectionId;
-  if (typeof connectionId !== "string" || !connectionId) {
-    throw new Error("postgres: config.connectionId é obrigatório (uuid de uma connection registrada)");
+  // `connectionRef` é o canônico (nome lógico ou uuid); `connectionId` é o
+  // alias legado preservado por compat de workflows criados antes do rename.
+  const rawRef = (cfg.connectionRef ?? cfg.connectionId) as unknown;
+  if (typeof rawRef !== "string" || !rawRef) {
+    throw new Error(
+      "postgres: config.connectionRef é obrigatório (nome lógico ou uuid de uma connection registrada)",
+    );
   }
   if (!context.resolveConnection) {
     throw new Error("postgres: resolveConnection ausente do contexto — execute via worker");
   }
 
-  const resolved = await context.resolveConnection(connectionId);
+  const resolved = await context.resolveConnection(rawRef);
   if (!resolved) {
-    throw new Error(`postgres: connection ${connectionId} não encontrada no workflow`);
+    throw new Error(`postgres: connection ${rawRef} não encontrada no workflow`);
   }
   if (resolved.kind !== "postgres") {
-    throw new Error(`postgres: connection ${connectionId} é do tipo ${resolved.kind}, esperado postgres`);
+    throw new Error(`postgres: connection ${rawRef} é do tipo ${resolved.kind}, esperado postgres`);
   }
   const connectionString = resolved.connectionString;
   if (connectionString === context.env?.DATABASE_URL) {

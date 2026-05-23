@@ -143,12 +143,42 @@ export const databaseConnectionsRepository = {
     return row ?? null;
   },
 
+  // Heurística simples — UUID v4 do Postgres tem 36 chars com hífens nas
+  // posições canônicas. Suficiente pra distinguir do nome lógico ("db_main")
+  // que o usuário pode digitar/escolher no editor.
+  isUuid(ref: string): boolean {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(ref);
+  },
+
   /**
-   * Resolve a connection que um node deve usar em runtime — lookup direto
-   * pelo id (workflow-scoped). Mantemos um helper aqui pra deixar
-   * explícito que o caller é o worker, não a API HTTP.
+   * Resolve a connection que um node deve usar em runtime.
+   *
+   * Aceita dois tipos de referência (`ref`):
+   *  - UUID — modo legado, pinned numa linha específica (env já cravado pela
+   *    linha; ignora `environmentId` do run).
+   *  - Nome lógico (`"db_main"`) — modo novo, indireção por nome. Tenta achar
+   *    override pro env do run; cai em fallback default (`environmentId IS
+   *    NULL`) se não houver. Isso é o que permite promover a mesma versão
+   *    entre envs sem reescrever a definition.
+   *
+   * Retorna null em ambos os casos quando nada bate — handler do node
+   * decide se isso é fatal (postgres/redis lançam, dry-run pode tolerar).
    */
-  resolve(workflowId: string, connectionId: string): Promise<DecryptedConnection | null> {
-    return this.findById(workflowId, connectionId);
+  async resolve(
+    workflowId: string,
+    ref: string,
+    environmentId: string | null,
+  ): Promise<DecryptedConnection | null> {
+    if (this.isUuid(ref)) {
+      return this.findById(workflowId, ref);
+    }
+    // Modo nome: override por env vence; fallback NULL é a "default" do
+    // workflow. Dois lookups separados (em vez de uma query com ORDER BY)
+    // mantém o caminho legível e usa o índice unique (workflow, env, name).
+    if (environmentId) {
+      const override = await this.findByName(workflowId, ref, environmentId);
+      if (override) return override;
+    }
+    return this.findByName(workflowId, ref, null);
   },
 };

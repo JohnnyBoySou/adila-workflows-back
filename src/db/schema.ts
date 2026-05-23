@@ -241,6 +241,16 @@ export const triggers = pgTable(
     environmentId: uuid("environment_id").references(() => environments.id, {
       onDelete: "set null",
     }),
+    /**
+     * Snapshot pinado: quando setado, o trigger sempre dispara este
+     * `workflow_versions.id`. NULL = comportamento legado, usa a latest
+     * (ou auto-publica o draft via ensureLatest). É o pino que torna o
+     * promote entre envs explícito — cada env pode rodar uma versão
+     * diferente sem mexer no `definition` do workflow.
+     */
+    workflowVersionId: uuid("workflow_version_id").references(() => workflowVersions.id, {
+      onDelete: "set null",
+    }),
     name: text("name").notNull(),
     type: text("type").$type<TriggerType>().notNull(),
     enabled: boolean("enabled").notNull().default(true),
