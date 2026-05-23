@@ -1,0 +1,21 @@
+# Config padrão do serviço web (API Elysia).
+#
+# O worker BullMQ roda em outro serviço Railway apontando para este mesmo
+# repo, com RAILWAY_CONFIG_FILE=railway.worker.toml.
+#
+# Postgres e Redis são plugins Railway separados — eles injetam DATABASE_URL
+# e REDIS_URL via referência de variável.
+
+[build]
+builder = "NIXPACKS"
+# Nixpacks detecta Bun automaticamente via bun.lock.
+
+[deploy]
+startCommand = "bun run start"
+# Roda migrations antes de promover o novo deploy. Só o serviço web faz isso —
+# o worker pega o schema já atualizado.
+preDeployCommand = ["bun run db:migrate"]
+healthcheckPath = "/health"
+healthcheckTimeout = 30
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5

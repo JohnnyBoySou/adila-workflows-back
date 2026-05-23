@@ -1,15 +1,51 @@
 {
   "name": "app",
   "version": "1.0.50",
+  "module": "src/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "bun run --watch src/index.ts"
+    "test": "bun test",
+    "typecheck": "tsgo --noEmit",
+    "dev": "bun run --watch src/index.ts",
+    "start": "bun run src/index.ts",
+    "start:worker": "bun run scripts/worker.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio",
+    "db:seed": "bun run scripts/seed.ts",
+    "worker": "bun run --watch scripts/worker.ts",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
+    "format": "oxfmt --ignore-path .oxfmtignore",
+    "format:check": "oxfmt --ignore-path .oxfmtignore --check",
+    "check": "bun run lint && bun run format:check && bun run typecheck",
+    "prepare": "lefthook install"
   },
   "dependencies": {
-    "elysia": "latest"
+    "@ai-sdk/anthropic": "^3.0.79",
+    "@ai-sdk/openai": "^3.0.65",
+    "@elysiajs/cors": "^1.4.2",
+    "@sinclair/typebox": "^0.34.49",
+    "ai": "^6.0.191",
+    "better-auth": "^1.6.11",
+    "bullmq": "^5.77.0",
+    "cron-parser": "^5.5.0",
+    "drizzle-orm": "^0.45.2",
+    "elysia": "latest",
+    "ioredis": "^5.10.1",
+    "pino": "^10.3.1",
+    "postgres": "^3.4.9"
   },
   "devDependencies": {
-    "bun-types": "latest"
-  },
-  "module": "src/index.js"
+    "@testcontainers/postgresql": "^12.0.0",
+    "@testcontainers/redis": "^12.0.0",
+    "@typescript/native-preview": "^7.0.0-dev.20260522.1",
+    "bun-types": "latest",
+    "drizzle-kit": "^0.31.10",
+    "lefthook": "^2.1.8",
+    "oxfmt": "^0.51.0",
+    "oxlint": "^1.66.0",
+    "pino-pretty": "^13.1.3",
+    "testcontainers": "^12.0.0"
+  }
 }

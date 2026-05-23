@@ -1,0 +1,152 @@
+/**
+ * Worker BullMQ — processa jobs das filas `workflows` e `cron-scheduler`.
+ *
+ * Roda como processo separado: `bun run worker` (ver package.json).
+ * Em produção, escale com várias instâncias — BullMQ distribui via Redis.
+ */
+import type { Job } from "bullmq";
+import { environmentVariablesController } from "../src/features/environment-variables/controller";
+import { triggersRepository } from "../src/features/triggers/repository";
+import { resyncEnabledCronTriggers } from "../src/features/triggers/scheduler";
+import { workflowRunsRepository } from "../src/features/workflow-runs/repository";
+import { workflowVersionsRepository } from "../src/features/workflow-versions/repository";
+import { workflowsController } from "../src/features/workflows/controller";
+import { workflowsRepository } from "../src/features/workflows/repository";
+import { CancelledError, executeRun } from "../src/lib/engine";
+import { logger } from "../src/lib/logger";
+import {
+  createCronSchedulerWorker,
+  createWorkflowWorker,
+  type CronTriggerJob,
+  type WorkflowJob,
+} from "../src/lib/queue";
+
+const workflowLog = logger.child({ component: "workflow-worker" });
+const cronLog = logger.child({ component: "cron-worker" });
+
+// ── Workflows ─────────────────────────────────────────────────────────
+async function processWorkflow(job: Job<WorkflowJob>) {
+  const { runId, workflowId, workflowVersionId, organizationId, environmentId, input } = job.data;
+  const log = workflowLog.child({
+    runId,
+    workflowId,
+    versionId: workflowVersionId,
+    orgId: organizationId,
+    jobId: job.id,
+  });
+
+  log.info("start");
+  await workflowRunsRepository.markRunning(runId, job.id ?? "");
+
+  try {
+    // Executa contra o snapshot imutável quando disponível; fallback para o
+    // draft atual cobre runs legados de antes do versionamento.
+    let definition: Record<string, unknown>;
+    if (workflowVersionId) {
+      const version = await workflowVersionsRepository.findByIdRaw(workflowVersionId);
+      if (!version) throw new Error(`workflow_version_not_found: ${workflowVersionId}`);
+      definition = version.definition;
+    } else {
+      const workflow = await workflowsRepository.findById(organizationId, workflowId);
+      if (!workflow) throw new Error(`workflow_not_found: ${workflowId}`);
+      definition = workflow.definition;
+    }
+
+    // Resolve variáveis do ambiente (vazio se não foi escolhido um).
+    const variables = environmentId
+      ? await environmentVariablesController.resolveForRun(organizationId, environmentId)
+      : {};
+
+    // ── Execução do workflow ──
+    // Motor sequencial: percorre o `definition`, grava cada nó visitado
+    // em workflow_run_steps. Falha em qualquer nó propaga pra cá.
+    const result = await executeRun({
+      runId,
+      definition,
+      input: input ?? {},
+      env: variables,
+      // Polling cooperativo do flag `cancelRequested` entre nós.
+      checkCancelled: async () => {
+        const r = await workflowRunsRepository.findByIdRaw(runId);
+        return Boolean(r?.cancelRequested);
+      },
+    });
+
+    await workflowRunsRepository.markSuccess(runId, result.output);
+    log.info({ steps: result.stepsExecuted }, "success");
+    return result.output;
+  } catch (err) {
+    if (err instanceof CancelledError) {
+      await workflowRunsRepository.markCancelled(runId);
+      log.info("cancelled");
+      return { cancelled: true };
+    }
+    const e = err as Error;
+    const payload = { message: e.message, stack: e.stack };
+    await workflowRunsRepository.markFailed(runId, payload);
+    log.error({ err: payload }, "failed");
+    throw err;
+  }
+}
+
+const workflowWorker = createWorkflowWorker(processWorkflow);
+workflowWorker.on("ready", () => workflowLog.info("ready"));
+workflowWorker.on("error", (err) => workflowLog.error({ err }, "error"));
+
+// ── Cron scheduler ─────────────────────────────────────────────────────
+// Cada disparo cron resolve o trigger e enfileira uma execução normal.
+async function processCron(job: Job<CronTriggerJob>) {
+  const { triggerId } = job.data;
+  const log = cronLog.child({ triggerId });
+  log.info("fire");
+
+  const trigger = await triggersRepository.findByIdRaw(triggerId);
+  if (!trigger) {
+    log.warn("trigger not found, skipping");
+    return;
+  }
+  if (!trigger.enabled) {
+    log.info("trigger disabled, skipping");
+    return;
+  }
+
+  const result = await workflowsController.run(
+    trigger.organizationId,
+    trigger.workflowId,
+    null, // disparo do sistema
+    { environmentId: trigger.environmentId, input: {} },
+  );
+
+  if ("error" in result) {
+    log.error({ err: result.error }, "failed to run trigger");
+    return;
+  }
+
+  await triggersRepository.updateRaw(triggerId, {
+    lastTriggeredAt: new Date(),
+    lastRunId: result.runId,
+  });
+  log.info({ runId: result.runId }, "enqueued run for trigger");
+}
+
+// Re-registra todos os triggers cron habilitados antes do worker subir.
+// Protege contra perda de estado do Redis (deploy, flush, migração).
+try {
+  const result = await resyncEnabledCronTriggers();
+  cronLog.info(result, "resynced cron triggers");
+} catch (err) {
+  cronLog.error({ err }, "resync failed");
+}
+
+const cronWorker = createCronSchedulerWorker(processCron);
+cronWorker.on("ready", () => cronLog.info("ready"));
+cronWorker.on("error", (err) => cronLog.error({ err }, "error"));
+
+// ── Shutdown ─────────────────────────────────────────────────────────
+async function shutdown(signal: string) {
+  logger.info({ signal }, "received signal, closing");
+  await Promise.all([workflowWorker.close(), cronWorker.close()]);
+  process.exit(0);
+}
+process.on("SIGINT", () => void shutdown("SIGINT"));
+process.on("SIGTERM", () => void shutdown("SIGTERM"));

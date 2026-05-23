@@ -1,0 +1,19 @@
+# Lefthook — git hooks rápidos com oxlint + oxfmt.
+# Instale com: bun run prepare (chama `lefthook install`).
+# Docs: https://lefthook.dev/configuration/
+
+pre-commit:
+  parallel: true
+  jobs:
+    - name: oxlint
+      glob: "*.{ts,tsx,js,jsx,mjs,cjs}"
+      run: bunx oxlint {staged_files}
+
+    - name: oxfmt
+      glob: "*.{ts,tsx,js,jsx,mjs,cjs,json,jsonc}"
+      run: bunx oxfmt --ignore-path .oxfmtignore --check {staged_files}
+
+pre-push:
+  jobs:
+    - name: typecheck
+      run: bun run typecheck

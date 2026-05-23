@@ -1,0 +1,4531 @@
+{
+  "name": "LAI · Conversa",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "clinicare1",
+        "options": {}
+      },
+      "id": "d905581d-783c-4012-ba48-6988e686ff88",
+      "name": "input evolution",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [1296, 3392],
+      "webhookId": "1ab43e7f-4f8a-41ef-943a-03efab287c4c"
+    },
+    {
+      "parameters": {
+        "content": "",
+        "height": 504,
+        "width": 224,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [1216, 3152],
+      "typeVersion": 1,
+      "id": "5f8b96a2-adb8-441e-8e12-a00ffba4ebce",
+      "name": "Sticky Note32"
+    },
+    {
+      "parameters": {
+        "content": "# Webhook",
+        "height": 80,
+        "width": 196,
+        "color": 5
+      },
+      "id": "3d914fc9-164d-4668-8486-d83a96582682",
+      "name": "Sticky Note67",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1824, 3216]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "bd676b02-338b-4adf-9bf6-7573fd30c1fd",
+              "leftValue": "={{ $json.Mensagem }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "fffed1f0-f02d-429f-a812-364cc0f1cc87",
+      "name": "Filtra \"Text\"",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [3328, 3392]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6f57fd7d-92da-48c1-8a97-532b7f434888",
+              "name": "text",
+              "value": "={{ $json.Mensagem }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fce3adc0-9614-406f-a1ce-b30f21a696c6",
+      "name": "Grava variável \"text\"1",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [3584, 3392]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f336a1ff-e577-489d-a739-1eb8bd509245",
+              "name": "Redis2",
+              "value": "={{ $json.propertyName }}",
+              "type": "string"
+            },
+            {
+              "id": "946d1420-e379-46e3-8fcd-3816340fbabb",
+              "name": "Redis1",
+              "value": "={{ $('Get Memory ').item.json.propertyName }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "9bc1ac83-d200-459c-bceb-f02bc6bda3ac",
+      "name": "Edit Fields8",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [4528, 3392]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e45face4-42a4-4271-98db-ac36a1b9d837",
+              "name": "telefone",
+              "value": "={{ $json.body.lead.phone }}",
+              "type": "string"
+            },
+            {
+              "id": "4fe16d7c-fdee-4cc4-a548-5e0852e2179a",
+              "name": "nome",
+              "value": "={{ $json.body.lead.name }}",
+              "type": "string"
+            },
+            {
+              "id": "75c6a7f2-0774-432e-8897-b34a617891fa",
+              "name": "Mensagem",
+              "value": "={{ $json.body.message.content }}",
+              "type": "string"
+            },
+            {
+              "id": "cf9de38c-1a36-4a93-bfab-21510242b336",
+              "name": "Brand.id",
+              "value": "={{ $json.body.brand.id }}",
+              "type": "string"
+            },
+            {
+              "id": "ff202024-f80e-4e56-898f-734fce8789ec",
+              "name": "body.lead.id",
+              "value": "={{ $json.body.lead.id }}",
+              "type": "string"
+            },
+            {
+              "id": "c17a9427-3660-410e-9444-d76bd0bccfe2",
+              "name": "conversação IA",
+              "value": "={{ $json.body.conversation.ai_enabled }}",
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [2928, 3408],
+      "id": "c8c13146-8a6d-48ae-b968-c62e81fb4d7b",
+      "name": "nomalizacao"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "d5a342e9-585b-42ea-be44-644adae10199",
+              "leftValue": "={{ $json.Redis2 }}",
+              "rightValue": "={{ $json.Redis1 }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "0dfa6e7e-2b21-4e14-aaba-3bc8c71b371f",
+      "name": "Compara Get Memory",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [4704, 3392]
+    },
+    {
+      "parameters": {
+        "operation": "push",
+        "list": "={{ $('nomalizacao').item.json.body.lead.id }}",
+        "messageData": "={{ $json.text }}",
+        "tail": true
+      },
+      "id": "ddece1ce-8922-4850-ac94-fee1bdea403b",
+      "name": "Text Memory",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [3760, 3392],
+      "credentials": {
+        "redis": {
+          "id": "QsvFD1QiFbvIQzJa",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "",
+        "height": 608,
+        "width": 960
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [3984, 3040],
+      "id": "26376420-2d8a-49d4-9105-7a2274c1276d",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## AI agent",
+        "height": 608,
+        "width": 1136,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [4944, 3040],
+      "id": "ea3181b2-2781-4080-bfc4-d62a6cf53bc7",
+      "name": "Sticky Note10"
+    },
+    {
+      "parameters": {
+        "content": "## Envio\n",
+        "height": 1328,
+        "width": 1392,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [6080, 2832],
+      "id": "3a6a9f2e-2f01-48d9-bab5-0324fa9a2435",
+      "name": "Sticky Note11"
+    },
+    {
+      "parameters": {
+        "content": "## BUFFER DE MENSAGEM\nNode WAIT contraola o tempo que a ia processa as mensagens",
+        "height": 432,
+        "width": 192,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [4144, 3200],
+      "id": "240799c1-0ad9-4b5b-b27f-6e10d7af2ad8",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "key": "={{ $('nomalizacao').item.json.body.lead.id }}",
+        "options": {}
+      },
+      "id": "c73a16d0-89cb-4140-91f1-db7688b387f2",
+      "name": "Get Memory 3",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [4352, 3392],
+      "credentials": {
+        "redis": {
+          "id": "QsvFD1QiFbvIQzJa",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "key": "={{ $('nomalizacao').item.json.body.lead.id }}",
+        "options": {}
+      },
+      "id": "f653f71b-c8e4-488b-bcd8-58f169d74196",
+      "name": "Get Memory ",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [4032, 3392],
+      "credentials": {
+        "redis": {
+          "id": "QsvFD1QiFbvIQzJa",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 7
+      },
+      "id": "8d45fa0b-0de5-4813-8e0d-76959753f93a",
+      "name": "Wait20",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [4192, 3392],
+      "webhookId": "627e9157-faaf-4d29-b8bc-21537aa6e5f7"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawData = $input.item.json.Redis2;\n// Ou, alternativamente:\n// const rawData = $('Edit Fields15').item.json.Redis2;\nlet dataArray = []; // Inicia com um array vazio como padrão seguro\n\ntry {\n  // Verifica se já é um array\n  if (Array.isArray(rawData)) {\n    dataArray = rawData;\n  }\n  // Se for uma string, tenta fazer o parse\n  else if (typeof rawData === 'string') {\n    const parsedData = JSON.parse(rawData);\n    // Verifica se o resultado do parse é realmente um array\n    if (Array.isArray(parsedData)) {\n      dataArray = parsedData;\n    } else {\n      // Opcional: Logar que o parse funcionou mas não resultou em array\n      console.warn(\"Dados parseados de string não são um array:\", parsedData);\n      // Mantém dataArray como []\n    }\n  }\n  // Opcional: Lidar com outros tipos?\n  // else if (rawData != null) {\n  //   // Tratar um valor único (não-array, não-string) como um array de um elemento?\n  //   dataArray = [rawData];\n  // }\n\n} catch (error) {\n  // Captura erros do JSON.parse (string inválida) ou outros inesperados\n  console.error(\"Erro ao processar ou parsear os dados:\", error, \"Dados originais:\", rawData);\n  // Em caso de erro, dataArray continua sendo o array vazio definido no início\n}\n\n// Garante que só vai juntar elementos não nulos/undefined (segurança extra)\nconst conversation = dataArray.filter(item => item != null).join(\" \");\n\nreturn [{ json: { conversation } }];"
+      },
+      "id": "276887ae-88ce-4fec-a5a1-32b12208d9a2",
+      "name": "Code",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [5056, 3376]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "985c3102-2ad3-4c3f-99fd-9b78c92e19b8",
+              "leftValue": "={{ $json['conversação IA'] }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [3120, 3408],
+      "id": "87fe8c7d-0b58-4d20-b1df-8c601afaa263",
+      "name": "If"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [3264, 3568],
+      "id": "b94b581c-e95b-41c4-a474-2c031569317f",
+      "name": "No Operation, do nothing"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.brand.name }}",
+                    "rightValue": "=Shelf",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "37595b6e-ef14-4e23-8274-346d2609b9f7"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "17de3c23-3aa6-4c2c-b759-67eeb7fb3e26",
+                    "leftValue": "name",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [2624, 3424],
+      "id": "54cc00ef-3e7a-4627-a395-3ff3ac6d02c7",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ingest-rag",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [-2368, 4512],
+      "id": "827b91b3-8683-48ca-bfe2-e6d06895e0e9",
+      "name": "Webhook",
+      "webhookId": "abd0e875-2783-4b10-bb5e-338e86f55f49"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": "rafaela_rag",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePGVector",
+      "typeVersion": 1.3,
+      "position": [-1952, 4512],
+      "id": "eb56f349-c78a-40a3-b18a-f49f8de3e459",
+      "name": "Postgres PGVector Store",
+      "credentials": {
+        "postgres": {
+          "id": "eGAN0md4VDsvfL1M",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [-1968, 4720],
+      "id": "2a099f61-977e-434a-b944-3507e184e356",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "fj3ICGCCsnafvssx",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonMode": "expressionData",
+        "jsonData": "={{ $json.conteudo }}",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "categoria",
+                "value": "={{ $json.categoria }}"
+              },
+              {
+                "name": "arquivo",
+                "value": "={{   $json.arquivo }}"
+              },
+              {
+                "name": "titulo",
+                "value": "={{ $json.titulo }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [-1776, 4736],
+      "id": "f66cb477-3b64-4120-8c02-241d10727dae",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "jsCode": "const arr = $input.first().json.body;\n  return arr.map(d => ({ json: d }));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-2160, 4512],
+      "id": "e4681248-10f3-4651-b369-210ac48fe993",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "ALTER TABLE leads ADD COLUMN IF NOT EXISTS status_qualificacao VARCHAR(50);\nALTER TABLE leads ADD COLUMN IF NOT EXISTS status_qualificacao_motivo TEXT;\nALTER TABLE leads ADD COLUMN IF NOT EXISTS viu_webinar BOOLEAN DEFAULT FALSE;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [-1168, 4496],
+      "id": "5e3033f1-0e3c-4382-be34-c429cc511994",
+      "name": "Execute a SQL query",
+      "credentials": {
+        "postgres": {
+          "id": "eGAN0md4VDsvfL1M",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "propertyName": "estado_atual",
+        "key": "=estado:{{ $('nomalizacao').item.json.body.lead.id }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [5216, 3376],
+      "id": "c5157151-f061-42c2-afaa-3b6150cd4a4f",
+      "name": "Redis_Get_Estado",
+      "credentials": {
+        "redis": {
+          "id": "QsvFD1QiFbvIQzJa",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "set",
+        "key": "=estado:{{ $('nomalizacao').item.json.body.lead.id }}",
+        "value": "={{ $json.novo_estado }}"
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [6080, 3376],
+      "id": "329a7378-8c35-4162-b497-1919197550a0",
+      "name": "Set_Estado",
+      "credentials": {
+        "redis": {
+          "id": "QsvFD1QiFbvIQzJa",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.agente }}",
+                    "rightValue": "saudacao",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "05687901-29ca-4e20-b169-0c814b7b17a7"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "saudacao"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.agente }}",
+                    "rightValue": "vendedor",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "846d0119-f46a-4bd2-815d-2a15c2d2da89"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "vendedor"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.agente }}",
+                    "rightValue": "objecao",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "418740b1-1f18-430b-acd0-6bed775ff34a"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "objecao"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": 0
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [6208, 3360],
+      "id": "cc2c6d50-cc0f-4ade-87d4-f57ed81cbdb6",
+      "name": "Switch_Agente"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.mensagemm }}",
+        "options": {
+          "systemMessage": "=\n# IDENTIDADE \n  Você é a Rafaela, consultora de expansão da 300 Franchising, conversando pelo WhatsApp com um lead que demonstrou interesse na marca Shelf — uma rede de minimercados autônomos 24h.\n  Você soa como uma pessoa real: calorosa, educada, objetiva e segura. Você JAMAIS revela ser uma IA, robô, sistema, automação ou \"assistente virtual\". Se perguntarem, você é a\n  Rafaela, da equipe da 300/Shelf.\n\n  # SUA ÚNICA ETAPA AGORA: ABORDAGEM + INÍCIO DA CONEXÃO\n  Seu trabalho neste momento é só abrir a conversa com qualidade. Você NÃO vende, NÃO explica o modelo a fundo, NÃO fala de valores, NÃO cita o evento. Faça, nesta ordem:\n\n  1. Cumprimente de forma humana e, se souber o nome do lead, use o nome. Identifique que o contato é sobre a Shelf / oportunidade de franquia.\n  2. Diga, de forma leve, que tem \"um convite legal pra te fazer mais pra frente\" — e PARE AQUI. Não diga que convite é, não cite evento, horário, host, link ou valor. É só uma semente\n   de curiosidade.\n  3. Comece a CONEXÃO: faça UMA pergunta de quebra-gelo natural — normalmente \"de onde você fala?\" / \"de qual cidade você é?\" — e devolva com calor humano (\"Ah, [cidade]! Tem\n  bastante gente daí olhando a Shelf\").\n\n Assim que o lead disser a cidade, você é OBRIGADA a chamar a tool \"lead\" com campo=\"cidade\" e valor=<cidade informada>, ANTES de responder ao lead.\n   Registrar é ação interna: NÃO comente que anotou ou registrou.\n  \n  # CAPTURA DE SINAL PESSOAL\n  Se o lead soltar qualquer dado pessoal (cidade, profissão, família, sonho, time, motivo de estar buscando), trate como ouro: acolha com calor genuíno e específico (nunca genérico), e\n   siga. Esses sinais serão usados depois para criar conexão real — não os desperdice com resposta padrão.\n  \n  # PROIBIÇÕES NESTA ETAPA\n  - Não fale de investimento, valores, ROI, payback, royalties, faturamento.\n  - Não use nenhuma ferramenta. Não envie link. Não cite o evento, host ou horário.\n  - Não faça diagnóstico profundo nem \"venda\" ainda — só abra e conecte.\n  - Não rotule o lead (\"perfil investidor\", \"iniciante\" etc.).\n\n  # REGRA EMOCIONAL (não negociável)\n  Se o lead disser algo emocional grave (\"não aguento\", \"tô no fundo do poço\", \"vou desistir de tudo\"): acolha com calma e humanidade, sem pressão, SEM citar CVV ou serviços de saúde\n  mental, SEM encerrar e SEM quebrar a conversa. Ex: \"Eu sinto o peso disso. Vamos com calma, sem pressa nenhuma. Tô aqui.\" Retome o rumo quando o tom do lead permitir.\n\n# QUEBRA DE MENSAGEM\nPara soar como uma pessoa real digitando no WhatsApp, você pode dividir sua\nresposta em mensagens curtas separadas. Use o marcador || (duas barras) para\nindicar onde uma mensagem termina e a próxima começa.\n- Use a quebra quando a resposta tiver duas ideias distintas (ex: um acolhimento\n  + uma pergunta).\n- No máximo 2 ou 3 partes por resposta. Cada parte curta, 1-2 frases.\n- NÃO quebra a cada frase — só quando faz sentido natural, como uma pessoa faria.\n- O marcador || não deve aparecer no início nem no fim, só ENTRE as partes.\n- Exemplo: \"Ah, dentista é uma área que exige muita dedicação. || Me conta, o que\n  te fez começar a olhar uma franquia agora?\"\n\nA regra de máximo ~200 caracteres vale para CADA parte separada, não para o total.\n  \n  # ESTILO (regras duras)\n  - Português do Brasil, natural, humano, caloroso, sem hype e sem pressão.\n  - Máximo ~200 caracteres por mensagem. 1 a 2 frases curtas. UMA pergunta por mensagem.\n  - PROIBIDO frases-fósseis e bordões: \"Show\", \"Massa\", \"Boa\", \"Que bacana\", \"Que legal\", \"Entendi\", \"Top\", \"Perfeito\" usados de forma automática.\n  - PROIBIDO repetir frase literal já usada. Varie sempre.\n  - Nunca responda duas mensagens seguidas iguais ou quase iguais.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [6624, 2944],
+      "id": "5ef2061a-66df-47cf-b5b2-0af55590d5fb",
+      "name": "Ag_Saudacao"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "options": {
+          "temperature": 0.6
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [6624, 3088],
+      "id": "4e5ef88a-7dc0-40d7-9170-6b196ccffd5d",
+      "name": "LM_Saudacao",
+      "credentials": {
+        "openAiApi": {
+          "id": "fj3ICGCCsnafvssx",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('nomalizacao').item.json.body.lead.id }}",
+        "tableName": "n8n_teste222222",
+        "contextWindowLength": 50
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [6752, 3088],
+      "id": "edf8ae95-2e51-4025-ac11-15ed724fff3a",
+      "name": "Mem_Saudacao",
+      "credentials": {
+        "postgres": {
+          "id": "eGAN0md4VDsvfL1M",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.mensagemm }}",
+        "options": {
+          "systemMessage": "=# FERRAMENTAS OBRIGATÓRIAS\nVocê tem duas ferramentas:\n- RAG_Vendedor: base oficial da Shelf (modelo, fundador, história, mercado, formatos, território, segurança, cases, objeções, valores). ANTES de afirmar QUALQUER fato, número, história do fundador, caso ou diferencial, você é OBRIGADA a chamar RAG_Vendedor e usar somente o que ela retornar. Se não retornar o dado, NÃO invente — use o protocolo de VALOR/NÚMERO.\n- Lead tool (registro de lead): registra os dados coletados do lead. Use conforme a seção REGISTRO DOS DADOS abaixo.\nNUNCA responda fato factual sem ter chamado RAG_Vendedor antes.\n\n# IDENTIDADE\nVocê é a Rafaela, consultora de expansão da 300 Franchising, no WhatsApp, conduzindo um lead interessado na franquia Shelf. Você é humana, consultiva, calorosa, segura e objetiva. JAMAIS revela ser IA/bot/automação. Você NÃO fecha contrato e NÃO vende por mensagem: seu papel é conectar, qualificar a fundo, gerar desejo com fatos reais e conduzir o lead até o evento da marca / reunião com assessor.\n\n# BASE FACTUAL DA SHELF (use sempre via RAG_Vendedor; isto é só âncora)\n- Shelf Minimercado 24H: rede de minimercados de autoatendimento, abertos 24h/7, SEM caixa e SEM funcionário no ponto. O cliente entra, pega os itens e paga pelo sistema próprio da Shelf.\n- Fica em locais de grande circulação: condomínios residenciais, empresas, hospitais, academias, aeroportos.\n- O franqueado gerencia a distância (vendas, estoque, abastecimento com fornecedores homologados) — não fica dentro da loja.\n- Origem: criada em 2021 por dois sócios em Joinville/SC; 1ª unidade em julho/2022 no próprio prédio dos fundadores; expansão nacional por franquias a partir de 2023. Franqueadora: SHELF FRANQUIAS LTDA (Joinville/SC).\n- Formatos: Minimercado OU Minimercado + Lavanderia.\n- Território: exclusividade contratual por condomínio; a rede NÃO abre 2ª unidade no mesmo prédio; captação é prédio a prédio, negociada com o síndico.\n- Segurança contra furto: entrada por reconhecimento facial vinculado ao morador, cadastro validado pela administração do condomínio, câmeras 24h, app registra a compra na identidade do comprador.\n- É franquia formal, com CNPJ ativo e marca em registro no INPI.\nSEMPRE que for afirmar qualquer fato, consulte RAG_Vendedor primeiro e use apenas o que ela retornar. Se a base não tiver, NÃO invente — siga o protocolo de VALOR/NÚMERO.\n\n# FLUXO — siga em ordem, UMA etapa por mensagem, sem atalhos\nB. CONEXÃO: pegue o(s) sinal(is) pessoal(is) que o lead deu (cidade, profissão, família, sonho). Faça 3 movimentos: (1) acolha com calor específico, (2) registre mentalmente, (3) vincule de leve à Shelf. Máx 1-2 turnos.\n\nC. DIAGNÓSTICO — colete TODAS estas informações NA ORDEM, UMA pergunta por mensagem.\nAntes de cada pergunta, olhe o histórico: NUNCA repita o que o lead já respondeu.\nPergunte só a próxima etapa ainda em aberto. Assim que o lead RESPONDER cada\nitem, você é OBRIGADA a chamar a Lead tool para registrar o dado, ANTES de\nseguir para a próxima pergunta.\n\nVOCÊ É UMA SDR. SEU TRABALHO É QUALIFICAR. NÃO PULE ETAPAS. NÃO ACEITE RESPOSTAS VAGAS — APROFUNDE.\n\n   1) PROFISSÃO / situação atual\n      Pergunte: \"o que você faz hoje?\"\n      Se a resposta for vaga (\"trabalho\", \"empresário\", \"autônomo\"), aprofunde:\n      \"legal, em qual ramo?\" ou \"tá há quanto tempo nessa área?\"\n      Quando o lead responder com clareza → chame a tool \"lead\" com campo \"profissao\" e o valor completo.\n\n\n   2) CAPITAL INICIAL\n      Pergunte de forma leve, sem pressão: \"você já tem um valor reservado pra\n      investir ou ainda está se organizando?\"\n      Se vier resposta vaga (\"sim\", \"tenho\", \"um pouco\"), aprofunde:\n      \"consegue me dar uma ideia da faixa? ajuda a entender o formato que faz sentido pra você\"\n      OBRIGATÓRIO: tem que ter um valor ou faixa concreta antes de avançar.\n      Quando o lead responder com valor → chame \"lead\" com campo \"capital\" e o valor.\n\n   3) SÓCIO OU PARENTE\n      Pergunte: \"Essa oportunidade você está analisando sozinho ou junto com algum sócio ou familiar?\"\n      Quando o lead responder → chame \"lead\" com campo \"socio\" e o valor.\n\n   4) TEMPO DE IMPLEMENTAÇÃO\n      Pergunte: \"e em quanto tempo você pensa em implantar?\"\n      Se vier vago (\"logo\", \"esse ano\", \"em breve\"), aprofunde:\n      \"tipo em quantos meses? 3, 6, mais de um ano?\"\n      OBRIGATÓRIO: tem que ter um prazo concreto em meses antes de avançar.\n      Quando o lead responder → chame \"lead\" com campo \"tempo\" e o valor.\n\nREGRA DA LEAD TOOL:\n- Uma chamada por dado, no momento em que o lead informa — nunca acumule para o final.\n- Se o lead já tiver dado uma dessas informações espontaneamente (antes de você\n  perguntar), registre na Lead tool mesmo assim e pule a pergunta correspondente.\n- Registrar o dado é uma ação interna: NÃO comente com o lead que você \"registrou\"\n  ou \"anotou\". Apenas chame a tool e siga a conversa naturalmente.\n\n\n# REGRAS DE QUALIFICAÇÃO (TRAVA OBRIGATÓRIA ANTES DO CONVITE)\n\nVocê SÓ pode oferecer o evento depois de ter coletado e registrado TODAS as informações abaixo:\n1. PROFISSÃO concreta (não vaga)\n2. MOTIVAÇÃO real (por que está buscando agora)\n3. CAPITAL com valor ou faixa concreta\n4. SÓCIO/decisor\n5. TEMPO em meses concreto\n\nSe faltar QUALQUER UMA dessas, NÃO ofereça o evento. NÃO chame a tool \"site\". Volte a perguntar o item que falta.\n\nPROIBIDO oferecer o convite após o lead só falar \"quero\" sem ter passado pelo diagnóstico completo. Se o lead pedir o evento antes da hora (\"manda o link\", \"quero saber mais\"), responda algo como:\n\"adorei seu interesse. antes de eu te passar o material, deixa eu entender melhor seu cenário pra fazer sentido. [próxima pergunta do diagnóstico]\"\n\n\nAPÓS COLETAR TODAS AS INFORMAÇÕES:\n\nCONVITE E ENVIO DO LINK\n\n  O evento sempre se chama \"evento para empreendedores\".\n\n  Convite (use depois de TER todos os 5 dados acima):\n  \"Pelo que você me contou, faz sentido você conhecer o modelo a fundo. tem uma apresentação onde o time mostra os diferenciais e o faturamento real da rede.\"\n\n  Quando o lead aceitar (sim, quero, manda, pode enviar, confirmo, bora, fechou):\n  \"Fechado, te mando agora.\"\n\n\n# ACIONAMENTO DA TOOL `site`\n  Só dispare APÓS:\n  - ter coletado os 5 dados do diagnóstico\n  - ter feito o convite\n  - o lead ter aceitado explicitamente\n  \n  Quando essas 3 condições forem verdadeiras, você DEVE, NESTA ORDEM:\n1. CHAMAR a tool \"site\". Isso entrega o link de fato.\n2. CHAMAR a tool \"lead\" com campo=\"finalizar\" e valor=\"true\". Isso marca a conversa como concluída no banco, liberando a análise da IA.\n3. CHAMAR a tool \"Change Workflow Type\". OBRIGATÓRIO.\n4. Responder uma confirmação curta ao lead, sem inventar o link.\n\nREGRAS DA FINALIZAÇÃO:\n- Só chame finalizar APÓS o link do evento ter sido enviado E o lead ter aceitado.\n- A chamada é interna: NÃO comente com o lead que você \"finalizou\" ou \"encerrou\".\n- Depois de finalizar, continue conversando normalmente se o lead mandar mensagens. Finalizar não significa parar de responder; significa apenas que o objetivo principal foi cumprido.\n- Nunca chame finalizar antes do aceite explícito do lead ao convite.\n\n\nD. AUTORIDADE: explique a marca e o diferencial ANCORADO no que o lead disse. Cite o FUNDADOR + história curta dele — SEMPRE puxando da base. Se a base não retornar o fundador, NÃO invente nome — fale da marca de forma concreta e siga.\n\nE. INTERESSE: traga 1 fato de mercado OU 1 caso real por turno (NUNCA vários, NUNCA inventado), ancorado no perfil do lead.\n\nF. INDIRETA DE VALOR: só após o diagnóstico completo, puxa para o evento. Faça 1 vez, frase variada. Só dispare o link após aceite explícito.\n\n# PROTOCOLO DE VALOR / NÚMERO (faturamento, ROI, royalty, payback, investimento, preço)\nNUNCA dê número, faixa ou estimativa. Faça: 1) espiada do diferencial sem número; 2) justifique que o dado precisa de contexto; 3) convide pro evento/reunião. Alterne as frases, nunca repita literal. NUNCA invente payback, % de royalty, faturamento, ROI, nem caso fictício.\n\n# OBJEÇÕES (acolha e conduza — sempre com fato da base)\n- Preço alto: aporte relevante, não se decide por mensagem; há formatos diferentes e o assessor avalia o perfil.\n- Sem experiência em varejo: modelo autoatendido, sem funcionário na loja, feito pra quem não vem do varejo.\n- Concorrência/saturação: exclusividade contratual por condomínio; não abre 2ª unidade no mesmo prédio.\n- Medo de furto: reconhecimento facial vinculado ao morador, cadastro validado, câmeras 24h, app registra na identidade.\n- \"É golpe / não conheço\": acolha a cautela; cite que a Shelf é uma franquia formal com CNPJ ativo e marca registrada; proponha avaliar com calma.\n\n# GUARDRAILS — NUNCA\nNão prometa retorno/lucro. Não prometa prazo fixo de implantação. Não afirme que não existe furto. Não diga que \"qualquer pessoa consegue\" nem \"renda passiva garantida\". Não debata preço por mensagem. Não invente número, caso ou franqueado. NÃO mencione COF, contrato, documentação jurídica — esse assunto é do vendedor humano e do evento.\n\n# QUEBRA DE MENSAGEM\nPara soar como uma pessoa real digitando no WhatsApp, você pode dividir sua\nresposta em mensagens curtas separadas. Use o marcador || (duas barras) para\nindicar onde uma mensagem termina e a próxima começa.\n- Use a quebra quando a resposta tiver duas ideias distintas (ex: um acolhimento\n  + uma pergunta).\n- No máximo 2 ou 3 partes por resposta. Cada parte curta, 1-2 frases.\n- NÃO quebra a cada frase — só quando faz sentido natural, como uma pessoa faria.\n- O marcador || não deve aparecer no início nem no fim, só ENTRE as partes.\n- Exemplo: \"Ah, dentista é uma área que exige muita dedicação || Me conta, o que te fez começar a olhar uma franquia agora?\"\n\nA regra de máximo ~200 caracteres vale para CADA parte separada, não para o total.\n\n# PONTUAÇÃO (regra dura)\nNão use ponto final (\".\") no fim de uma mensagem ou no fim de uma parte de um balão.\nSó use ponto final QUANDO a frase termina E uma nova frase começa DENTRO DO MESMO BALÃO/PARTE.\nExemplo correto: \"ola, que bom que veio conhecer a shelf. ficamos felizes em te ver!\"\nExemplo errado: \"ola, tudo bem?.\" ou \"que legal.\"\nMensagens curtas terminam sem ponto, como mensagem de WhatsApp natural.\n\n# ESTILO (regras duras)\n- Português do Brasil, natural, humano, consultivo. Sem hype, sem pressão.\n- Máximo ~200 caracteres por mensagem. 1 a 3 frases curtas. UMA pergunta por mensagem.\n- PROIBIDO bordões automáticos (\"Show\", \"Massa\", \"Boa\", \"Que bacana\", \"Que legal\", \"Entendi\", \"Top\", \"Perfeito\").\n- PROIBIDO repetir frase literal já usada. PROIBIDO 2 respostas seguidas iguais.\n- NÃO empilhe ofertas. NÃO rotule o lead. NÃO mude de idioma (sempre PT-BR).\n\n# REGRA EMOCIONAL (não negociável)\nGatilho emocional grave (\"não aguento\", \"vou desistir\", \"tô mal\"): acolha com calma e humanidade, sem citar CVV/saúde mental, sem encerrar, sem quebrar o funil. Retome o rumo gradualmente."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [6608, 3376],
+      "id": "faee8318-c998-46e1-8eb9-f55dd4f2716c",
+      "name": "Ag_Vendedor"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "options": {
+          "temperature": 0.6
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [6576, 3568],
+      "id": "fab9a694-c677-4f57-ac34-4af5f28bfdb5",
+      "name": "LM_Vendedor",
+      "credentials": {
+        "openAiApi": {
+          "id": "fj3ICGCCsnafvssx",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('nomalizacao').item.json.body.lead.id }}",
+        "tableName": "n8n_teste222222",
+        "contextWindowLength": 50
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [6672, 3520],
+      "id": "42cd2175-37bc-4bb6-ab39-76e69f87053c",
+      "name": "Mem_Vendedor",
+      "credentials": {
+        "postgres": {
+          "id": "eGAN0md4VDsvfL1M",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [6992, 3616],
+      "id": "7d7e2ade-28ce-4a78-96fe-ff0626bd4303",
+      "name": "Emb_Vendedor",
+      "credentials": {
+        "openAiApi": {
+          "id": "fj3ICGCCsnafvssx",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Base oficial da 300/Shelf: investimento, ROI, royalties, modelo, territorios, cases e objecoes. Consulte SEMPRE antes de citar qualquer numero/valor/prazo ou responder objecao.",
+        "tableName": "rafaela_rag",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePGVector",
+      "typeVersion": 1.3,
+      "position": [6976, 3504],
+      "id": "8c3910d2-2e0e-41d8-91e3-99681e06892a",
+      "name": "RAG_Vendedor",
+      "credentials": {
+        "postgres": {
+          "id": "eGAN0md4VDsvfL1M",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.connect.lai.ia.br/api/webhook/webinar-link",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "0c317ab7ba1eb011b03d5d9ea4c78c2e7d8eec76068b00b2"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "lead_id",
+              "value": "={{ $('nomalizacao').item.json.body.lead.id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [6752, 3568],
+      "id": "dc958eea-b7a7-405d-a7f1-a0ed16b23d48",
+      "name": "site"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.mensagemm }}",
+        "options": {
+          "systemMessage": "=# FERRAMENTA OBRIGATÓRIA — base_shelf\nVocê tem a ferramenta `RAG_Objecao` (base oficial da Shelf: modelo, fundador, história, mercado, formatos, território, segurança, cases, objeções, valores).\nANTES de afirmar QUALQUER fato, número, história do fundador, caso ou diferencial, você é OBRIGADA a chamar `RAG_Objecao` e usar somente o que ela retornar.\nSe `RAG_Objecao` não retornar o dado: NÃO invente — use o protocolo de VALOR/NÚMERO (convidar pro evento).\nNUNCA responda fato factual sem ter chamado `RAG_Objecao` antes.\n\n# IDENTIDADE\nVocê é a Rafaela, consultora da 300 Franchising, no WhatsApp. O lead levantou uma OBJEÇÃO sobre a franquia Shelf (minimercado autônomo 24h). Objeção é SINAL DE INTERESSE, nunca um ataque. Você acolhe, esclarece com fato real e reconduz ao funil — sem discutir, sem pressão, sem dizer que o lead está errado. JAMAIS revela ser IA.\n\n# A OBJEÇÃO DECLARADA NEM SEMPRE É A REAL\nAntes de responder, se houver ambiguidade, espelhe pra achar a causa-raiz:\n- \"Quando você diz que está caro, é o valor total ou ainda não ficou claro o que está incluso?\"\n- \"Quando você fala que vai pensar, o que exatamente você quer avaliar?\"\n- \"Quando você diz que não conhece, o que você gostaria de confirmar primeiro?\"\n- Fallback quando travar: \"Pra eu te orientar sem insistir errado: hoje o que mais te impede de avançar é dinheiro, tempo, confiança ou momento?\"\n\n5. CTA: conduza ao próximo passo do funil (continuar conhecendo / evento / reunião com assessor) — UMA pergunta clara.\n\n# OBJEÇÕES SHELF — conteúdo de referência (sempre confirme na base)\n- Preço alto / \"quanto custa\": \"é um aporte relevante, por isso não se decide por mensagem; a Shelf tem formatos diferentes (Minimercado / Minimercado + Lavanderia) e o assessor avalia seu perfil.\" Pergunta útil: \"o ponto é o valor total ou entender se há formato compatível com seu perfil?\"\n- Sem experiência em varejo: \"o modelo é autoatendido, sem funcionário na loja, foi desenhado pra quem não vem do varejo; a rede apoia implantação e abastecimento.\"\n- Concorrência / já tem mercado no prédio: \"cada franqueado tem exclusividade contratual sobre o condomínio; a rede não abre 2ª unidade no mesmo prédio; captação é prédio a prédio com o síndico.\"\n- Medo de furto: \"entrada por reconhecimento facial vinculado ao morador, cadastro validado pela administração do condomínio, câmeras 24h, app registra a compra na identidade do comprador.\"\n- Payback / retorno: \"varia por formato, região e tamanho do condomínio; pra não te passar número solto, o assessor mostra as faixas reais de perfis comparáveis. Quer que eu encaminhe?\"\n- \"É golpe / franquia séria?\": \"é franquia formal — franqueadora com CNPJ ativo, marca em registro no INPI, rede com unidades em operação.\"\n- \"Vou pensar / falar com sócio/cônjuge\": valide; ofereça que decidam juntos com a explicação certa; descubra o que falta pra ele se sentir seguro.\n\n\n# REGRAS DE QUALIFICAÇÃO (TRAVA OBRIGATÓRIA ANTES DE QUALQUER CONVITE)\n\nMesmo após acolher a objeção, você SÓ pode oferecer o evento ou encaminhar pro assessor depois de ter coletado e registrado TODAS as informações abaixo:\n1. PROFISSÃO concreta (não vaga)\n2. MOTIVAÇÃO real (por que está buscando agora)\n3. CAPITAL com valor ou faixa concreta\n4. SÓCIO/decisor\n5. TEMPO em meses concreto\n\nSe faltar QUALQUER UMA dessas, NÃO ofereça o evento. NÃO chame a tool \"site\". Use o tratamento da objeção pra também coletar o que falta — de forma natural, encaixando a próxima pergunta de diagnóstico no fim da resposta.\n\nVOCÊ É UMA SDR. SEU TRABALHO É QUALIFICAR. NÃO PULE ETAPAS. NÃO ACEITE RESPOSTAS VAGAS — APROFUNDE.\n\nSe o lead pedir o evento durante a objeção (\"manda o link logo\", \"quero saber mais\"), responda algo como:\n\"adorei seu interesse, mas pra eu te passar o material certo, deixa eu entender melhor seu cenário. [próxima pergunta do diagnóstico que falta]\"\n\nPROIBIDO encaminhar pro assessor ou enviar link sem ter os 5 dados completos. Acolher a objeção NÃO substitui a qualificação.\n\n\n# ACIONAMENTO DA TOOL `site`\nSó dispare APÓS:\n- ter os 5 dados do diagnóstico coletados\n- a objeção ter sido acolhida com fato da base\n- o lead ter aceitado explicitamente o convite ao evento\n\nQuando essas 3 condições forem verdadeiras, NESTA ORDEM:\n1. CHAMAR a tool \"site\". Isso entrega o link de fato.\n2. CHAMAR a tool \"lead\" com campo=\"finalizar\" e valor=\"true\".\n3. CHAMAR a tool \"Change Workflow Type\". OBRIGATÓRIO.\n4. Responder uma confirmação curta ao lead, sem inventar o link.\n\n\n# QUEBRA DE MENSAGEM\nPara soar como uma pessoa real digitando no WhatsApp, você pode dividir sua\nresposta em mensagens curtas separadas. Use o marcador || (duas barras) para\nindicar onde uma mensagem termina e a próxima começa.\n- Use a quebra quando a resposta tiver duas ideias distintas (ex: um acolhimento\n  + uma pergunta).\n- No máximo 2 ou 3 partes por resposta. Cada parte curta, 1-2 frases.\n- NÃO quebra a cada frase — só quando faz sentido natural, como uma pessoa faria.\n- O marcador || não deve aparecer no início nem no fim, só ENTRE as partes.\n- Exemplo: \"Ah, dentista é uma área que exige muita dedicação || Me conta, o que te fez começar a olhar uma franquia agora?\"\n\nA regra de máximo ~200 caracteres vale para CADA parte separada, não para o total.\n\n# PONTUAÇÃO (regra dura)\nNão use ponto final (\".\") no fim de uma mensagem ou no fim de uma parte de um balão.\nSó use ponto final QUANDO a frase termina E uma nova frase começa DENTRO DO MESMO BALÃO/PARTE.\nExemplo correto: \"entendo seu receio, faz sentido pensar nisso. é justamente por isso que o evento existe\"\nExemplo errado: \"entendo seu receio.\" ou \"faz sentido.\"\nMensagens curtas terminam sem ponto, como mensagem de WhatsApp natural.\n\n# GUARDRAILS — NUNCA\nNão prometa retorno/lucro. Não prometa prazo fixo de implantação. Não afirme que não existe furto/perda. Não diga que qualquer pessoa pode investir nem que é renda passiva garantida. Não debata preço por mensagem. Não invente número, caso ou franqueado. NÃO mencione COF, contrato, documentação jurídica — esse assunto é do vendedor humano e do evento. NÃO envie o link do evento aqui, a menos que o lead aceite explicitamente E os 5 dados do diagnóstico estejam completos.\n\n# ESTILO (regras duras)\n- Português do Brasil natural, acolhedor, consultivo. Máx ~200 caracteres, 1 a 3 frases curtas, UMA pergunta por mensagem.\n- PROIBIDO frases-fósseis/bordões automáticos e repetir frase literal. Sem pressão, sem urgência artificial, sem rotular o lead.\n\n# REGRA EMOCIONAL (não negociável)\nGatilho emocional grave: acolha com calma e humanidade, sem citar CVV/saúde mental, sem encerrar, sem quebrar o funil; retome quando o tom permitir."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [6592, 3776],
+      "id": "c0e68be8-4ab7-472c-a14f-8a2ba7663040",
+      "name": "Ag_Objecao"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "options": {
+          "temperature": 0.6
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [6592, 3904],
+      "id": "14745742-3f3b-458c-8c26-9e0b248047f4",
+      "name": "LM_Objecao",
+      "credentials": {
+        "openAiApi": {
+          "id": "fj3ICGCCsnafvssx",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('nomalizacao').item.json.body.lead.id }}",
+        "tableName": "n8n_teste222222",
+        "contextWindowLength": 50
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [6720, 3904],
+      "id": "d1543b7a-ef1b-427c-9065-292c573cc324",
+      "name": "Mem_Objecao",
+      "credentials": {
+        "postgres": {
+          "id": "eGAN0md4VDsvfL1M",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [6896, 4016],
+      "id": "962a47fa-0dec-4236-982a-9f9606e78c86",
+      "name": "Emb_Objecao",
+      "credentials": {
+        "openAiApi": {
+          "id": "fj3ICGCCsnafvssx",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Base oficial da 300/Shelf: investimento, ROI, royalties, modelo, territorios, cases e objecoes. Consulte SEMPRE antes de citar qualquer numero/valor/prazo ou responder objecao.",
+        "tableName": "rafaela_rag",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePGVector",
+      "typeVersion": 1.3,
+      "position": [6896, 3904],
+      "id": "22a3680b-7cb1-4102-bb7c-8247ab2c635f",
+      "name": "RAG_Objecao",
+      "credentials": {
+        "postgres": {
+          "id": "eGAN0md4VDsvfL1M",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// entrada deste node = output do classificador (Ag_Saudacao1)\nconst inJson = $input.first().json;\n\nlet raw = inJson.output ?? inJson.text ?? '';\n\nlet parsed;\ntry {\nraw = String(raw).replace(/```json|```/g, '').trim();\nraw = raw.replace(/\\{\\{/g, '{').replace(/\\}\\}/g, '}');\n  parsed = JSON.parse(raw);\n} catch (e) {\n  parsed = { agente: 'saudacao', motivo: 'falha parse | raw=' + JSON.stringify(raw) };\n}\n\n// estado anterior, vindo do Redis\nconst est = ($('Redis_Get_Estado').first().json.estado_atual || 'saudacao');\n\n// o que a IA classificou\nlet agente = ['saudacao','vendedor','objecao'].includes(parsed.agente)\n  ? parsed.agente : 'saudacao';\n\n// === TRAVA: saiu da saudacao, nunca mais volta ===\n// se a conversa ja avancou (estado != saudacao) e a IA tentou voltar\n// para 'saudacao', forcamos para 'vendedor'.\nif (est !== 'saudacao' && agente === 'saudacao') {\n  agente = 'vendedor';\n}\n\n// calcula o novo estado a ser salvo\nlet novo;\nif (agente === 'objecao') {\n  // objecao nao e um estado \"fixo\": guardamos vendedor para nao regredir\n  novo = 'vendedor';\n} else if (agente === 'vendedor') {\n  novo = 'vendedor';\n} else {\n  // so chega aqui se est === 'saudacao' e agente === 'saudacao'\n  novo = 'saudacao';\n}\n\nreturn [{ json: {\n  agente,\n  novo_estado: novo,\n  estado_anterior: est,\n  motivo: parsed.motivo\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [5936, 3376],
+      "id": "d0a33f79-7602-4a7e-9487-deacb80d7b0b",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fbcf73e9-e943-41dc-b73a-72b8df170e9f",
+              "name": "mensagemm",
+              "value": "={{ $('Code').item.json.conversation }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [6400, 3152],
+      "id": "a6396208-b9a9-4061-a76f-141f0e161a55",
+      "name": "nomalizacao1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fbcf73e9-e943-41dc-b73a-72b8df170e9f",
+              "name": "mensagemm",
+              "value": "={{ $('Code').item.json.conversation }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [6400, 3376],
+      "id": "53d0d144-56db-4307-bef8-9c4e80b95a14",
+      "name": "nomalizacao2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fbcf73e9-e943-41dc-b73a-72b8df170e9f",
+              "name": "mensagemm",
+              "value": "={{ $('Code').item.json.conversation }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [6400, 3600],
+      "id": "2e54a4cc-627f-41e6-8245-955a2721383a",
+      "name": "nomalizacao3"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT message\nFROM n8n_teste222222\nWHERE session_id = '{{ $('nomalizacao').item.json.body.lead.id }}'\nORDER BY id DESC\nLIMIT 12;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [5328, 3376],
+      "id": "b8b8a25f-9bce-40f1-9f47-8693f7ee4b56",
+      "name": "Execute a SQL query1",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "eGAN0md4VDsvfL1M",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all();\n\n// fica só com linhas que realmente tem 'message'\nconst validas = rows.filter(r => r.json && r.json.message != null);\n\nconst ordered = validas.slice().reverse(); // cronológico\n\nconst linhas = ordered.map(r => {\n  let m = r.json.message;\n  if (typeof m === 'string') {\n    try { m = JSON.parse(m); } catch (e) { m = { type: 'human', content: String(m) }; }\n  }\n  // garante objeto valido\n  if (!m || typeof m !== 'object') {\n    m = { type: 'human', content: String(m ?? '') };\n  }\n  const quem = m.type === 'ai' ? 'Rafaela' : 'Lead';\n  return `${quem}: ${m.content ?? ''}`;\n});\n\nconst historico = linhas.join('\\n') || '(sem histórico ainda)';\n\nreturn [{ json: { historico } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [5472, 3376],
+      "id": "7e1017b5-483b-4607-b884-2b3c187de1a5",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "lead",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [-2384, 4000],
+      "id": "e3a90558-dc4b-42a7-a0b2-fffbf5bdb6bc",
+      "name": "Webhook1",
+      "webhookId": "a922ce9e-0dcb-4773-8909-e834aaa79a1f"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "73eb71a0-a933-4a68-8e98-f8c38f584562",
+              "leftValue": "={{ $json.lead_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [-2016, 4000],
+      "id": "2027f389-31bd-4a44-a200-d33aaa626b9b",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Registra um dado coletado do lead durante o diagnostico. Use sempre que o lead informar profissao, capital disponivel, se decide sozinho ou com socio/parente, ou o prazo de implementacao. Faca uma chamada para cada dado.",
+        "method": "POST",
+        "url": "https://primary-production-102a6.up.railway.app/webhook/lead",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"lead_id\": \"{{ $('nomalizacao').item.json.body.lead.id }}\",\n  \"nome\": \"{{ $('nomalizacao').item.json.nome }}\",\n  \"telefone\": \"{{ $('nomalizacao').item.json.telefone }}\",\n  \"conversationId\": \"{{ $('input evolution').item.json.body.conversation.id }}\",\n  \"campo\": \"{{ $fromAI('campo', 'cidade, profissao, capital, socio, tempo ou finalizar') }}\",\n  \"valor\": \"{{ $fromAI('valor', 'o valor informado pelo lead; quando campo for finalizar, passe true') }}\",\n  \"requestId\": \"{{ $('input evolution').item.json.body.requestId }}\",\n  \"brandId\": \"{{ $('input evolution').item.json.body.brand.id }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [6880, 3520],
+      "id": "17183a39-5d62-484d-81e6-761efc8cdd38",
+      "name": "lead"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT lead_id FROM leads WHERE lead_id = '{{ $json.body.lead_id }}';\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [-2192, 4000],
+      "id": "ea52bc0a-47f2-418f-8732-c2015a174126",
+      "name": "Execute a SQL query2",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "eGAN0md4VDsvfL1M",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE leads SET\n  cidade    = COALESCE(CASE WHEN '{{ $('Webhook1').item.json.body.campo }}' = 'cidade'    THEN '{{ $('Webhook1').item.json.body.valor }}' END, cidade),\n  profissao = COALESCE(CASE WHEN '{{ $('Webhook1').item.json.body.campo }}' = 'profissao' THEN '{{ $('Webhook1').item.json.body.valor }}' END, profissao),\n  capital   = COALESCE(CASE WHEN '{{ $('Webhook1').item.json.body.campo }}' = 'capital'   THEN '{{ $('Webhook1').item.json.body.valor }}' END, capital),\n  socio     = COALESCE(CASE WHEN '{{ $('Webhook1').item.json.body.campo }}' = 'socio'     THEN '{{ $('Webhook1').item.json.body.valor }}' END, socio),\n  tempo     = COALESCE(CASE WHEN '{{ $('Webhook1').item.json.body.campo }}' = 'tempo'     THEN '{{ $('Webhook1').item.json.body.valor }}' END, tempo),\n  finalizado    = CASE WHEN '{{ $('Webhook1').item.json.body.campo }}' = 'finalizar' THEN TRUE ELSE finalizado END,\n  finalizado_em = CASE WHEN '{{ $('Webhook1').item.json.body.campo }}' = 'finalizar' THEN NOW() ELSE finalizado_em END,\n  conversation_id = COALESCE('{{ $('Webhook1').item.json.body.conversationId }}', conversation_id),\n  atualizado_em = NOW()\nWHERE lead_id = '{{ $('Webhook1').item.json.body.lead_id }}';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [-1696, 3840],
+      "id": "076d6a57-0bc4-4ca8-bb63-81426e2301a5",
+      "name": "Execute a SQL query3",
+      "credentials": {
+        "postgres": {
+          "id": "eGAN0md4VDsvfL1M",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO leads (lead_id, nome, telefone, conversation_id, cidade, profissao, capital, socio, tempo, finalizado, finalizado_em)\nVALUES (\n  '{{ $('Webhook1').item.json.body.lead_id }}',\n  '{{ $('Webhook1').item.json.body.nome }}',\n  '{{ $('Webhook1').item.json.body.telefone }}',\n  '{{ $('Webhook1').item.json.body.conversationId }}',\n  CASE WHEN '{{ $('Webhook1').item.json.body.campo }}' = 'cidade'    THEN '{{ $('Webhook1').item.json.body.valor }}' END,\n  CASE WHEN '{{ $('Webhook1').item.json.body.campo }}' = 'profissao' THEN '{{ $('Webhook1').item.json.body.valor }}' END,\n  CASE WHEN '{{ $('Webhook1').item.json.body.campo }}' = 'capital'   THEN '{{ $('Webhook1').item.json.body.valor }}' END,\n  CASE WHEN '{{ $('Webhook1').item.json.body.campo }}' = 'socio'     THEN '{{ $('Webhook1').item.json.body.valor }}' END,\n  CASE WHEN '{{ $('Webhook1').item.json.body.campo }}' = 'tempo'     THEN '{{ $('Webhook1').item.json.body.valor }}' END,\n  CASE WHEN '{{ $('Webhook1').item.json.body.campo }}' = 'finalizar' THEN TRUE ELSE FALSE END,\n  CASE WHEN '{{ $('Webhook1').item.json.body.campo }}' = 'finalizar' THEN NOW() ELSE NULL END\n);",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [-1696, 4064],
+      "id": "81e32585-bc6e-44e6-bd22-9af6edd89b0b",
+      "name": "Execute a SQL query4",
+      "credentials": {
+        "postgres": {
+          "id": "eGAN0md4VDsvfL1M",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM leads WHERE lead_id = 'b5b1487d-9703-4fa2-9ea0-f17b943bdd4b';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [-1296, 3952],
+      "id": "41ea3a8e-851f-438f-a12a-01fe08ba8cf2",
+      "name": "Execute a SQL query5",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "eGAN0md4VDsvfL1M",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "39f26c2c-37ab-417c-b4f3-f9d43e1e4b94",
+              "leftValue": "={{ $json.body.message.content }}",
+              "rightValue": "#fim",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [2128, 3392],
+      "id": "681b5416-c9c4-4946-bd9f-f08387b53b0a",
+      "name": "If3"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "DELETE FROM n8n_teste222222 WHERE session_id = '{{ $('input evolution').item.json.body.lead.id }}';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [2320, 2992],
+      "id": "47a57dcc-cfa3-4f77-8f11-1e724aee6a42",
+      "name": "Execute a SQL query6",
+      "credentials": {
+        "postgres": {
+          "id": "eGAN0md4VDsvfL1M",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "DELETE FROM leads WHERE lead_id = '{{ $('input evolution').item.json.body.lead.id }}';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [2432, 2880],
+      "id": "e70c3df8-b110-4ca6-a698-27e7503c6896",
+      "name": "Execute a SQL query7",
+      "credentials": {
+        "postgres": {
+          "id": "eGAN0md4VDsvfL1M",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "key": "={{ $('input evolution').item.json.body.lead.id }}"
+      },
+      "id": "8da06fda-103a-48c3-b150-8d7c963dd55e",
+      "name": "Delete Memory",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [2544, 2784],
+      "credentials": {
+        "redis": {
+          "id": "QsvFD1QiFbvIQzJa",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "key": "=estado:{{ $('input evolution').item.json.body.lead.id }}"
+      },
+      "id": "fd10c78b-df8f-44b6-a821-0d6a3f7ea32e",
+      "name": "Delete Memory1",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [2656, 2672],
+      "credentials": {
+        "redis": {
+          "id": "QsvFD1QiFbvIQzJa",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [5616, 3584],
+      "id": "14f25b96-7a03-413b-b94d-dc235809a8ef",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "fj3ICGCCsnafvssx",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "let t = $json.output || \"\";\nt = t.replace(/\\r\\n/g, \"\\n\").replace(/\\r/g, \"\\n\");\nt = t.replace(/\\*\\*(.*?)\\*\\*/g, \"*$1*\");\n\n// quebra pelo || em partes\nlet partes = t.split(/\\s*\\|\\|\\s*/).map(s => s.trim()).filter(Boolean);\nif (partes.length === 0) partes = [\"Pode repetir, por favor?\"];\n\n// cada parte vira um item separado; final = true só na última\nreturn partes.map((texto, i) => ({\n  json: {\n    text: texto,\n    final: i === partes.length - 1\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [7296, 3376],
+      "id": "c3e0b0f6-303b-4dac-a83b-a4b10dfe0b62",
+      "name": "normalizar1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "ec85dc56-3fe1-4ac5-81ce-3b1572737e1b",
+      "name": "Loop Over Items",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [7488, 3376]
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [7728, 3232],
+      "id": "21fb05ec-0eef-4c8f-b9fd-0ab6df17ab48",
+      "name": "No Operation, do nothing4"
+    },
+    {
+      "parameters": {
+        "amount": "={{ $json.espera_s }}"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [8048, 3392],
+      "id": "6885a994-752e-494d-becf-b73743070a79",
+      "name": "Wait",
+      "webhookId": "23885526-e66d-4d4d-af6f-e02d429480f4"
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "key": "={{ $('nomalizacao').item.json.body.lead.id }}"
+      },
+      "id": "7e43f1a4-f6a4-46f7-8c54-29747103a7ff",
+      "name": "Delete Memory3",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [7984, 3232],
+      "credentials": {
+        "redis": {
+          "id": "QsvFD1QiFbvIQzJa",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.connect.lai.ia.br/api/webhook/ai-reply",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer aa1faaf1c02c3881b4cbdd348f81bd3e6e880f4a73c515fd9afbaeda43a29ec1"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ requestId: $('input evolution').item.json.body.requestId, conversationId: $('input evolution').item.json.body.conversation.id, brandId: $('input evolution').item.json.body.brand.id, status: 'success', reply: { content: $json.text, type: 'text' }, final: $json.final }) }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [7728, 3392],
+      "id": "451199a9-4f58-4ff4-869a-c7630f67894b",
+      "name": "HTTP Request7",
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 500
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Estado atual: {{ $('Redis_Get_Estado').item.json.estado_atual || 'saudacao' }}\n\n=== HISTÓRICO DA CONVERSA (só para análise) ===\n{{ $json.historico }}\n=== FIM ===\n\nMensagem mais recente do lead: {{ $('nomalizacao').item.json.Mensagem }}\n\nClassifique. Responda só o JSON.",
+        "options": {
+          "systemMessage": "Você é um classificador de intenção de uma conversa de vendas de franquia pelo WhatsApp. Sua única função é decidir qual agente deve responder. Você NUNCA conversa com o lead — sua única saída é um JSON.\n\nSua resposta deve ser EXATAMENTE neste formato:\n{{\"agente\":\"PALAVRA\",\"motivo\":\"FRASE CURTA\"}}\n\nExemplos de respostas corretas e completas:\n{{\"agente\":\"saudacao\",\"motivo\":\"lead so cumprimentou, ainda nao disse cidade\"}}\n{{\"agente\":\"vendedor\",\"motivo\":\"lead acabou de informar a cidade\"}}\n{{\"agente\":\"vendedor\",\"motivo\":\"lead informou a profissao\"}}\n{{\"agente\":\"vendedor\",\"motivo\":\"lead disse o capital que tem disponivel\"}}\n{{\"agente\":\"objecao\",\"motivo\":\"lead disse que tem medo de furto na loja\"}}\n{{\"agente\":\"objecao\",\"motivo\":\"lead disse que precisa falar com o socio antes\"}}\n\nAGENTES:\n1. \"saudacao\" — APENAS o cumprimento inicial, ANTES do lead dizer de onde é / qual cidade. Assim que a cidade for informada, NUNCA MAIS use saudacao.\n2. \"vendedor\" — TODO o resto da conversa de venda: a partir do momento em que a cidade foi dita, qualquer avanço normal (profissão, capital, sócio, prazo, interesse, perguntas sobre o negócio) é vendedor. É o estado padrão depois da abertura.\n3. \"objecao\" — Quando o lead, olhando o contexto da conversa, demonstra DÚVIDA, MEDO ou RECEIO, não entendeu algo, hesita, desconfia, reclama de preço, adia, ou condiciona a decisão a outra pessoa (sócio, cônjuge, família). Inclui medo de furto, medo de não dar certo, medo de perder dinheiro, insegurança sobre o modelo ou sobre a própria capacidade.\n\nETAPAS DO DIAGNÓSTICO — em qual agente cada assunto se encaixa:\n- Cumprimento inicial (oi, bom dia, tudo bem) SEM ainda ter dito a cidade: saudacao\n- Cidade informada / lead disse de onde é: vendedor (a partir deste momento, saudacao está encerrada para sempre)\n- Profissão / o que o lead faz hoje: vendedor\n- Capital inicial / valor disponível para investir: vendedor\n- Sócio ou parente envolvido na decisão, quando o lead apenas INFORMA, sem usar como freio: vendedor\n- Tempo / prazo de implementação / quando pretende começar: vendedor\n\nAtenção: se o lead usa o sócio/parente como FREIO (exemplo: \"preciso falar com meu sócio antes\", \"só decido depois de conversar com minha esposa\"), isso NÃO é diagnóstico — é objecao. Apenas informar que tem um sócio é vendedor.\n\nCOMO DECIDIR (use o histórico para interpretar, não só a última mensagem):\n- A última mensagem precisa ser lida no contexto do que foi conversado antes. Exemplo: \"não entendi\" ou \"como assim?\" só fazem sentido olhando a mensagem anterior da Rafaela — isso é objecao (dúvida).\n- Se o lead ainda NÃO disse a cidade e está apenas cumprimentando: saudacao.\n- Se o lead acabou de informar a cidade OU já tinha informado em algum momento anterior: vendedor ou objecao (nunca mais saudacao).\n- Se o lead responde profissão, capital, sócio/parente, tempo de implementação, ou avança na conversa de venda de forma normal: vendedor.\n- Se o lead trava, duvida, não entende, hesita, freia, ou demonstra medo / receio / insegurança: objecao.\n\nREGRAS DE TRANSIÇÃO (máquina de estados — DURAS):\n- REGRA DA CIDADE: assim que a cidade for informada pelo lead (em qualquer mensagem do histórico), saudacao está ENCERRADA para sempre. A partir daí, escolha SEMPRE entre vendedor e objecao — nunca mais saudacao.\n- Depois que o estado sai de saudacao, ele NUNCA volta para saudacao.\n- Em caso de dúvida entre vendedor e objecao: se o lead expressou qualquer incerteza, medo ou não-entendimento, escolha objecao; senão, vendedor.\n\nFORMATO DE SAÍDA — OBRIGATÓRIO:\nSua resposta é EXCLUSIVAMENTE um objeto JSON. Nada antes, nada depois. NÃO escreva frases soltas. NÃO explique fora do JSON. NÃO use markdown. NÃO use blocos de código.\n\nO JSON tem exatamente dois campos: \"agente\" (uma só palavra: saudacao, vendedor ou objecao) e \"motivo\" (explicação curta em uma frase).\n\nSua resposta deve ser EXATAMENTE neste formato:\n{{\"agente\":\"PALAVRA\",\"motivo\":\"FRASE CURTA\"}}\n\nExemplos de respostas corretas e completas:\n{{\"agente\":\"saudacao\",\"motivo\":\"lead so cumprimentou, ainda nao disse cidade\"}}\n{{\"agente\":\"vendedor\",\"motivo\":\"lead acabou de informar a cidade\"}}\n{{\"agente\":\"vendedor\",\"motivo\":\"lead informou a profissao\"}}\n{{\"agente\":\"vendedor\",\"motivo\":\"lead disse o capital que tem disponivel\"}}\n{{\"agente\":\"objecao\",\"motivo\":\"lead disse que tem medo de furto na loja\"}}\n{{\"agente\":\"objecao\",\"motivo\":\"lead disse que precisa falar com o socio antes\"}}\n\nSe você responder qualquer coisa que NÃO comece com a chave de abertura e termine com a chave de fechamento, você FALHOU na tarefa. Responda agora SOMENTE o JSON."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [5616, 3376],
+      "id": "764f5217-7c61-458b-a49a-d7f3d18926d9",
+      "name": "Ag_Classificação"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "39f26c2c-37ab-417c-b4f3-f9d43e1e4b94",
+              "leftValue": "={{ $json.body.message.content }}",
+              "rightValue": "#memoria",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [1872, 3376],
+      "id": "6b75ac22-d6b7-43a0-b9d1-4731a69b1190",
+      "name": "If4"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT message\nFROM n8n_teste222222\nWHERE session_id = '{{ $('input evolution').item.json.body.lead.id }}'\nORDER BY id DESC\nLIMIT 50;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [2016, 2960],
+      "id": "8f18c70a-6092-427a-9dab-8bfff0e5ca94",
+      "name": "Execute a SQL query8",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "eGAN0md4VDsvfL1M",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.connect.lai.ia.br/api/webhook/ai-reply",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer aa1faaf1c02c3881b4cbdd348f81bd3e6e880f4a73c515fd9afbaeda43a29ec1"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ requestId: $('input evolution').item.json.body.requestId, conversationId: $('input evolution').item.json.body.conversation.id, brandId: $('input evolution').item.json.body.brand.id, status: 'success', reply: { content: $json.historico, type: 'text' }, final: true }) }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [2240, 2720],
+      "id": "fe761a59-fc9d-42ac-b7d0-0d6af337ad4f",
+      "name": "HTTP Request8",
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 500
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all();\n\n// fica só com linhas que realmente tem 'message'\nconst validas = rows.filter(r => r.json && r.json.message != null);\n\nconst ordered = validas.slice().reverse(); // cronológico\n\nconst linhas = ordered.map(r => {\n  let m = r.json.message;\n  if (typeof m === 'string') {\n    try { m = JSON.parse(m); } catch (e) { m = { type: 'human', content: String(m) }; }\n  }\n  // garante objeto valido\n  if (!m || typeof m !== 'object') {\n    m = { type: 'human', content: String(m ?? '') };\n  }\n  const quem = m.type === 'ai' ? 'Rafaela' : 'Lead';\n  return `${quem}: ${m.content ?? ''}`;\n});\n\nconst historico = linhas.join('\\n') || '(sem histórico ainda)';\n\nreturn [{ json: { historico } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2128, 2848],
+      "id": "a265dd31-7e0d-469b-a662-f288971cf7bb",
+      "name": "Code in JavaScript4"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Registra um dado coletado do lead durante o diagnostico. Use sempre que o lead informar profissao, capital disponivel, se decide sozinho ou com socio/parente, ou o prazo de implementacao. Faca uma chamada para cada dado.",
+        "method": "POST",
+        "url": "https://primary-production-102a6.up.railway.app/webhook/lead",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"lead_id\": \"{{ $('nomalizacao').item.json.body.lead.id }}\",\n  \"nome\": \"{{ $('nomalizacao').item.json.nome }}\",\n  \"telefone\": \"{{ $('nomalizacao').item.json.telefone }}\",\n  \"conversationId\": \"{{ $('input evolution').item.json.body.conversation.id }}\",\n  \"campo\": \"{{ $fromAI('campo', 'cidade, profissao, capital, socio, tempo ou finalizar') }}\",\n  \"valor\": \"{{ $fromAI('valor', 'o valor informado pelo lead; quando campo for finalizar, passe true') }}\",\n  \"requestId\": \"{{ $('input evolution').item.json.body.requestId }}\",\n  \"brandId\": \"{{ $('input evolution').item.json.body.brand.id }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [6864, 3120],
+      "id": "0e98fa7a-757d-4298-b1d9-4615070afe06",
+      "name": "lead1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// recebe o item da mensagem que acabou de ser enviada\nconst texto = $('Loop Over Items').first().json.text || '';\nconst final = $json.final;\n\n// formula: 1 segundo base + 35ms por caractere\nconst BASE_MS = 1000;\nconst MS_POR_CHAR = 35;\nconst MIN_MS = 2000;\nconst MAX_MS = 12000;\n\nlet espera = BASE_MS + (texto.length * MS_POR_CHAR);\nespera = Math.max(MIN_MS, Math.min(MAX_MS, espera));\n\n// se for a ultima mensagem do lote, nao precisa esperar\n// (ja terminou de \"digitar\", pode soltar imediato pro proximo passo)\nif (final === true) {\n  espera = 0;\n}\n\nreturn [{\n  json: {\n    text: texto,\n    final: final,\n    espera_ms: espera,\n    espera_s: Math.round(espera / 100) / 10  // pra debug, em segundos com 1 casa\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [7888, 3392],
+      "id": "336d4a41-82f4-4f71-8156-8aed4b99aa37",
+      "name": "Code in JavaScript5"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "poswebinar",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [2080, 6624],
+      "id": "e9fff176-3e86-48b7-9873-21ac9cf246db",
+      "name": "Webhook2",
+      "webhookId": "29bd358c-4903-4580-a5c3-b6e70e813de5"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "if6-cond",
+              "leftValue": "={{ $json.body.message?.content || '' }}",
+              "rightValue": "#memoria",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [2352, 6624],
+      "id": "4ba82b76-3042-4977-852c-904867374b1c",
+      "name": "If6"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT message FROM n8n_teste222222 WHERE session_id = '{{ $('Webhook2').item.json.body.lead.id }}' ORDER BY id DESC LIMIT 50;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [2480, 6288],
+      "id": "9f1bbaa0-5cbb-466b-bd34-db7667c2a1bc",
+      "name": "Execute a SQL query12",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "eGAN0md4VDsvfL1M",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all();\nconst validas = rows.filter(r => r.json && r.json.message != null);\nconst ordered = validas.slice().reverse();\nconst linhas = ordered.map(r => {\n  let m = r.json.message;\n  if (typeof m === 'string') {\n    try { m = JSON.parse(m); } catch (e) { m = { type: 'human', content: String(m) }; }\n  }\n  if (!m || typeof m !== 'object') m = { type: 'human', content: String(m ?? '') };\n  const quem = m.type === 'ai' ? 'Rafaela' : 'Lead';\n  return `${quem}: ${m.content ?? ''}`;\n});\nconst historico = linhas.join('\\n') || '(sem histórico ainda)';\nreturn [{ json: { historico } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2592, 6192],
+      "id": "69afca4a-9aa9-43ee-b512-9f2a6ee4d20f",
+      "name": "Code in JavaScript7"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.connect.lai.ia.br/api/webhook/ai-reply",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer aa1faaf1c02c3881b4cbdd348f81bd3e6e880f4a73c515fd9afbaeda43a29ec1"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ requestId: $('Webhook2').item.json.body.requestId || ('poswebinar_' + Date.now()), conversationId: $('Webhook2').item.json.body.conversation.id, brandId: $('Webhook2').item.json.body.brand.id, status: 'success', reply: { content: $json.historico, type: 'text' }, final: true }) }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [2704, 6096],
+      "id": "f6058c55-1642-484c-8f17-c0191e9d768b",
+      "name": "HTTP Request9",
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 500
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "if5-cond",
+              "leftValue": "={{ $json.body.message?.content || '' }}",
+              "rightValue": "#fim",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [2608, 6640],
+      "id": "24bb5778-fbce-49b4-8479-399c03180225",
+      "name": "If5"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "DELETE FROM n8n_teste222222 WHERE session_id = '{{ $('Webhook2').item.json.body.lead.id }}';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [2720, 6464],
+      "id": "9f129f6d-2f76-45ad-8df1-7e784f0d51cc",
+      "name": "Execute a SQL query10",
+      "credentials": {
+        "postgres": {
+          "id": "eGAN0md4VDsvfL1M",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "DELETE FROM leads WHERE lead_id = '{{ $('Webhook2').item.json.body.lead.id }}';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [2832, 6336],
+      "id": "cbb73884-a06c-41f5-b5f2-b51b04a78590",
+      "name": "Execute a SQL query11",
+      "credentials": {
+        "postgres": {
+          "id": "eGAN0md4VDsvfL1M",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "key": "={{ $('Webhook2').item.json.body.lead.id }}"
+      },
+      "id": "8cc016dd-7041-47e4-a7b7-9f9cbd613c54",
+      "name": "Delete Memory2",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [2944, 6208],
+      "credentials": {
+        "redis": {
+          "id": "QsvFD1QiFbvIQzJa",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "key": "=estado:{{ $('Webhook2').item.json.body.lead.id }}"
+      },
+      "id": "1a27b900-13e6-4ff7-902c-e1a4c9b5ba6d",
+      "name": "Delete Memory4",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [3056, 6080],
+      "credentials": {
+        "redis": {
+          "id": "QsvFD1QiFbvIQzJa",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "if7-cond",
+              "leftValue": "={{ $json.body.message?.content || '' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [2752, 6656],
+      "id": "b7101e7d-72dd-43a3-b00a-110cb6602073",
+      "name": "If7"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE leads SET viu_webinar = TRUE, viu_webinar_em = NOW(), atualizado_em = NOW() WHERE lead_id = '{{ $('Webhook2').item.json.body.lead.id }}';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [2864, 6752],
+      "id": "edf1e57a-42e0-4fa3-92f5-1783f2d86a79",
+      "name": "Marca viu_webinar",
+      "credentials": {
+        "postgres": {
+          "id": "eGAN0md4VDsvfL1M",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.connect.lai.ia.br/api/webhook/ai-reply",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer aa1faaf1c02c3881b4cbdd348f81bd3e6e880f4a73c515fd9afbaeda43a29ec1"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ requestId: $('Webhook2').item.json.body.requestId || ('poswebinar_' + Date.now()), conversationId: $('Webhook2').item.json.body.conversation.id, brandId: $('Webhook2').item.json.body.brand.id, status: 'success', reply: { content: 'Oi, ' + ($('Webhook2').item.json.body.lead.name || '').split(' ')[0] + '! Percebi que você viu o nosso webinar, do que você mais gostou?', type: 'text' }, final: true }) }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [2976, 6880],
+      "id": "0fee158a-eceb-4af6-a257-706c15457354",
+      "name": "HTTP Request2",
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 500
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.body.brand.name }}",
+                    "rightValue": "=Shelf",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "sw-shelf"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "shelf"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "none"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [3152, 6640],
+      "id": "2205ba94-9170-4e25-853f-f838c204ed81",
+      "name": "Switch1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "n4-1",
+              "name": "telefone",
+              "value": "={{ $json.body.body.lead.phone }}",
+              "type": "string"
+            },
+            {
+              "id": "n4-2",
+              "name": "nome",
+              "value": "={{ $json.body.body.lead.name }}",
+              "type": "string"
+            },
+            {
+              "id": "n4-3",
+              "name": "Mensagem",
+              "value": "={{ $json.body.body.message.content }}",
+              "type": "string"
+            },
+            {
+              "id": "n4-4",
+              "name": "Brand.id",
+              "value": "={{ $json.body.body.brand.id }}",
+              "type": "string"
+            },
+            {
+              "id": "n4-5",
+              "name": "body.lead.id",
+              "value": "={{ $json.body.body.lead.id }}",
+              "type": "string"
+            },
+            {
+              "id": "n4-6",
+              "name": "conversação IA",
+              "value": "={{ $json.body.body.conversation.ai_enabled }}",
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [3344, 6624],
+      "id": "068c5aa9-61e5-4c03-9b85-07fa789075ce",
+      "name": "nomalizacao4"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "if2-cond",
+              "leftValue": "={{ $json['conversação IA'] }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [3536, 6624],
+      "id": "36db9a58-a5fd-4b81-8a55-963adf74d857",
+      "name": "If2"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [3696, 6768],
+      "id": "607bfb62-e23e-42d2-b6e7-066017029957",
+      "name": "No Operation, do nothing1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "filtra-cond",
+              "leftValue": "={{ $json.Mensagem }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "e3effe26-666d-401c-ba94-ead2d5af93c2",
+      "name": "Filtra \"Text\"1",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [3744, 6608]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "grava-text",
+              "name": "text",
+              "value": "={{ $json.Mensagem }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1deaad90-7aad-4087-aeea-a95f8d8272a4",
+      "name": "Grava variável \"text\"",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [4000, 6608]
+    },
+    {
+      "parameters": {
+        "operation": "push",
+        "list": "={{ $('nomalizacao4').item.json.body.lead.id }}",
+        "messageData": "={{ $json.text }}",
+        "tail": true
+      },
+      "id": "74898251-b3eb-42a0-a22d-a89ba5a43219",
+      "name": "Text Memory1",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [4176, 6608],
+      "credentials": {
+        "redis": {
+          "id": "QsvFD1QiFbvIQzJa",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "key": "={{ $('nomalizacao4').item.json.body.lead.id }}",
+        "options": {}
+      },
+      "id": "ed99cb0b-3b3c-4332-b915-bdc8c7360465",
+      "name": "Get Memory 1",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [4384, 6608],
+      "credentials": {
+        "redis": {
+          "id": "QsvFD1QiFbvIQzJa",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 1
+      },
+      "id": "0738e7ce-ebd1-4b4e-86a8-55444100553b",
+      "name": "Wait21",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [4544, 6608],
+      "webhookId": "627e9157-faaf-4d29-b8bc-21537aa6e5f7"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "key": "={{ $('nomalizacao4').item.json.body.lead.id }}",
+        "options": {}
+      },
+      "id": "737f9eac-1970-4e8e-80c4-b254b4b547bd",
+      "name": "Get Memory 4",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [4704, 6608],
+      "credentials": {
+        "redis": {
+          "id": "QsvFD1QiFbvIQzJa",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ef-1",
+              "name": "Redis2",
+              "value": "={{ $json.propertyName }}",
+              "type": "string"
+            },
+            {
+              "id": "ef-2",
+              "name": "Redis1",
+              "value": "={{ $('Get Memory 1').item.json.propertyName }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2155c2b1-3e3b-4593-82f3-1b3d6d59ec30",
+      "name": "Edit Fields",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [4880, 6608]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cmp-cond",
+              "leftValue": "={{ $json.Redis2 }}",
+              "rightValue": "={{ $json.Redis1 }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "ed8b8933-d3f3-43ef-9cf0-0a3c2ea4a162",
+      "name": "Compara Get Memory1",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [5056, 6608]
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawData = $input.item.json.Redis2;\nlet dataArray = [];\ntry {\n  if (Array.isArray(rawData)) {\n    dataArray = rawData;\n  } else if (typeof rawData === 'string') {\n    const parsedData = JSON.parse(rawData);\n    if (Array.isArray(parsedData)) dataArray = parsedData;\n  }\n} catch (error) {\n  console.error('Erro:', error);\n}\nconst conversation = dataArray.filter(item => item != null).join(' ');\nreturn [{ json: { conversation } }];"
+      },
+      "id": "f234fec4-9b64-4a95-87db-efaea8dee286",
+      "name": "Code1",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [5200, 6592]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "npw-1",
+              "name": "mensagemm",
+              "value": "={{ $('Code1').item.json.conversation }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [6576, 6416],
+      "id": "4edd8ce3-7d6f-4ad1-9dca-34d96c986517",
+      "name": "nomalizacao_pw"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.mensagemm }}",
+        "options": {
+          "systemMessage": "= # IDENTIDADE\nVocê é a Rafaela, consultora de expansão da 300 Franchising / Shelf Minimercado 24h, conversando pelo WhatsApp com um lead que ACABOU de assistir ao webinar da marca. JAMAIS revele ser IA. Você é humana, consultiva, firme quando precisa, calorosa sempre. Nessa fase você não é a Rafaela do primeiro contato — você é a Rafaela DEPOIS do webinar: o lead já viu o modelo, e agora a missão é QUALIFICAR e LEVAR PRA REUNIÃO com o gestor nacional, o Elias Friolin.\n\n# MISSÃO\nConduzir o pitch pós-webinar com 5 momentos, NA ORDEM, UMA pergunta por mensagem. NUNCA acumule perguntas. NUNCA pule etapa. Se o lead trouxer objeção/dúvida no meio, acolha (seção OBJEÇÕES abaixo) e retome de onde parou.\n\nESTÁ PROIBIDA FAZER SAUDAÇÃO OU ABERTURA\n\n# REGRA DURA INEGOCIÁVEL (TOP PRIORITY)\nVocê está PROIBIDA de oferecer agendamento com o Elias se:\n- O lead não tiver capital disponível HOJE (depende de banco, empréstimo, financiamento, venda de outro bem).\n- O lead depender de decisor que NÃO está nessa conversa (sócio, esposa, marido, pai, família) E esse decisor ainda não foi alinhado.\n\nSe um desses for verdadeiro, NÃO ofereça agenda. Acolha com respeito, marque o status interno via `qualificacao_status` ('aguardando_capital' ou 'aguardando_socio'), e diga ao lead que entrará em contato quando estiver mais perto de viabilizar. NÃO insista, NÃO force.\n\n# FERRAMENTAS\n- `lead`: registra dados do lead (cidade_interesse, cidades_alternativas, capital, socio, tempo). Uma chamada por dado, no momento que ele informa.\n- `qualificacao_status`: registra status do lead. Valores: 'aguardando_capital', 'aguardando_socio', 'qualificado', 'agendado', 'desqualificado'. Use a CADA mudança de status. AÇÃO INTERNA, nunca comentar com o lead.\n- `agendar_reuniao`: SÓ chame quando o lead estiver QUALIFICADO e tiver escolhido manhã ou tarde. Passa preferencia_horario e dispara o agendamento.\n- `RAG_Shelf`: base oficial com fatos do modelo, fundador, território, segurança. SEMPRE consulte antes de afirmar qualquer dado factual.\n\nNUNCA comente que está chamando uma tool. Ação interna.\n\n# OS 5 MOMENTOS — SIGA NA ORDEM\n\n## MOMENTO 1: ABERTURA + ESCUTA\nA primeira mensagem ('Oi, [nome]! Percebi que você viu o nosso webinar, do que você mais gostou?') JÁ FOI enviada pelo sistema. Sua conversa começa quando o lead responde a essa pergunta.\n\nQuando o lead responder o que mais gostou:\n- ESCUTE de verdade. A resposta dele te entrega a direção do pitch.\n- Acolha com calor ESPECÍFICO, citando o que ele falou.\n- Vincule com 1 fato do modelo Shelf (use RAG_Shelf) que conecte com o que ele apontou.\n- Exemplo: se ele gostou da gestão remota, fale que isso é o que mais surpreende quem vem de outras franquias. Se gostou do modelo 24h, fale do território exclusivo.\n- NÃO vomite tudo do modelo. UMA conexão por turno.\n\n## MOMENTO 2: CONEXÃO GEOGRÁFICA\nPergunta: 'Você imagina a sua franquia aí em [CIDADE DO LEAD] mesmo? Fora essa cidade, teria interesse em outros municípios também?'\n\nQuando ele responder:\n- Chame `lead` com campo='cidade_interesse' e valor=<cidade principal>.\n- Se citar cidades alternativas, chame `lead` com campo='cidades_alternativas' e valor=<lista>.\n- Acolha com leveza e siga.\n\n## MOMENTO 3: VALIDAÇÃO FINANCEIRA (CRÍTICO)\nDuas perguntas, NA ORDEM:\n\n3a: 'Os valores de investimento apresentados no webinar estão dentro do seu planejamento financeiro? Ficou claro o modelo de negócio?'\n\n3b (depois que ele responder a 3a): 'E em relação ao investimento, é algo disponível para você HOJE? Te faço essa pergunta para entender como posso te orientar da melhor forma. Recentemente tivemos o caso de um candidato interessado na região de Dourados-MS que acabou perdendo a oportunidade, porque dependia de um financiamento bancário para avançar com o bloqueio da cota. Enquanto aguardava a liberação, outro candidato avançou e garantiu a região.'\n\nINTERPRETAÇÃO:\n- TEM valor disponível hoje (poupança, conta, investimento líquido) → chame `lead` campo='capital' valor='disponivel_hoje: <descrição>'. SEGUE Momento 4.\n- DEPENDE de banco, financiamento, vender carro/imóvel, herança → chame `lead` campo='capital' valor='depende_de: <descrição>'. ATIVE REGRA DURA: chame `qualificacao_status` status='aguardando_capital' motivo='<curto>'. Diga: 'Entendo. Vou anotar aqui e te chamo assim que essa parte estiver mais perto de viabilizar. A Shelf vai continuar aqui, e quando você estiver pronto a gente avança.' PARE. NÃO ofereça agenda.\n\n## MOMENTO 4: DECISORES\nPergunta: 'E essa decisão você toca sozinho, ou tem alguém que decide junto com você — sócio, esposa, marido, família?'\n\nINTERPRETAÇÃO:\n- Decide sozinho → chame `lead` campo='socio' valor='decide_sozinho'. SEGUE Momento 5.\n- Tem decisor mas JÁ alinhou ('minha esposa já está dentro, conversamos antes') → chame `lead` campo='socio' valor='<descrição: alinhado>'. SEGUE Momento 5.\n- Tem decisor e NÃO alinhou → chame `lead` campo='socio' valor='<descrição: nao alinhado>'. ATIVE REGRA DURA: chame `qualificacao_status` status='aguardando_socio' motivo='<curto>'. Diga: 'Faz total sentido você alinhar com [pessoa] antes. Conversa com calma, e quando vocês dois estiverem na mesma página, me chama aqui que a gente segue. Sem pressa.' PARE. NÃO ofereça agenda.\n\n## MOMENTO 5: TEMPO + ELIAS + AGENDAMENTO\n\n5a: 'Agora que você viu o evento e a demanda, o tempo que você imagina a sua franquia em funcionamento mudou, ou continua o que a gente conversou antes?'\n\nQuando responder → chame `lead` campo='tempo' valor=<o que ele disse>.\n\nDepois apresente o Elias:\n'Perfeito. O próximo passo é a avaliação de perfil com o nosso gestor nacional, o Elias Friolin. || O Elias tem mais de 10 anos de experiência no franchising, já participou da expansão de diversas redes e atuou diretamente na operação das unidades próprias da marca. Hoje ele lidera a expansão nacional e internacional e é o responsável por selecionar os perfis mais alinhados ao que buscamos. || Essa reunião dura entre 1h e 1h30 e é justamente o momento em que avaliamos se o seu perfil está conectado com o modelo, e se faz sentido avançar com você.'\n\nDepois:\n'Pra agendarmos essa reunião, fica melhor pra você no período da manhã ou da tarde?'\n\nQuando ele escolher manhã ou tarde:\n- Chame `qualificacao_status` status='qualificado' motivo='capital ok e decisores alinhados'.\n- Chame `agendar_reuniao` com preferencia_horario=<manha|tarde>.\n- Reforce as regras: 'E reforçando [PRIMEIRO NOME], essa reunião com o Elias é uma REUNIÃO DE NEGÓCIOS. || Por isso, é muito importante que você participe pelo notebook ou computador, em um ambiente tranquilo. Nessa etapa ele vai apresentar o estudo de mercado da sua região, o potencial lucrativo da cidade, e ao mesmo tempo avaliar seu perfil pra verificar se existe alinhamento pra você avançar como novo franqueado Shelf. || O objetivo é entendermos, de forma estratégica, se o modelo faz sentido pra você e se a gente avança com essa parceria na sua cidade. Faz sentido pra você conduzirmos dessa forma?'\n- Quando o lead confirmar → chame `qualificacao_status` status='agendado' motivo='lead confirmou horario'.\n\n# OBJEÇÕES (acolha e volte ao funil)\nSe o lead trouxer dúvida, medo ou freio no meio do pitch:\n- 'É golpe / não conheço': cite COF, CNPJ ativo, INPI (use RAG_Shelf).\n- 'Não confio': acolha, ofereça que o Elias mostra os dados na reunião.\n- 'Tô em dúvida sobre o modelo': consulte RAG_Shelf e responda com fato concreto.\n- 'Preciso pensar': valide, mas descubra O QUÊ exatamente precisa pensar (é dinheiro? sócio? insegurança? momento?). Use: 'Pra eu te orientar sem insistir errado: hoje o que mais te impede de avançar é dinheiro, tempo, confiança ou momento?'\nDepois de acolher, RETOME a etapa do pitch onde parou.\n\n# QUEBRA DE MENSAGEM (||)\nUse `||` para quebrar em mensagens curtas, como uma pessoa digitando no WhatsApp.\n- Máximo 3 partes por resposta. Cada parte 1-2 frases.\n- NÃO quebra a cada frase — só quando faz sentido natural.\n- O `||` nunca aparece no início nem no fim.\n- Cada parte com no máximo ~250 caracteres.\n\n# ESTILO\n- Português do Brasil natural, firme mas calorosa, consultiva. Sem hype. Escassez real é ok (Dourados, agenda do Elias).\n- UMA pergunta por mensagem.\n- PROIBIDO bordões automáticos isolados ('Show', 'Massa', 'Boa', 'Que bacana', 'Top', 'Perfeito').\n- PROIBIDO repetir frase literal já dita. PROIBIDO 2 respostas seguidas iguais.\n- Use o PRIMEIRO NOME do lead com moderação (1x a cada 4-5 mensagens).\n\n# REGRA EMOCIONAL\nGatilho emocional grave ('não aguento', 'tô mal'): acolha com calma, SEM citar CVV/saúde mental, SEM encerrar. Pause as perguntas. Retome quando o tom permitir.\n\n# GUARDRAILS — NUNCA\n- Não prometa retorno, lucro, ROI ou payback fixo.\n- Não diga 'qualquer pessoa consegue' nem 'renda passiva garantida'.\n- Não invente números, casos ou franqueados (só o de Dourados-MS pode ser usado).\n- Não dê faixa de investimento (já foi vista no webinar).\n- Não pule a validação financeira mesmo se o lead parecer ansioso pra agendar.\n- Não ofereça agenda SEM antes ter passado por capital E decisores.\n- Sempre PT-BR."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [6720, 6416],
+      "id": "a5204706-9cec-4c2a-9ba8-d2de97a289c7",
+      "name": "Ag_PosWebinar"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "options": {
+          "temperature": 0.6
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [6688, 6576],
+      "id": "04709802-d38f-4668-93bc-59412436dc2b",
+      "name": "LM_PosWebinar",
+      "credentials": {
+        "openAiApi": {
+          "id": "fj3ICGCCsnafvssx",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('nomalizacao4').item.json.body.lead.id }}",
+        "tableName": "n8n_teste222222",
+        "contextWindowLength": 50
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [6816, 6608],
+      "id": "01b5d9d4-8033-4f06-b9f3-acec75e46d32",
+      "name": "Mem_PosWebinar",
+      "credentials": {
+        "postgres": {
+          "id": "eGAN0md4VDsvfL1M",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [6768, 6304],
+      "id": "ba6e97f7-5837-4f51-b558-72e26d239a08",
+      "name": "Emb_PosWebinar",
+      "credentials": {
+        "openAiApi": {
+          "id": "fj3ICGCCsnafvssx",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Base oficial da 300/Shelf: investimento, ROI, royalties, modelo, territorios, cases, fundador, historia e objecoes. Consulte SEMPRE antes de citar qualquer fato ou responder objecao.",
+        "tableName": "rafaela_rag",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePGVector",
+      "typeVersion": 1.3,
+      "position": [6768, 6144],
+      "id": "65320d02-13c6-4ba1-8903-c06695c88367",
+      "name": "RAG_Shelf",
+      "credentials": {
+        "postgres": {
+          "id": "eGAN0md4VDsvfL1M",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toolDescription": "Registra o status da qualificacao do lead no pos-webinar. Valores aceitos: aguardando_capital (lead nao tem dinheiro hoje), aguardando_socio (lead depende de decisor que nao esta na conversa), qualificado (passou em capital e decisores), agendado (confirmou horario com o Elias), desqualificado (perfil nao alinhado). Acao interna, nunca comentar com o lead.",
+        "method": "POST",
+        "url": "https://primary-production-102a6.up.railway.app/webhook/qualificacao-status",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"lead_id\": \"{{ $('nomalizacao4').item.json.body.lead.id }}\",\n  \"status\": \"{{ $fromAI('status', 'aguardando_capital, aguardando_socio, qualificado, agendado ou desqualificado') }}\",\n  \"motivo\": \"{{ $fromAI('motivo', 'frase curta explicando por que esse status, ex: lead depende de financiamento bancario') }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [6848, 5792],
+      "id": "cc22de06-8a2f-4e3d-bbf0-1677ee4522ea",
+      "name": "qualificacao_status"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Agenda a reuniao do lead com o gestor Elias Friolin. SO chame DEPOIS de qualificar o lead (capital disponivel + decisores alinhados) e do lead ter escolhido entre manha ou tarde. Esta tool dispara o link de agendamento.",
+        "method": "POST",
+        "url": "https://primary-production-102a6.up.railway.app/webhook/agendar-reuniao",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"lead_id\": \"{{ $('nomalizacao4').item.json.body.lead.id }}\",\n  \"nome\": \"{{ $('nomalizacao4').item.json.nome }}\",\n  \"telefone\": \"{{ $('nomalizacao4').item.json.telefone }}\",\n  \"conversationId\": \"{{ $('Webhook2').item.json.body.conversation.id }}\",\n  \"preferencia_horario\": \"{{ $fromAI('preferencia_horario', 'manha ou tarde') }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [6848, 5648],
+      "id": "f8f851dd-3188-4351-8122-9103e66b030b",
+      "name": "agendar_reuniao"
+    },
+    {
+      "parameters": {
+        "jsCode": "let t = $json.output || '';\nt = t.replace(/\\r\\n/g, '\\n').replace(/\\r/g, '\\n');\nt = t.replace(/\\*\\*(.*?)\\*\\*/g, '*$1*');\nlet partes = t.split(/\\s*\\|\\|\\s*/).map(s => s.trim()).filter(Boolean);\nif (partes.length === 0) partes = ['Pode repetir, por favor?'];\nreturn partes.map((texto, i) => ({ json: { text: texto, final: i === partes.length - 1 } }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [7472, 6592],
+      "id": "6af35026-4ffb-44aa-8c08-18da03fb3d1d",
+      "name": "normalizar"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "b52279f8-b0f5-4160-a29a-9cc9379691be",
+      "name": "Loop Over Items1",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [7664, 6592]
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [7904, 6448],
+      "id": "15ac7cc6-2b13-49b3-b5e3-7aa3735a1243",
+      "name": "No Operation, do nothing5"
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "key": "={{ $('nomalizacao4').item.json.body.lead.id }}"
+      },
+      "id": "51227240-8669-4fd2-bfb9-e71aa1e497a2",
+      "name": "Delete Memory5",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [8160, 6448],
+      "credentials": {
+        "redis": {
+          "id": "QsvFD1QiFbvIQzJa",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.connect.lai.ia.br/api/webhook/ai-reply",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer aa1faaf1c02c3881b4cbdd348f81bd3e6e880f4a73c515fd9afbaeda43a29ec1"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  requestId: $('Webhook2').first().json.body?.body?.requestId ?? ('poswebinar_' + Date.now()),\n  conversationId: $('Webhook2').first().json.body?.body?.conversation?.id ?? null,\n  brandId: $('Webhook2').first().json.body?.body?.brand?.id ?? null,\n  status: 'success',\n  reply: {\n    content: $json.text ?? '',\n    type: 'text'\n  },\n  final: $json.final ?? false\n}) }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [7904, 6608],
+      "id": "df248576-bf16-41cd-9872-1bc1cc38f11a",
+      "name": "HTTP Request",
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 500
+    },
+    {
+      "parameters": {
+        "jsCode": "const texto = $('Loop Over Items1').first().json.text || '';\nconst final = $json.final;\nconst BASE_MS = 1000;\nconst MS_POR_CHAR = 35;\nconst MIN_MS = 2000;\nconst MAX_MS = 12000;\nlet espera = BASE_MS + (texto.length * MS_POR_CHAR);\nespera = Math.max(MIN_MS, Math.min(MAX_MS, espera));\nif (final === true) espera = 0;\nreturn [{ json: { text: texto, final, espera_ms: espera, espera_s: Math.round(espera / 100) / 10 } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [8064, 6608],
+      "id": "65a61f1d-9485-4fd1-aa85-ebeaa2c8f784",
+      "name": "Code in JavaScript8"
+    },
+    {
+      "parameters": {
+        "amount": "={{ $json.espera_s }}"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [8224, 6608],
+      "id": "b74b66f8-8f55-4af8-a58b-6c7159020f03",
+      "name": "Wait1",
+      "webhookId": "23885526-e66d-4d4d-af6f-e02d429480f4"
+    },
+    {
+      "parameters": {
+        "content": "## TRIGGER + COMANDOS",
+        "height": 800,
+        "width": 1200,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [2032, 6048],
+      "id": "de920a75-2a80-468d-9b61-0b9f45e150fe",
+      "name": "Sticky Trigger"
+    },
+    {
+      "parameters": {
+        "content": "## BUFFER DE MENSAGEM",
+        "height": 600,
+        "width": 1400,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [3328, 6528],
+      "id": "da100bbd-1e48-46a0-97b2-a5919008c1e7",
+      "name": "Sticky Buffer"
+    },
+    {
+      "parameters": {
+        "content": "## AGENTE POS-WEBINAR",
+        "height": 1752,
+        "width": 1000,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [6432, 5616],
+      "id": "7da7a177-bcf3-49de-a388-fb7a14dc858e",
+      "name": "Sticky Agente"
+    },
+    {
+      "parameters": {
+        "content": "## ENVIO + LOOP",
+        "height": 536,
+        "width": 1056,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [7440, 6400],
+      "id": "da185d5f-aa3e-4ba6-9e80-2a7452f0da49",
+      "name": "Sticky Envio"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Registra um dado coletado do lead no pos-webinar. Use sempre que o lead informar cidade_interesse, cidades_alternativas, capital (e se esta disponivel hoje), socio/decisores, ou tempo de implementacao. Uma chamada para cada dado, no momento em que o lead informa.",
+        "method": "POST",
+        "url": "https://primary-production-102a6.up.railway.app/webhook/lead",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"lead_id\": \"{{ $('nomalizacao4').item.json.body.lead.id }}\",\n  \"nome\": \"{{ $('nomalizacao4').item.json.nome }}\",\n  \"telefone\": \"{{ $('nomalizacao4').item.json.telefone }}\",\n  \"conversationId\": \"{{ $('Webhook2').item.json.body.conversation.id }}\",\n  \"campo\": \"{{ $fromAI('campo', 'cidade_interesse, cidades_alternativas, capital, socio ou tempo') }}\",\n  \"valor\": \"{{ $fromAI('valor', 'o valor informado pelo lead') }}\",\n  \"requestId\": \"{{ $('Webhook2').item.json.body.requestId }}\",\n  \"brandId\": \"{{ $('Webhook2').item.json.body.brand.id }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [6848, 5952],
+      "id": "e7cdae51-3ee2-4725-a395-57824c024f6b",
+      "name": "lead3"
+    },
+    {
+      "parameters": {
+        "public": true,
+        "options": {
+          "subtitle": "HTTP Request puro · sem AI Agent",
+          "title": "LAI · Teste Direto"
+        }
+      },
+      "id": "53fe43f1-05f2-4bba-aca5-9d29e4c309b1",
+      "name": "Chat_Trigger",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [5904, 1152],
+      "webhookId": "lai-http-direto-webhook"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://llm.lai.ia.br/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"sentinela-base\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"Você é um assistente cordial. Responda em português, de forma breve e natural. Sem HTML, sem markdown.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": {{ JSON.stringify($json.chatInput) }}\n    }\n  ],\n  \"temperature\": 0.3,\n  \"max_tokens\": 400\n}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          },
+          "timeout": 60000
+        }
+      },
+      "id": "653a7390-15f5-4443-8070-2a53af058be6",
+      "name": "LAI_Chat_Completions",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [7264, 1344],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "VarNfUkNYntbJx8z",
+          "name": "Header Auth account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ass-0001",
+              "name": "output",
+              "value": "={{ $json.choices?.[0]?.message?.content || ('[ERRO] ' + JSON.stringify($json)) }}",
+              "type": "string"
+            },
+            {
+              "id": "ass-0002",
+              "name": "model_returned",
+              "value": "={{ $json.model || 'n/a' }}",
+              "type": "string"
+            },
+            {
+              "id": "ass-0003",
+              "name": "usage",
+              "value": "={{ $json.usage || {} }}",
+              "type": "object"
+            },
+            {
+              "id": "ass-0004",
+              "name": "finish_reason",
+              "value": "={{ $json.choices?.[0]?.finish_reason || 'n/a' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "de7b87a7-32bc-4f42-8064-105b36e535e5",
+      "name": "Extrai_Resposta",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [6384, 1152]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "39f26c2c-37ab-417c-b4f3-f9d43e1e4b94",
+              "leftValue": "={{ $json.body.message.content }}",
+              "rightValue": "#atualiza",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [2336, 3408],
+      "id": "767a6d09-47be-4c3c-9a5c-dfb0f7163fba",
+      "name": "If8"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://primary-production-102a6.up.railway.app/webhook/atualiza",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [2496, 3184],
+      "id": "7b49cd63-70f0-4679-b0ea-e0de9cb417f6",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Alterar workflow type",
+        "method": "POST",
+        "url": "https://api.connect.lai.ia.br/api/webhook/workflow-type",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"lead_id\": \"{{ $('nomalizacao').item.json.body.lead.id }}\",\n  \"workflow_type\": 'CALL'\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [6864, 3680],
+      "id": "892e2324-f5d7-47a2-a5e0-c15f277c8de2",
+      "name": "Change Workflow Type",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "myaNgJUj5Uec4g1c",
+          "name": "Bearer Auth account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.connect.lai.ia.br/api/webhook/workflow-type",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"lead_id\": \"cd1ec2a9-6b84-4fca-b90b-73deeaa34cb6\",\n  \"workflow_type\": \"ABERTURA\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [7744, 3712],
+      "id": "1bdbcacc-eaeb-4b4b-bb37-f1950185be09",
+      "name": "HTTP Request3",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "myaNgJUj5Uec4g1c",
+          "name": "Bearer Auth account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "0ea1923f-cd18-4fc1-8da7-e8254299df04",
+              "leftValue": "={{ $json.body.lead.workflowType }}",
+              "rightValue": "ABERTURA",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [1504, 3392],
+      "id": "467c0bf2-f3b2-46ff-8ecd-298e90468a15",
+      "name": "If9"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://primary-production-102a6.up.railway.app/webhook/poswebinar",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"headers\": {\n    \"host\": {{ JSON.stringify($('input evolution').item.json.headers.host) }},\n    \"user-agent\": {{ JSON.stringify($('input evolution').item.json.headers['user-agent']) }},\n    \"content-length\": {{ JSON.stringify($('input evolution').item.json.headers['content-length']) }},\n    \"accept\": {{ JSON.stringify($('input evolution').item.json.headers.accept) }},\n    \"accept-encoding\": {{ JSON.stringify($('input evolution').item.json.headers['accept-encoding']) }},\n    \"content-type\": {{ JSON.stringify($('input evolution').item.json.headers['content-type']) }},\n    \"x-forwarded-for\": {{ JSON.stringify($('input evolution').item.json.headers['x-forwarded-for']) }},\n    \"x-forwarded-host\": {{ JSON.stringify($('input evolution').item.json.headers['x-forwarded-host']) }},\n    \"x-forwarded-proto\": {{ JSON.stringify($('input evolution').item.json.headers['x-forwarded-proto']) }},\n    \"x-railway-edge\": {{ JSON.stringify($('input evolution').item.json.headers['x-railway-edge']) }},\n    \"x-railway-request-id\": {{ JSON.stringify($('input evolution').item.json.headers['x-railway-request-id']) }},\n    \"x-real-ip\": {{ JSON.stringify($('input evolution').item.json.headers['x-real-ip']) }},\n    \"x-request-id\": {{ JSON.stringify($('input evolution').item.json.headers['x-request-id']) }},\n    \"x-request-start\": {{ JSON.stringify($('input evolution').item.json.headers['x-request-start']) }}\n  },\n  \"params\": {{ JSON.stringify($('input evolution').item.json.params) }},\n  \"query\": {{ JSON.stringify($('input evolution').item.json.query) }},\n  \"body\": {\n    \"requestId\": {{ JSON.stringify($('input evolution').item.json.body.requestId) }},\n    \"dispatchedAt\": {{ JSON.stringify($('input evolution').item.json.body.dispatchedAt) }},\n    \"brand\": {\n      \"id\": {{ JSON.stringify($('input evolution').item.json.body.brand.id) }},\n      \"name\": {{ JSON.stringify($('input evolution').item.json.body.brand.name) }}\n    },\n    \"conversation\": {\n      \"id\": {{ JSON.stringify($('input evolution').item.json.body.conversation.id) }},\n      \"ai_enabled\": {{ JSON.stringify($('input evolution').item.json.body.conversation.ai_enabled) }}\n    },\n    \"lead\": {\n      \"id\": {{ JSON.stringify($('input evolution').item.json.body.lead.id) }},\n      \"phone\": {{ JSON.stringify($('input evolution').item.json.body.lead.phone) }},\n      \"name\": {{ JSON.stringify($('input evolution').item.json.body.lead.name) }},\n      \"workflowType\": {{ JSON.stringify($('input evolution').item.json.body.lead.workflowType) }}\n    },\n    \"message\": {\n      \"id\": {{ JSON.stringify($('input evolution').item.json.body.message.id) }},\n      \"content\": {{ JSON.stringify($('input evolution').item.json.body.message.content) }},\n      \"receivedAt\": {{ JSON.stringify($('input evolution').item.json.body.message.receivedAt) }},\n      \"messageType\": {{ JSON.stringify($('input evolution').item.json.body.message.messageType) }},\n      \"attachment\": {{ JSON.stringify($('input evolution').item.json.body.message.attachment) }}\n    }\n  },\n  \"webhookUrl\": {{ JSON.stringify($('input evolution').item.json.webhookUrl) }},\n  \"executionMode\": {{ JSON.stringify($('input evolution').item.json.executionMode) }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [1776, 3584],
+      "id": "5f5daa18-52fa-4047-8871-b2afee78614d",
+      "name": "HTTP Request4"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "propertyName": "estado_atual",
+        "key": "=estado:{{ $('nomalizacao4').item.json.body.lead.id }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [5328, 6592],
+      "id": "51d21a96-39f8-4547-a095-808fe3b6bbd3",
+      "name": "Redis_Get_Estado1",
+      "credentials": {
+        "redis": {
+          "id": "QsvFD1QiFbvIQzJa",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "set",
+        "key": "=estado:{{ $('nomalizacao4').item.json.body.lead.id }}",
+        "value": "={{ $json.novo_estado }}"
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [6192, 6592],
+      "id": "5d9fa31b-5a51-4d28-8d93-98bc6f9d32df",
+      "name": "Set_Estado1",
+      "credentials": {
+        "redis": {
+          "id": "QsvFD1QiFbvIQzJa",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.agente }}",
+                    "rightValue": "vendedor",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "846d0119-f46a-4bd2-815d-2a15c2d2da89"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "vendedor"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.agente }}",
+                    "rightValue": "objecao",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "418740b1-1f18-430b-acd0-6bed775ff34a"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "objecao"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": 0
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [6336, 6592],
+      "id": "3df31c0b-37d8-43e8-bb4c-712fba93a90a",
+      "name": "Switch_Agente1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// entrada deste node = output do classificador (Ag_Saudacao1)\nconst inJson = $input.first().json;\nlet raw = inJson.output ?? inJson.text ?? '';\n\nlet parsed;\ntry {\n  raw = String(raw).replace(/```json|```/g, '').trim();\n  raw = raw.replace(/\\{\\{/g, '{').replace(/\\}\\}/g, '}');\n  parsed = JSON.parse(raw);\n} catch (e) {\n  parsed = { agente: 'vendedor', motivo: 'falha parse | raw=' + JSON.stringify(raw) };\n}\n\n// estado anterior, vindo do Redis\nconst est = ($('Redis_Get_Estado1').first().json.estado_atual || 'vendedor');\n\n// o que a IA classificou\nlet agente = ['vendedor', 'objecao'].includes(parsed.agente)\n  ? parsed.agente\n  : 'vendedor';\n\n// calcula o novo estado a ser salvo\n// objecao nao e um estado \"fixo\": guardamos vendedor para nao regredir\nconst novo = 'vendedor';\n\nreturn [{\n  json: {\n    agente,\n    novo_estado: novo,\n    estado_anterior: est,\n    motivo: parsed.motivo\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [6048, 6592],
+      "id": "d4061036-43eb-4ff3-b5ca-3405f1430a6d",
+      "name": "Code in JavaScript3"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT message\nFROM n8n_teste222222\nWHERE session_id = '{{ $('nomalizacao4').item.json.body.lead.id }}'\nORDER BY id DESC\nLIMIT 12;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [5456, 6592],
+      "id": "8abf9d51-fa76-4f3d-b41d-d546ac94e494",
+      "name": "Execute a SQL query9",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "eGAN0md4VDsvfL1M",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all();\n\n// fica só com linhas que realmente tem 'message'\nconst validas = rows.filter(r => r.json && r.json.message != null);\n\nconst ordered = validas.slice().reverse(); // cronológico\n\nconst linhas = ordered.map(r => {\n  let m = r.json.message;\n  if (typeof m === 'string') {\n    try { m = JSON.parse(m); } catch (e) { m = { type: 'human', content: String(m) }; }\n  }\n  // garante objeto valido\n  if (!m || typeof m !== 'object') {\n    m = { type: 'human', content: String(m ?? '') };\n  }\n  const quem = m.type === 'ai' ? 'Rafaela' : 'Lead';\n  return `${quem}: ${m.content ?? ''}`;\n});\n\nconst historico = linhas.join('\\n') || '(sem histórico ainda)';\n\nreturn [{ json: { historico } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [5600, 6592],
+      "id": "df94f6eb-ad71-4923-9db5-7ff369b420a3",
+      "name": "Code in JavaScript6"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [5744, 6800],
+      "id": "730ece7d-5c85-4885-a402-9ece6cce0823",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "fj3ICGCCsnafvssx",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Estado atual: {{ $('Redis_Get_Estado1').item.json.estado_atual || 'saudacao' }}\n\n=== HISTÓRICO DA CONVERSA (só para análise) ===\n{{ $json.historico }}\n=== FIM ===\n\nMensagem mais recente do lead: {{ $('nomalizacao4').item.json.Mensagem }}\n\nClassifique. Responda só o JSON.",
+        "options": {
+          "systemMessage": "Você é um classificador de intenção de uma conversa de vendas de franquia pelo WhatsApp. Sua única função é decidir qual agente deve responder. Você NUNCA conversa com o lead — sua única saída é um JSON.\n\nSua resposta deve ser EXATAMENTE neste formato:\n{{\"agente\":\"PALAVRA\",\"motivo\":\"FRASE CURTA\"}}\n\nExemplos de respostas corretas e completas:\n{{\"agente\":\"vendedor\",\"motivo\":\"lead informou a profissao\"}}\n{{\"agente\":\"vendedor\",\"motivo\":\"lead disse o capital que tem disponivel\"}}\n{{\"agente\":\"objecao\",\"motivo\":\"lead disse que tem medo de furto na loja\"}}\n{{\"agente\":\"objecao\",\"motivo\":\"lead disse que precisa falar com o socio antes\"}}\n\nAGENTES:\n1. \"vendedor\" — TODA a conversa de venda: interesse, perguntas sobre o negócio, diagnóstico, valores, próximos passos. É o estado padrão.\n2. \"objecao\" — Quando o lead, olhando o contexto da conversa, demonstra DÚVIDA, MEDO ou RECEIO, não entendeu algo, hesita, desconfia, reclama de preço, adia, ou condiciona a decisão a outra pessoa (sócio, cônjuge, família). Inclui medo de furto, medo de não dar certo, medo de perder dinheiro, insegurança sobre o modelo ou sobre a própria capacidade.\n\nETAPAS DO DIAGNÓSTICO — em qual agente cada assunto se encaixa:\n- Profissão / o que o lead faz hoje: vendedor\n- Capital inicial / valor disponível para investir: vendedor\n- Sócio ou parente envolvido na decisão, quando o lead apenas INFORMA, sem usar como freio: vendedor\n- Tempo / prazo de implementação / quando pretende começar: vendedor\n\nAtenção: se o lead usa o sócio/parente como FREIO (exemplo: \"preciso falar com meu sócio antes\", \"só decido depois de conversar com minha esposa\"), isso NÃO é diagnóstico — é objecao. Apenas informar que tem um sócio é vendedor.\n\nCOMO DECIDIR (use o histórico para interpretar, não só a última mensagem):\n- A última mensagem precisa ser lida no contexto do que foi conversado antes. Exemplo: \"não entendi\" ou \"como assim?\" só fazem sentido olhando a mensagem anterior da Rafaela — isso é objecao (dúvida).\n- Se o lead responde profissão, capital, sócio/parente, tempo de implementação, ou avança na conversa de venda de forma normal: vendedor.\n- Se o lead trava, duvida, não entende, hesita, freia, ou demonstra medo / receio / insegurança: objecao.\n\nREGRA DE DESEMPATE:\n- Em caso de dúvida entre vendedor e objecao: se o lead expressou qualquer incerteza, medo ou não-entendimento, escolha objecao; senão, vendedor.\n\nFORMATO DE SAÍDA — OBRIGATÓRIO:\nSua resposta é EXCLUSIVAMENTE um objeto JSON. Nada antes, nada depois. NÃO escreva frases soltas. NÃO explique fora do JSON. NÃO use markdown. NÃO use blocos de código.\n\nO JSON tem exatamente dois campos: \"agente\" (uma só palavra: vendedor ou objecao) e \"motivo\" (explicação curta em uma frase).\n\nSua resposta deve ser EXATAMENTE neste formato:\n{{\"agente\":\"PALAVRA\",\"motivo\":\"FRASE CURTA\"}}\n\nExemplos de respostas corretas e completas:\n{{\"agente\":\"vendedor\",\"motivo\":\"lead informou a profissao\"}}\n{{\"agente\":\"vendedor\",\"motivo\":\"lead disse o capital que tem disponivel\"}}\n{{\"agente\":\"objecao\",\"motivo\":\"lead disse que tem medo de furto na loja\"}}\n{{\"agente\":\"objecao\",\"motivo\":\"lead disse que precisa falar com o socio antes\"}}\n\nSe você responder qualquer coisa que NÃO comece com a chave de abertura e termine com a chave de fechamento, você FALHOU na tarefa. Responda agora SOMENTE o JSON."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [5744, 6592],
+      "id": "36d1ed35-99fc-4a89-9680-912a4424dc79",
+      "name": "Ag_Classificação1"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.mensagemm }}",
+        "options": {
+          "systemMessage": "= # FERRAMENTA OBRIGATÓRIA — base_shelf\n  Você tem a ferramenta `RAG_Objecao` (base oficial da Shelf: modelo, fundador, história, mercado, formatos, território, segurança, cases, objeções, valores).\n  ANTES de afirmar QUALQUER fato, número, história do fundador, caso ou diferencial, você é OBRIGADA a chamar `RAG_Objecao` e usar somente o que ela retornar.\n  Se `RAG_Objecao` não retornar o dado: NÃO invente — use o protocolo de VALOR/NÚMERO (convidar pro evento).\n  NUNCA responda fato factual sem ter chamado `RAG_Objecao` antes.\n\n# IDENTIDADE\n  Você é a Rafaela, consultora da 300 Franchising, no WhatsApp. O lead levantou uma OBJEÇÃO sobre a franquia Shelf (minimercado autônomo 24h). Objeção é SINAL DE INTERESSE, nunca um\n  ataque. Você acolhe, esclarece com fato real e reconduz ao funil — sem discutir, sem pressão, sem dizer que o lead está errado. JAMAIS revela ser IA.\n\n  # A OBJEÇÃO DECLARADA NEM SEMPRE É A REAL\n  Antes de responder, se houver ambiguidade, espelhe pra achar a causa-raiz:\n  - \"Quando você diz que está caro, é o valor total ou ainda não ficou claro o que está incluso?\"\n  - \"Quando você fala que vai pensar, o que exatamente você quer avaliar?\"\n  - \"Quando você diz que não conhece, o que você gostaria de confirmar primeiro?\"\n  - Fallback quando travar: \"Pra eu te orientar sem insistir errado: hoje o que mais te impede de avançar é dinheiro, tempo, confiança ou momento?\"\n\n  5. CTA: conduza ao próximo passo do funil (continuar conhecendo / evento / reunião com assessor) — UMA pergunta clara.\n\n  # OBJEÇÕES SHELF — conteúdo de referência (sempre confirme na base)\n  - Preço alto / \"quanto custa\": \"é um aporte relevante, por isso não se decide por mensagem; a Shelf tem formatos diferentes (Minimercado / Minimercado + Lavanderia) e o assessor\n  avalia seu perfil.\" Pergunta útil: \"o ponto é o valor total ou entender se há formato compatível com seu perfil?\"\n  - Sem experiência em varejo: \"o modelo é autoatendido, sem funcionário na loja, foi desenhado pra quem não vem do varejo; a rede apoia implantação e abastecimento.\"\n  - Concorrência / já tem mercado no prédio: \"cada franqueado tem exclusividade contratual sobre o condomínio; a rede não abre 2ª unidade no mesmo prédio; captação é prédio a prédio\n  com o síndico.\"\n  - Medo de furto: \"entrada por reconhecimento facial vinculado ao morador, cadastro validado pela administração do condomínio, câmeras 24h, app registra a compra na identidade do\n  comprador.\"\n  - Payback / retorno: \"varia por formato, região e tamanho do condomínio; pra não te passar número solto, o assessor mostra as faixas reais de perfis comparáveis. Quer que eu\n  encaminhe?\"\n  - \"É golpe / franquia séria?\": \"é franquia formal — COF atualizada pra análise antes de qualquer contrato, franqueadora com CNPJ ativo, marca em registro no INPI.\"\n  - \"Vou pensar / falar com sócio/cônjuge\": valide; ofereça que decidam juntos com a explicação certa; descubra o que falta pra ele se sentir seguro.\n\nOBRIGATÓRIO O LEAD INFORMAR O CAPITAL INICIAL E TEMPO DE IMPLEMENTAÇÃO, SEM ESSAS INFORMAÇÕES NÃO ACIONE A TOOL \"SITE\"\n\n\n# QUEBRA DE MENSAGEM\nPara soar como uma pessoa real digitando no WhatsApp, você pode dividir sua\nresposta em mensagens curtas separadas. Use o marcador || (duas barras) para\nindicar onde uma mensagem termina e a próxima começa.\n- Use a quebra quando a resposta tiver duas ideias distintas (ex: um acolhimento\n  + uma pergunta).\n- No máximo 2 ou 3 partes por resposta. Cada parte curta, 1-2 frases.\n- NÃO quebra a cada frase — só quando faz sentido natural, como uma pessoa faria.\n- O marcador || não deve aparecer no início nem no fim, só ENTRE as partes.\n- Exemplo: \"Ah, dentista é uma área que exige muita dedicação. || Me conta, o que\n  te fez começar a olhar uma franquia agora?\"\n\nA regra de máximo ~200 caracteres vale para CADA parte separada, não para o total.\n\n  # GUARDRAILS — NUNCA\n  Não prometa retorno/lucro. Não prometa prazo fixo de implantação. Não afirme que não existe furto/perda. Não diga que qualquer pessoa pode investir nem que é renda passiva garantida.\n   Não debata preço por mensagem. Não invente número, caso ou franqueado. Não oculte que a COF/contrato deve ser analisada com calma. NÃO envie o link do evento aqui, a menos que o\n  lead aceite explicitamente participar.\n\n  # ESTILO (regras duras)\n  - Português do Brasil natural, acolhedor, consultivo. Máx ~200 caracteres, 1 a 3 frases curtas, UMA pergunta por mensagem.\n  - PROIBIDO frases-fósseis/bordões automáticos e repetir frase literal. Sem pressão, sem urgência artificial, sem rotular o lead.\n\n  # REGRA EMOCIONAL (não negociável)\n  Gatilho emocional grave: acolha com calma e humanidade, sem citar CVV/saúde mental, sem encerrar, sem quebrar o funil; retome quando o tom permitir.\n\n\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [6704, 6784],
+      "id": "966f6412-7eca-480e-937e-cd128d2789ad",
+      "name": "Ag_Objecao1"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "options": {
+          "temperature": 0.6
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [6704, 6912],
+      "id": "22368b95-0057-4e0c-a5bb-96b9559acce8",
+      "name": "LM_Objecao1",
+      "credentials": {
+        "openAiApi": {
+          "id": "fj3ICGCCsnafvssx",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('nomalizacao').item.json.body.lead.id }}",
+        "tableName": "n8n_teste222222",
+        "contextWindowLength": 50
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [6848, 6928],
+      "id": "6d2bcbad-4cb2-47ae-b591-d6bf5c8fa327",
+      "name": "Mem_Objecao1",
+      "credentials": {
+        "postgres": {
+          "id": "eGAN0md4VDsvfL1M",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [6768, 7232],
+      "id": "e980f193-28d6-4112-b92e-b5914681a6ef",
+      "name": "Emb_Objecao1",
+      "credentials": {
+        "openAiApi": {
+          "id": "fj3ICGCCsnafvssx",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Base oficial da 300/Shelf: investimento, ROI, royalties, modelo, territorios, cases e objecoes. Consulte SEMPRE antes de citar qualquer numero/valor/prazo ou responder objecao.",
+        "tableName": "rafaela_rag",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePGVector",
+      "typeVersion": 1.3,
+      "position": [6768, 7104],
+      "id": "7c828477-a9ff-40bf-9328-bf7b3272598f",
+      "name": "RAG_Objecao1",
+      "credentials": {
+        "postgres": {
+          "id": "eGAN0md4VDsvfL1M",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "npw-1",
+              "name": "mensagemm",
+              "value": "={{ $('Code1').item.json.conversation }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [6544, 6784],
+      "id": "54ddbc8e-90c0-4080-b9a3-afe8bb73adbe",
+      "name": "nomalizacao_pw1"
+    }
+  ],
+  "pinData": {
+    "Webhook1": [
+      {
+        "json": {
+          "headers": {
+            "host": "primary-production-102a6.up.railway.app",
+            "user-agent": "n8n",
+            "content-length": "305",
+            "accept": "application/json,text/html,application/xhtml+xml,application/xml,text/*;q=0.9, image/*;q=0.8, */*;q=0.7",
+            "accept-encoding": "gzip, compress, deflate, br",
+            "content-type": "application/json",
+            "x-forwarded-for": "162.220.232.81",
+            "x-forwarded-host": "primary-production-102a6.up.railway.app",
+            "x-forwarded-proto": "https",
+            "x-railway-edge": "railway/us-west2",
+            "x-railway-request-id": "IClbJOFCSWyMwKIZ-_9nXA",
+            "x-real-ip": "162.220.232.81",
+            "x-request-start": "1779473876360"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "lead_id": "cd1ec2a9-6b84-4fca-b90b-73deeaa34cb6",
+            "nome": "Maju e Heinrich (Sistemas)",
+            "telefone": "554788028195",
+            "conversationId": "7c9f9356-f21c-4c8a-a90a-0287e2c365dd",
+            "campo": "profissao",
+            "valor": "pintor",
+            "requestId": "4cd894ef-c42b-4458-98e0-43a8db83e0c8",
+            "brandId": "0b9279a6-c8e8-458f-a28f-fbd8d3a416df"
+          },
+          "webhookUrl": "https://primary-production-102a6.up.railway.app/webhook/lead",
+          "executionMode": "production"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ],
+    "Webhook2": [
+      {
+        "json": {
+          "headers": {
+            "host": "primary-production-102a6.up.railway.app",
+            "user-agent": "n8n",
+            "content-length": "1195",
+            "accept": "application/json,text/html,application/xhtml+xml,application/xml,text/*;q=0.9, image/*;q=0.8, */*;q=0.7",
+            "accept-encoding": "gzip, compress, deflate, br",
+            "content-type": "application/json",
+            "x-forwarded-for": "162.220.232.81",
+            "x-forwarded-host": "primary-production-102a6.up.railway.app",
+            "x-forwarded-proto": "https",
+            "x-railway-edge": "railway/us-west2",
+            "x-railway-request-id": "n1EywxHaQTueBf0JxtoGcA",
+            "x-real-ip": "162.220.232.81",
+            "x-request-start": "1779480133698"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "headers": {
+              "host": "primary-production-102a6.up.railway.app",
+              "user-agent": "Bun/1.3.14",
+              "content-length": "526",
+              "accept": "*/*",
+              "accept-encoding": "gzip, deflate, br, zstd",
+              "content-type": "application/json",
+              "x-forwarded-for": "152.55.176.55",
+              "x-forwarded-host": "primary-production-102a6.up.railway.app",
+              "x-forwarded-proto": "https",
+              "x-railway-edge": "railway/us-west2",
+              "x-railway-request-id": "0dxV118HSbGS2WPi0_TJvA",
+              "x-real-ip": "152.55.176.55",
+              "x-request-id": "3a02a3ce-7155-4449-a007-69d89601f7d1",
+              "x-request-start": "1779480133393"
+            },
+            "params": {},
+            "query": {},
+            "body": {
+              "requestId": "3a02a3ce-7155-4449-a007-69d89601f7d1",
+              "dispatchedAt": "2026-05-22T20:02:13.331Z",
+              "brand": {
+                "id": "0b9279a6-c8e8-458f-a28f-fbd8d3a416df",
+                "name": "Shelf"
+              },
+              "conversation": {
+                "id": "7c9f9356-f21c-4c8a-a90a-0287e2c365dd",
+                "ai_enabled": true
+              },
+              "lead": {
+                "id": "cd1ec2a9-6b84-4fca-b90b-73deeaa34cb6",
+                "phone": "554788028195",
+                "name": "Maju e Heinrich (Sistemas)",
+                "workflowType": "CALL"
+              },
+              "message": {
+                "id": "9906fa07-3d0c-4216-aa22-b4ca3647622b",
+                "content": "oi",
+                "receivedAt": "2026-05-22T20:02:13.267Z",
+                "messageType": "text",
+                "attachment": null
+              }
+            },
+            "webhookUrl": "https://primary-production-102a6.up.railway.app/webhook/clinicare1",
+            "executionMode": "production"
+          },
+          "webhookUrl": "https://primary-production-102a6.up.railway.app/webhook/poswebinar",
+          "executionMode": "production"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ],
+    "input evolution": [
+      {
+        "json": {
+          "headers": {
+            "host": "primary-production-102a6.up.railway.app",
+            "user-agent": "Bun/1.3.14",
+            "content-length": "516",
+            "accept": "*/*",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "authorization": {
+              "__redacted": true,
+              "reason": "node_defined_field",
+              "canReveal": false
+            },
+            "content-type": "application/json",
+            "x-api-key": "E69cKMDh2HNfSk0ryD88cPvbfc2KUFVd",
+            "x-forwarded-for": "152.55.176.37",
+            "x-forwarded-host": "primary-production-102a6.up.railway.app",
+            "x-forwarded-proto": "https",
+            "x-railway-edge": "railway/us-west2",
+            "x-railway-request-id": "T2W2YDnHQGCCqldonpoFkQ",
+            "x-real-ip": "152.55.176.37",
+            "x-request-id": "caa8565a-b943-41a4-a901-2ca0352132c9",
+            "x-request-start": "1779482778601"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "requestId": "caa8565a-b943-41a4-a901-2ca0352132c9",
+            "dispatchedAt": "2026-05-22T20:46:18.598Z",
+            "brand": {
+              "id": "0b9279a6-c8e8-458f-a28f-fbd8d3a416df",
+              "name": "Shelf"
+            },
+            "conversation": {
+              "id": "4f04998c-aca3-48e7-bfe8-b71b4680960f",
+              "ai_enabled": true
+            },
+            "lead": {
+              "id": "c02805ca-2160-42d7-a02f-9508b85ea7c0",
+              "phone": "554991935657",
+              "name": "Sousa",
+              "workflowType": "ABERTURA"
+            },
+            "message": {
+              "id": "43c93dfd-a67f-456a-8952-80b0749bc3b8",
+              "content": "Joinville",
+              "receivedAt": "2026-05-22T20:46:18.518Z",
+              "messageType": "text",
+              "attachment": null
+            }
+          },
+          "webhookUrl": "https://primary-production-102a6.up.railway.app/webhook/clinicare1",
+          "executionMode": "production"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "connections": {
+    "input evolution": {
+      "main": [
+        [
+          {
+            "node": "If9",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filtra \"Text\"": {
+      "main": [
+        [
+          {
+            "node": "Grava variável \"text\"1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Grava variável \"text\"1": {
+      "main": [
+        [
+          {
+            "node": "Text Memory",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields8": {
+      "main": [
+        [
+          {
+            "node": "Compara Get Memory",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "nomalizacao": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compara Get Memory": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Text Memory": {
+      "main": [
+        [
+          {
+            "node": "Get Memory ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Memory 3": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields8",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Memory ": {
+      "main": [
+        [
+          {
+            "node": "Wait20",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait20": {
+      "main": [
+        [
+          {
+            "node": "Get Memory 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Redis_Get_Estado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Filtra \"Text\"",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "nomalizacao",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Postgres PGVector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Postgres PGVector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Postgres PGVector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Redis_Get_Estado": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set_Estado": {
+      "main": [
+        [
+          {
+            "node": "Switch_Agente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch_Agente": {
+      "main": [
+        [
+          {
+            "node": "nomalizacao1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "nomalizacao2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "nomalizacao3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ag_Saudacao": {
+      "main": [
+        [
+          {
+            "node": "normalizar1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ag_Vendedor": {
+      "main": [
+        [
+          {
+            "node": "normalizar1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ag_Objecao": {
+      "main": [
+        [
+          {
+            "node": "normalizar1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LM_Saudacao": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Ag_Saudacao",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mem_Saudacao": {
+      "ai_memory": [
+        [
+          {
+            "node": "Ag_Saudacao",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LM_Vendedor": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Ag_Vendedor",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mem_Vendedor": {
+      "ai_memory": [
+        [
+          {
+            "node": "Ag_Vendedor",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RAG_Vendedor": {
+      "ai_tool": [
+        [
+          {
+            "node": "Ag_Vendedor",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Emb_Vendedor": {
+      "ai_embedding": [
+        [
+          {
+            "node": "RAG_Vendedor",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "site": {
+      "ai_tool": [
+        [
+          {
+            "node": "Ag_Vendedor",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LM_Objecao": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Ag_Objecao",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mem_Objecao": {
+      "ai_memory": [
+        [
+          {
+            "node": "Ag_Objecao",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RAG_Objecao": {
+      "ai_tool": [
+        [
+          {
+            "node": "Ag_Objecao",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Emb_Objecao": {
+      "ai_embedding": [
+        [
+          {
+            "node": "RAG_Objecao",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Set_Estado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "nomalizacao1": {
+      "main": [
+        [
+          {
+            "node": "Ag_Saudacao",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "nomalizacao2": {
+      "main": [
+        [
+          {
+            "node": "Ag_Vendedor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "nomalizacao3": {
+      "main": [
+        [
+          {
+            "node": "Ag_Objecao",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "Ag_Classificação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook1": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "lead": {
+      "ai_tool": [
+        [
+          {
+            "node": "Ag_Vendedor",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query2": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Execute a SQL query4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query3": {
+      "main": [[]]
+    },
+    "Execute a SQL query5": {
+      "main": [[]]
+    },
+    "If3": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query6",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If8",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query6": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query7": {
+      "main": [
+        [
+          {
+            "node": "Delete Memory",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete Memory": {
+      "main": [
+        [
+          {
+            "node": "Delete Memory1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Ag_Classificação",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "normalizar1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "No Operation, do nothing4",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "No Operation, do nothing4": {
+      "main": [
+        [
+          {
+            "node": "Delete Memory3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request7": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ag_Classificação": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If4": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query8",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query8": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript4": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request8",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "lead1": {
+      "ai_tool": [
+        [
+          {
+            "node": "Ag_Saudacao",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript5": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query": {
+      "main": [[]]
+    },
+    "Webhook2": {
+      "main": [
+        [
+          {
+            "node": "If6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If6": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query12",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query12": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript7": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request9",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If5": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query10",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query10": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query11",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query11": {
+      "main": [
+        [
+          {
+            "node": "Delete Memory2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete Memory2": {
+      "main": [
+        [
+          {
+            "node": "Delete Memory4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If7": {
+      "main": [
+        [
+          {
+            "node": "Switch1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Marca viu_webinar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Marca viu_webinar": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch1": {
+      "main": [
+        [
+          {
+            "node": "nomalizacao4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "nomalizacao4": {
+      "main": [
+        [
+          {
+            "node": "If2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If2": {
+      "main": [
+        [
+          {
+            "node": "Filtra \"Text\"1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Operation, do nothing1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filtra \"Text\"1": {
+      "main": [
+        [
+          {
+            "node": "Grava variável \"text\"",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Grava variável \"text\"": {
+      "main": [
+        [
+          {
+            "node": "Text Memory1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Text Memory1": {
+      "main": [
+        [
+          {
+            "node": "Get Memory 1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Memory 1": {
+      "main": [
+        [
+          {
+            "node": "Wait21",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait21": {
+      "main": [
+        [
+          {
+            "node": "Get Memory 4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Memory 4": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Compara Get Memory1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compara Get Memory1": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "Redis_Get_Estado1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "nomalizacao_pw": {
+      "main": [
+        [
+          {
+            "node": "Ag_PosWebinar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LM_PosWebinar": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Ag_PosWebinar",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mem_PosWebinar": {
+      "ai_memory": [
+        [
+          {
+            "node": "Ag_PosWebinar",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Emb_PosWebinar": {
+      "ai_embedding": [
+        [
+          {
+            "node": "RAG_Shelf",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RAG_Shelf": {
+      "ai_tool": [
+        [
+          {
+            "node": "Ag_PosWebinar",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "qualificacao_status": {
+      "ai_tool": [
+        [
+          {
+            "node": "Ag_PosWebinar",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "agendar_reuniao": {
+      "ai_tool": [
+        [
+          {
+            "node": "Ag_PosWebinar",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ag_PosWebinar": {
+      "main": [
+        [
+          {
+            "node": "normalizar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "normalizar": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items1": {
+      "main": [
+        [
+          {
+            "node": "No Operation, do nothing5",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "No Operation, do nothing5": {
+      "main": [
+        [
+          {
+            "node": "Delete Memory5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript8",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript8": {
+      "main": [
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "lead3": {
+      "ai_tool": [
+        [
+          {
+            "node": "Ag_PosWebinar",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chat_Trigger": {
+      "main": [[]]
+    },
+    "LAI_Chat_Completions": {
+      "main": [[]]
+    },
+    "If8": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Change Workflow Type": {
+      "ai_tool": [
+        [
+          {
+            "node": "Ag_Vendedor",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If9": {
+      "main": [
+        [
+          {
+            "node": "If4",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Redis_Get_Estado1": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query9",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set_Estado1": {
+      "main": [
+        [
+          {
+            "node": "Switch_Agente1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript3": {
+      "main": [
+        [
+          {
+            "node": "Set_Estado1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query9": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript6": {
+      "main": [
+        [
+          {
+            "node": "Ag_Classificação1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Ag_Classificação1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ag_Classificação1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch_Agente1": {
+      "main": [
+        [
+          {
+            "node": "nomalizacao_pw",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "nomalizacao_pw1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LM_Objecao1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Ag_Objecao1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mem_Objecao1": {
+      "ai_memory": [
+        [
+          {
+            "node": "Ag_Objecao1",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Emb_Objecao1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "RAG_Objecao1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RAG_Objecao1": {
+      "ai_tool": [
+        [
+          {
+            "node": "Ag_Objecao1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "nomalizacao_pw1": {
+      "main": [
+        [
+          {
+            "node": "Ag_Objecao1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ag_Objecao1": {
+      "main": [
+        [
+          {
+            "node": "normalizar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "a7122201-32c1-4b27-b32b-efade7659c3c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "d5de2ae6c616048ec30a28fb7f1be9cbf4fc71b3c3c957b51411f2077a6797ce"
+  },
+  "id": "dKJDdnfU3ez9kDqm",
+  "tags": []
+}

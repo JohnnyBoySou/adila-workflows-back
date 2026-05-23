@@ -1,0 +1,16 @@
+# Config do serviço worker (consome filas `workflows` e `cron-scheduler`).
+#
+# Aponta o serviço Railway para este arquivo via:
+#   RAILWAY_CONFIG_FILE=railway.worker.toml
+# (definir no painel do Railway, em "Service > Settings > Config-as-Code").
+#
+# Não tem healthcheck — worker não escuta HTTP. Re-resync dos cron triggers
+# acontece no boot do worker.ts.
+
+[build]
+builder = "NIXPACKS"
+
+[deploy]
+startCommand = "bun run start:worker"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5
