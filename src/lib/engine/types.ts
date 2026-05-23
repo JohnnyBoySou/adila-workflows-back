@@ -34,6 +34,11 @@ export const nodeTypes = [
   "sticky_note",
   "container",
   "respond_to_webhook",
+  "date_time",
+  "crypto",
+  "item_lists",
+  "aggregate",
+  "execute_workflow",
 ] as const;
 export type NodeType = (typeof nodeTypes)[number];
 
@@ -84,6 +89,21 @@ export interface ExecutionContext {
    * Não usar fora deles — não é parte do template engine.
    */
   loopState?: Record<NodeId, { cursor: number; items: unknown[] }>;
+  /**
+   * Callback injetado pelo worker pra `execute_workflow` invocar sub-runs.
+   * Não é template-visível — handlers chamam direto. Ausente fora do worker
+   * (ex: testes unitários do executor); o handler falha cedo nesse caso.
+   */
+  subWorkflowRunner?: (args: {
+    workflowId: string;
+    input: Record<string, unknown>;
+    environmentId: string | null;
+    timeoutMs: number;
+  }) => Promise<{
+    runId: string;
+    status: "success" | "failed" | "cancelled" | "timeout";
+    output?: Record<string, unknown>;
+  }>;
 }
 
 /**

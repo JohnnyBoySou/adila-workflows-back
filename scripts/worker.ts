@@ -20,6 +20,8 @@ import {
   createWorkflowWorker,
   type CronTriggerJob,
   type WorkflowJob,
+  workflowQueue,
+  workflowQueueEvents,
 } from "../src/lib/queue";
 
 const workflowLog = logger.child({ component: "workflow-worker" });
@@ -67,6 +69,12 @@ async function processWorkflow(job: Job<WorkflowJob>) {
       definition,
       input: input ?? {},
       env: variables,
+      subWorkflowRunner: (args) =>
+        runSubWorkflow({
+          parentOrganizationId: organizationId,
+          parentRunId: runId,
+          ...args,
+        }),
       // Polling cooperativo do flag `cancelRequested` entre nós.
       checkCancelled: async () => {
         const r = await workflowRunsRepository.findByIdRaw(runId);
@@ -121,6 +129,61 @@ async function processWorkflow(job: Job<WorkflowJob>) {
     log.error({ err: payload }, "failed");
     throw err;
   }
+}
+
+// ── Sub-workflow runner ───────────────────────────────────────────────
+// Injetado no `executeRun` pra o nó `execute_workflow`. Mesma org do pai
+// (segurança: não cruza tenants). Espera síncrono via QueueEvents +
+// timeout opaco — esgotado o tempo, retorna status "timeout" e o sub-run
+// continua rodando em background (não cancelamos).
+interface SubRunArgs {
+  parentOrganizationId: string;
+  parentRunId: string;
+  workflowId: string;
+  input: Record<string, unknown>;
+  environmentId: string | null;
+  timeoutMs: number;
+}
+
+async function runSubWorkflow(args: SubRunArgs) {
+  const log = workflowLog.child({
+    parentRunId: args.parentRunId,
+    subWorkflowId: args.workflowId,
+  });
+
+  const enqueued = await workflowsController.run(args.parentOrganizationId, args.workflowId, null, {
+    environmentId: args.environmentId,
+    input: args.input,
+  });
+  if ("error" in enqueued) {
+    throw new Error(`execute_workflow: ${enqueued.error}`);
+  }
+
+  const jobId = enqueued.jobId;
+  if (!jobId) throw new Error("execute_workflow: sub-job sem id");
+
+  log.info({ subRunId: enqueued.runId, jobId }, "sub-workflow enqueued");
+
+  try {
+    const job = await workflowQueue.getJob(jobId);
+    if (!job) throw new Error(`execute_workflow: job ${jobId} sumiu antes de waitUntilFinished`);
+    await job.waitUntilFinished(workflowQueueEvents, args.timeoutMs);
+  } catch (err) {
+    const msg = (err as Error).message ?? "";
+    if (msg.includes("timed out") || msg.includes("timeout")) {
+      log.warn({ subRunId: enqueued.runId }, "sub-workflow timeout");
+      return { runId: enqueued.runId, status: "timeout" as const };
+    }
+    // Falha do sub: continua pra coletar o status real (failed/cancelled) do DB.
+  }
+
+  const finalRun = await workflowRunsRepository.findByIdRaw(enqueued.runId);
+  const status = (finalRun?.status ?? "failed") as "success" | "failed" | "cancelled";
+  const output =
+    finalRun?.output && typeof finalRun.output === "object"
+      ? (finalRun.output as Record<string, unknown>)
+      : {};
+  return { runId: enqueued.runId, status, output };
 }
 
 const workflowWorker = createWorkflowWorker(processWorkflow);

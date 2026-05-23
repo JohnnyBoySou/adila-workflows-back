@@ -356,7 +356,128 @@ export type MappedType =
   | "vector_store"
   | "chat_memory"
   | "document_loader"
-  | "sticky_note";
+  | "sticky_note"
+  | "date_time"
+  | "crypto"
+  | "item_lists"
+  | "aggregate"
+  | "execute_workflow";
+
+function translateDateTime({ params, nameToId }: Ctx): Params {
+  // n8n dateTime: action + (value/format/unit/amount/from/to)
+  const action = String(params.action ?? params.operation ?? "now");
+  // n8n usa nomes como "format" e "calculate" — normalizamos pro nosso vocabulário.
+  const opMap: Record<string, string> = {
+    now: "now",
+    parse: "parse",
+    format: "format",
+    formatDate: "format",
+    add: "add",
+    subtract: "add",
+    calculate: "add",
+    diff: "diff",
+    getTimeBetweenDates: "diff",
+  };
+  const operation = opMap[action] ?? action;
+
+  const value = rewriteDeep(params.value ?? params.date ?? "", nameToId);
+  const cfg: Params = { operation };
+  if (operation === "format") {
+    cfg.value = value;
+    cfg.format = typeof params.format === "string" ? params.format : "YYYY-MM-DD HH:mm:ss";
+  } else if (operation === "add") {
+    cfg.value = value;
+    // n8n grava "subtract" → amount negativo.
+    const amountRaw = Number(params.amount ?? 0);
+    cfg.amount = action === "subtract" ? -amountRaw : amountRaw;
+    cfg.unit = typeof params.unit === "string" ? params.unit : "seconds";
+  } else if (operation === "diff") {
+    cfg.from = rewriteDeep(params.from ?? params.startDate, nameToId);
+    cfg.to = rewriteDeep(params.to ?? params.endDate, nameToId);
+  } else if (operation === "parse") {
+    cfg.value = value;
+  }
+  return cfg;
+}
+
+function translateCrypto({ params, nameToId }: Ctx): Params {
+  const action = String(params.action ?? "hash");
+  // n8n: "hash" | "hmac" | "generate" (uuid|random)
+  if (action === "generate") {
+    const type = String(params.type ?? "uuid");
+    return type === "uuid" ? { operation: "uuid" } : { operation: "random" };
+  }
+  const value = rewriteDeep(params.value ?? "", nameToId);
+  const algo = String(params.type ?? params.algorithm ?? "sha256").toLowerCase();
+  const encoding = String(params.encoding ?? "hex").toLowerCase();
+  if (action === "hmac") {
+    return {
+      operation: "hmac",
+      algorithm: algo,
+      value,
+      secret: rewriteDeep(params.secret ?? "", nameToId),
+      encoding,
+    };
+  }
+  return { operation: "hash", algorithm: algo, value, encoding };
+}
+
+function translateItemLists({ params, nameToId }: Ctx): Params {
+  // n8n itemLists: operation = "splitOutItems" | "concatenateItems" | "limit" |
+  //                "sort" | "removeDuplicates" | "summarize" (alguns versions).
+  const op = String(params.operation ?? "filter");
+  const items = rewriteDeep(params.items ?? params.fieldToSplitOut ?? [], nameToId);
+  if (op === "limit") {
+    return { operation: "slice", items, end: Number(params.maxItems ?? 10) };
+  }
+  if (op === "sort" || op === "sortItems") {
+    return {
+      operation: "sort",
+      items,
+      field: typeof params.fieldName === "string" ? params.fieldName : undefined,
+      order: params.order === "descending" ? "desc" : "asc",
+    };
+  }
+  if (op === "removeDuplicates") {
+    return {
+      operation: "distinct",
+      items,
+      field: typeof params.fieldName === "string" ? params.fieldName : undefined,
+    };
+  }
+  // splitOutItems / concatenateItems / etc não têm equivalente direto — preserva.
+  return { operation: op, items, _n8n: params };
+}
+
+function translateAggregate({ params, nameToId }: Ctx): Params {
+  // n8n aggregate: aggregate = "aggregateIndividualFields" | "aggregateAllItemData"
+  const items = rewriteDeep(params.items ?? [], nameToId);
+  const fields = (params.fieldsToAggregate as Params | undefined)?.fieldToAggregate;
+  if (Array.isArray(fields) && fields.length > 0) {
+    const f = fields[0] as Params;
+    return {
+      operation: "sum",
+      items,
+      field: typeof f.fieldToAggregate === "string" ? f.fieldToAggregate : "",
+    };
+  }
+  return { operation: "count", items };
+}
+
+function translateExecuteWorkflow({ params, nameToId }: Ctx): Params {
+  // n8n armazena o id como string OU como objeto { mode, value }.
+  let workflowId = "";
+  if (typeof params.workflowId === "string") workflowId = params.workflowId;
+  else if (params.workflowId && typeof params.workflowId === "object") {
+    const wf = params.workflowId as Params;
+    if (typeof wf.value === "string") workflowId = wf.value;
+  }
+  return {
+    workflowId,
+    input: rewriteDeep(params.workflowInputs ?? {}, nameToId),
+    _n8n_note: "Cole o uuid do sub-workflow no campo `workflowId` (mapeie do id do n8n).",
+  };
+}
 
 function translateStickyNote({ params }: Ctx): Params {
   // n8n stickyNote.parameters: { content (markdown), height, width, color (number 1-7) }
@@ -390,6 +511,11 @@ const TRANSLATORS: Record<MappedType, (ctx: Ctx) => Params> = {
   chat_memory: translateChatMemory,
   document_loader: translateDocumentLoader,
   sticky_note: translateStickyNote,
+  date_time: translateDateTime,
+  crypto: translateCrypto,
+  item_lists: translateItemLists,
+  aggregate: translateAggregate,
+  execute_workflow: translateExecuteWorkflow,
 };
 
 /**

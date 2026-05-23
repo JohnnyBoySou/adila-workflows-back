@@ -21,6 +21,9 @@ import type {
   WorkflowEdge,
   WorkflowNode,
 } from "./types";
+
+/** Tipo do callback de sub-workflow — espelha o de `ExecutionContext`. */
+type SubWorkflowRunner = NonNullable<ExecutionContext["subWorkflowRunner"]>;
 import { nodeTypes, visualNodeTypes } from "./types";
 
 // Suporta loops controlados (split_in_batches). 1000 cobre arrays típicos;
@@ -65,6 +68,11 @@ export interface RunExecutionInput {
    * não interrompem a execução.
    */
   onStepEvent?: (event: StepEvent) => void | Promise<void>;
+  /**
+   * Permite ao nó `execute_workflow` invocar sub-runs. Injetado pelo
+   * worker (orquestrador real); ausente em testes do executor puro.
+   */
+  subWorkflowRunner?: SubWorkflowRunner;
 }
 
 export interface RunExecutionResult {
@@ -159,6 +167,7 @@ export async function executeRun(args: RunExecutionInput): Promise<RunExecutionR
     env: args.env ?? {},
     steps: {},
     loopState: {},
+    subWorkflowRunner: args.subWorkflowRunner,
   };
 
   const byId = new Map(def.nodes.map((n) => [n.id, n]));

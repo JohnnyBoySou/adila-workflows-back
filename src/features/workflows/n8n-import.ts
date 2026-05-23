@@ -78,6 +78,11 @@ const TYPE_MAP: Record<string, MappedType> = {
   "@n8n/n8n-nodes-langchain.memoryPostgresChat": "chat_memory",
   "@n8n/n8n-nodes-langchain.documentDefaultDataLoader": "document_loader",
   "n8n-nodes-base.stickyNote": "sticky_note",
+  "n8n-nodes-base.dateTime": "date_time",
+  "n8n-nodes-base.crypto": "crypto",
+  "n8n-nodes-base.itemLists": "item_lists",
+  "n8n-nodes-base.aggregate": "aggregate",
+  "n8n-nodes-base.executeWorkflow": "execute_workflow",
 };
 
 // Tipos puramente visuais — descartados no import (nenhum hoje, ficou só
