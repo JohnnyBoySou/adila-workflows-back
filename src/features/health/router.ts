@@ -51,6 +51,7 @@ async function checkRedis(): Promise<{ ok: true } | { ok: false; error: string }
 
 export const healthRouter = new Elysia()
   .get("/livez", () => ({ status: "ok" }))
+  .get("/health", () => ({ status: "ok" }))
 
   .get("/readyz", async ({ status }) => {
     const [database, redis] = await Promise.all([checkDb(), checkRedis()]);
