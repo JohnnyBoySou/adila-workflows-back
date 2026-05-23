@@ -7,9 +7,7 @@
 # e REDIS_URL via referência de variável.
 
 [build]
-builder = "NIXPACKS"
-# Bun é forçado pelo `nixpacks.toml` na raiz — sem ele, o auto-detect cai
-# no provider Node por causa do `package.json` e pega Node 18 (EOL).
+builder = "RAILPACK"
 
 [deploy]
 startCommand = "bun run start"
