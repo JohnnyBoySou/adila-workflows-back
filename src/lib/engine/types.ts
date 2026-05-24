@@ -40,6 +40,47 @@ export const nodeTypes = [
   "item_lists",
   "aggregate",
   "execute_workflow",
+  "filter",
+  "sort",
+  "limit",
+  "remove_duplicates",
+  "merge",
+  "split_out",
+  "compare_datasets",
+  "rename_keys",
+  "edit_fields",
+  "json",
+  "xml",
+  "csv",
+  "html_extract",
+  "markdown",
+  "text_manipulation",
+  "math",
+  "shuffle",
+  "schedule_trigger",
+  "interval_trigger",
+  "email_trigger",
+  "form_trigger",
+  "chat_trigger",
+  "error_trigger",
+  "workflow_called_trigger",
+  "rss_trigger",
+  "postgres_trigger",
+  "redis_trigger",
+  "email_send",
+  "slack_webhook",
+  "discord_webhook",
+  "telegram_send",
+  "template",
+  "yaml",
+  "jwt",
+  "url_tools",
+  "uuid",
+  "random",
+  "compression",
+  "s3",
+  "pdf_extract",
+  "websocket",
 ] as const;
 export type NodeType = (typeof nodeTypes)[number];
 
@@ -49,6 +90,26 @@ export type NodeType = (typeof nodeTypes)[number];
  * start e qualquer aresta apontando pra eles é tratada como no-op.
  */
 export const visualNodeTypes = new Set<NodeType>(["sticky_note", "container"]);
+
+/**
+ * Tipos de nó que são entry points do workflow. Usado por `findStart()` para
+ * eleger o primeiro nó a executar e pelos pollers/listeners para enumerar
+ * trigger types reconhecidos.
+ */
+export const TRIGGER_NODE_TYPES = new Set<NodeType>([
+  "start",
+  "webhook_trigger",
+  "schedule_trigger",
+  "interval_trigger",
+  "email_trigger",
+  "form_trigger",
+  "chat_trigger",
+  "error_trigger",
+  "workflow_called_trigger",
+  "rss_trigger",
+  "postgres_trigger",
+  "redis_trigger",
+]);
 
 export interface WorkflowNode {
   id: NodeId;

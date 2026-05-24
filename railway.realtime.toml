@@ -1,0 +1,24 @@
+# Config do serviço realtime (WebSocket gateway de colaboração).
+#
+# Aponta o serviço Railway para este arquivo via:
+#   RAILWAY_CONFIG_FILE=railway.realtime.toml
+# (definir no painel do Railway, em "Service > Settings > Config-as-Code").
+#
+# IMPORTANTE — escalabilidade:
+#   WebSocket é stateful. Mantenha 1 réplica por enquanto. Para escalar:
+#     - rotear por hash(workflowId) com sticky sessions, OU
+#     - fazer o `CollaborationGateway` publicar/assinar via Redis pub/sub
+#       para que qualquer réplica receba qualquer cliente.
+
+[build]
+builder = "RAILPACK"
+
+[deploy]
+startCommand = "bun run start:realtime"
+# Healthcheck simples — o Elysia responde 404 na raiz, mas dá 200 num path
+# que existe. Como o gateway é só /ws + /presence, podemos usar este último.
+# Se preferir não checar, remova as duas linhas abaixo.
+healthcheckPath = "/health"
+healthcheckTimeout = 30
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5

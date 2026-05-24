@@ -3,7 +3,7 @@ import { foldersRepository } from "../folders/repository";
 import { workflowRunsRepository } from "../workflow-runs/repository";
 import { workflowVersionsController } from "../workflow-versions/controller";
 import { workflowVersionsRepository } from "../workflow-versions/repository";
-import { workflowQueue } from "../../lib/queue";
+import { pickLaneForDefinition, workflowQueues } from "../../lib/queue";
 import { importN8nWorkflow } from "./n8n-import";
 import { workflowsRepository } from "./repository";
 import type {
@@ -106,6 +106,8 @@ export const workflowsController = {
        */
       workflowVersionId?: string | null;
       queuePriority?: number;
+      /** Trigger que está disparando este run (webhook/cron/etc). */
+      triggerId?: string | null;
     } = {},
   ) {
     const workflow = await workflowsRepository.findById(organizationId, id);
@@ -119,6 +121,13 @@ export const workflowsController = {
     // Resolve a versão imutável que vai rodar:
     //  - opts.workflowVersionId setado → busca direto (modo "pinned by trigger")
     //  - senão → latest published, ou auto-publica a v1 com o draft atual
+    //
+    // IMPORTANTE: sem `opts.workflowVersionId` e sem promote prévio do trigger,
+    // `ensureLatest` devolve a ÚLTIMA versão publicada — NÃO o draft atual.
+    // Se o usuário editou o workflow depois de publicar v3 e dispara via
+    // cron/webhook sem trigger pinado, roda v3 — não as edições. Esse é o
+    // contrato: dispatch automático = sempre versão imutável. Edições não
+    // publicadas só disparam via "test run" no editor (caminho separado).
     let version: { id: string };
     if (opts.workflowVersionId) {
       const pinned = await workflowVersionsRepository.findByIdRaw(opts.workflowVersionId);
@@ -144,10 +153,16 @@ export const workflowsController = {
       status: "queued",
       input: opts.input ?? {},
       triggeredBy,
+      triggerId: opts.triggerId ?? null,
       queuePriority: opts.queuePriority ?? 5,
     });
 
-    const job = await workflowQueue.add(
+    // Roteia o run para a lane apropriada (default/heavy/scraping) baseado
+    // nos node-types do grafo. Permite que workers externos (ex.: Go) consumam
+    // lanes específicas sem que o caller precise saber disso.
+    const lane = pickLaneForDefinition(workflow.definition);
+    const targetQueue = workflowQueues[lane];
+    const job = await targetQueue.add(
       "execute",
       {
         runId: run.id,

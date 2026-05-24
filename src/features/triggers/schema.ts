@@ -28,16 +28,61 @@ const cronFields = {
 
 // Campos específicos de webhook — `responseMode: sync` faz o endpoint /hooks/:token
 // aguardar o run terminar e devolver o output (ou um `respond_to_webhook` node).
+const webhookMethodEnum = t.Union([
+  t.Literal("POST"),
+  t.Literal("GET"),
+  t.Literal("PUT"),
+  t.Literal("PATCH"),
+  t.Literal("DELETE"),
+]);
+
 const webhookFields = {
   webhookResponseMode: t.Optional(t.Union([t.Literal("async"), t.Literal("sync")])),
   webhookResponseTimeoutMs: t.Optional(t.Integer({ minimum: 1000, maximum: 120_000 })),
+  /** Métodos HTTP aceitos no endpoint público. Default ['POST']. */
+  allowedMethods: t.Optional(t.Array(webhookMethodEnum, { minItems: 1, maxItems: 5 })),
+  /** Segredo HMAC. Null/undefined remove a exigência de assinatura. */
+  hmacSecret: t.Optional(t.Union([t.String({ minLength: 16, maxLength: 256 }), t.Null()])),
 };
 
+// Config de `interval_trigger`. Validado estritamente porque o scheduler
+// usa esses valores no upsert do BullMQ.
+const intervalConfig = t.Object({
+  every: t.Integer({ minimum: 1 }),
+  unit: t.Union([
+    t.Literal("seconds"),
+    t.Literal("minutes"),
+    t.Literal("hours"),
+    t.Literal("days"),
+  ]),
+});
+
+// Para os triggers cujo dispatch ainda não foi implementado, aceitamos a
+// criação com config opaco — o registro fica armazenado e o poller/listener
+// vai consumi-lo quando a Fase 3+ chegar.
+const opaqueConfig = t.Record(t.String(), t.Unknown());
+
 // Body de criação: union discriminada por `type`.
-// Cron exige cronExpression; webhook ignora ambos.
 export const createTriggerBody = t.Union([
   t.Object({ type: t.Literal("cron"), ...baseFields, ...cronFields }),
   t.Object({ type: t.Literal("webhook"), ...baseFields, ...webhookFields }),
+  t.Object({ type: t.Literal("interval_trigger"), ...baseFields, config: intervalConfig }),
+  // Tipos com dispatch ainda pendente — registramos a config como blob livre.
+  t.Object({
+    type: t.Union([
+      t.Literal("schedule_trigger"),
+      t.Literal("email_trigger"),
+      t.Literal("form_trigger"),
+      t.Literal("chat_trigger"),
+      t.Literal("error_trigger"),
+      t.Literal("workflow_called_trigger"),
+      t.Literal("rss_trigger"),
+      t.Literal("postgres_trigger"),
+      t.Literal("redis_trigger"),
+    ]),
+    ...baseFields,
+    config: t.Optional(opaqueConfig),
+  }),
 ]);
 
 export const updateTriggerBody = t.Object({
@@ -49,6 +94,9 @@ export const updateTriggerBody = t.Object({
   // Atualizar cron só faz sentido em triggers do tipo cron — validamos no controller.
   cronExpression: t.Optional(t.String({ minLength: 1, maxLength: 120 })),
   timezone: t.Optional(t.String({ maxLength: 64 })),
+  // Patch parcial da config — o controller faz merge com a config atual.
+  // Validação estrita por tipo é responsabilidade do controller.
+  config: t.Optional(opaqueConfig),
   ...webhookFields,
 });
 

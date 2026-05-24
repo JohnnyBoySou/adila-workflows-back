@@ -1,11 +1,13 @@
 import { Elysia } from "elysia";
 import { requireOrganization, requireRole } from "../../lib/auth-middleware";
 import { auditLog } from "../audit-logs/service";
+import { workflowVersionsController } from "../workflow-versions/controller";
 import { workflowsController } from "./controller";
 import {
   createWorkflowBody,
   importN8nBody,
   listWorkflowsQuery,
+  promoteWorkflowBody,
   runWorkflowBody,
   updateWorkflowBody,
   workflowIdParam,
@@ -142,4 +144,50 @@ export const workflowsRouter = new Elysia({ prefix: "/workflows" })
       return status(202, result);
     },
     { params: workflowIdParam, body: runWorkflowBody },
+  )
+
+  .post(
+    "/:id/promote",
+    async ({ organizationId, user, params, body, status, request }) => {
+      const result = await workflowVersionsController.promoteBulk(
+        organizationId,
+        params.id,
+        body.workflowVersionId,
+        body.triggerIds,
+      );
+      if ("error" in result) {
+        const code =
+          result.error === "workflow_not_found"
+            ? 404
+            : result.error === "trigger_not_found"
+              ? 400
+              : 400;
+        return status(code, { error: result.error });
+      }
+      // Audit log único do release — diferente de N entradas de `trigger.promoted`.
+      await auditLog({
+        organizationId,
+        actorUserId: user.id,
+        action: "workflow.promoted",
+        resourceType: "workflow",
+        resourceId: params.id,
+        metadata: {
+          workflowVersionId: body.workflowVersionId,
+          version: result.version.version,
+          triggerIds: result.promoted.map((p) => p.trigger.id),
+          fromBy: Object.fromEntries(
+            result.promoted.map((p) => [p.trigger.id, p.previousWorkflowVersionId]),
+          ),
+        },
+        request,
+      });
+      return {
+        version: result.version,
+        promoted: result.promoted.map((p) => ({
+          trigger: p.trigger,
+          previousWorkflowVersionId: p.previousWorkflowVersionId,
+        })),
+      };
+    },
+    { params: workflowIdParam, body: promoteWorkflowBody, beforeHandle: adminOnly },
   );

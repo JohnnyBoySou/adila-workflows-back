@@ -13,6 +13,7 @@ import { triggersRouter } from "./features/triggers/router";
 import { webhookRouter } from "./features/triggers/webhook-router";
 import { workflowRunsRouter } from "./features/workflow-runs/router";
 import { workflowVersionsRouter } from "./features/workflow-versions/router";
+import { workflowNodesRouter } from "./features/workflows/nodes-router";
 import { workflowsRouter } from "./features/workflows/router";
 import { auth } from "./lib/auth";
 import { httpLogger } from "./lib/http-logger";
@@ -86,6 +87,7 @@ const app = new Elysia()
   .use(workflowsRouter)
   .use(workflowVersionsRouter)
   .use(workflowRunsRouter)
+  .use(workflowNodesRouter)
   .use(triggersRouter)
   .use(databaseConnectionsRouter)
   .use(auditLogsRouter)

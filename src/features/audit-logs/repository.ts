@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { auditLogs, type NewAuditLog } from "../../db/schema";
 
@@ -7,6 +7,8 @@ export interface ListAuditLogsFilters {
   action?: string;
   resourceType?: string;
   resourceId?: string;
+  /** Filtra por `metadata->>'workflowId'`. Ver schema.ts pro porquê. */
+  workflowId?: string;
   actorUserId?: string;
   limit: number;
   offset: number;
@@ -19,6 +21,7 @@ export const auditLogsRepository = {
     resourceType,
     resourceId,
     actorUserId,
+    workflowId,
     limit,
     offset,
   }: ListAuditLogsFilters) {
@@ -27,6 +30,9 @@ export const auditLogsRepository = {
     if (resourceType) conditions.push(eq(auditLogs.resourceType, resourceType));
     if (resourceId) conditions.push(eq(auditLogs.resourceId, resourceId));
     if (actorUserId) conditions.push(eq(auditLogs.actorUserId, actorUserId));
+    if (workflowId) {
+      conditions.push(sql`${auditLogs.metadata}->>'workflowId' = ${workflowId}`);
+    }
 
     return db
       .select()

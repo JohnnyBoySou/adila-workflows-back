@@ -2,6 +2,7 @@ import { Elysia } from "elysia";
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import { logger } from "../../lib/logger";
+import { LANE_NAMES, cronSchedulerQueue, workflowQueues } from "../../lib/queue";
 import { connection } from "../../lib/redis";
 
 /**
@@ -61,4 +62,45 @@ export const healthRouter = new Elysia()
       return status(503, { status: "degraded", checks: { database, redis } });
     }
     return { status: "ok", checks: { database, redis } };
+  })
+
+  /**
+   * Métricas operacionais das filas BullMQ.
+   *
+   * `failed` é a DLQ — jobs esgotaram attempts. Inspecionáveis com
+   * `workflowQueue.getFailed(start, end)` se precisar de detalhe;
+   * aqui exponho só os contadores pra monitoração externa.
+   */
+  .get("/health/queue", async () => {
+    const lanesEntries = await Promise.all(
+      LANE_NAMES.map(
+        async (lane) =>
+          [
+            lane,
+            await workflowQueues[lane].getJobCounts(
+              "waiting",
+              "prioritized",
+              "active",
+              "delayed",
+              "completed",
+              "failed",
+            ),
+          ] as const,
+      ),
+    );
+    const scheduler = await cronSchedulerQueue.getJobCounts(
+      "waiting",
+      "prioritized",
+      "active",
+      "delayed",
+      "completed",
+      "failed",
+    );
+    return {
+      at: new Date().toISOString(),
+      queues: {
+        workflows: Object.fromEntries(lanesEntries),
+        scheduler,
+      },
+    };
   });

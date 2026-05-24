@@ -98,6 +98,19 @@ export const workflowVersionsRepository = {
    * colisão sob concorrência, mas o índice único (workflow_id, version)
    * faz o segundo insert falhar e o caller retenta se quiser.
    */
+  /**
+   * Renomeia uma versão. `name = null` remove o rótulo. Único campo
+   * mutável — `definition` permanece imutável.
+   */
+  async rename(workflowId: string, id: string, name: string | null) {
+    const [row] = await db
+      .update(workflowVersions)
+      .set({ name })
+      .where(and(eq(workflowVersions.id, id), eq(workflowVersions.workflowId, workflowId)))
+      .returning();
+    return row ?? null;
+  },
+
   async create(data: Omit<NewWorkflowVersion, "version" | "definitionHash">) {
     const [row] = await db
       .insert(workflowVersions)

@@ -1,4 +1,4 @@
-export { CancelledError, executeRun, normalizeDefinition } from "./executor";
+export { CancelledError, RetryableError, executeRun, normalizeDefinition } from "./executor";
 export type {
   ExecutionContext,
   NodeHandler,

@@ -6,11 +6,11 @@ import { logger } from "./logger";
 
 let transporter: Transporter | null = null;
 
-function isSmtpConfigured(): boolean {
+export function isSmtpConfigured(): boolean {
   return Boolean(env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS && env.SMTP_FROM);
 }
 
-function getTransporter(): Transporter {
+export function getTransporter(): Transporter {
   if (!isSmtpConfigured()) {
     throw new Error("SMTP não configurado — defina SMTP_HOST, SMTP_USER, SMTP_PASS e SMTP_FROM.");
   }

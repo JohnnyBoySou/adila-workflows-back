@@ -54,6 +54,16 @@ export const runWorkflowBody = t.Optional(
   }),
 );
 
+/**
+ * Bulk promote: aponta N triggers do workflow pra mesma versão atomicamente.
+ * `triggerIds` omitido = todos os triggers do workflow.
+ */
+export const promoteWorkflowBody = t.Object({
+  workflowVersionId: t.String({ format: "uuid" }),
+  triggerIds: t.Optional(t.Array(t.String({ format: "uuid" }), { maxItems: 100 })),
+});
+export type PromoteWorkflowBody = typeof promoteWorkflowBody.static;
+
 export type CreateWorkflowBody = typeof createWorkflowBody.static;
 export type UpdateWorkflowBody = typeof updateWorkflowBody.static;
 export type ListWorkflowsQuery = typeof listWorkflowsQuery.static;

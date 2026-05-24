@@ -99,6 +99,48 @@
       "when": 1779562186405,
       "tag": "0013_open_sentry",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1779582611729,
+      "tag": "0014_lethal_leper_queen",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1779840000000,
+      "tag": "0017_extended_triggers",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1779584262237,
+      "tag": "0018_peaceful_mongoose",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1779584861568,
+      "tag": "0019_webhook_extras",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1779739800000,
+      "tag": "0020_run_event_seq",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1779586764521,
+      "tag": "0021_shallow_the_hand",
+      "breakpoints": true
     }
   ]
 }

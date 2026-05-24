@@ -182,5 +182,10 @@ const app = new Elysia({ name: "realtime-gateway" })
     },
   });
 
-app.listen(env.PORT + 1);
-console.log(`realtime gateway running on :${env.PORT + 1}`);
+// Em prod (Railway), cada service tem sua própria `PORT` injetada — não
+// existe "API + 1". Em dev rodamos os dois no mesmo Bun e separamos por
+// offset. `REALTIME_PORT` cobre o caso prod (override explícito); fallback
+// é `PORT + 1` pro dev.
+const realtimePort = Number(process.env.REALTIME_PORT ?? env.PORT + 1);
+app.listen(realtimePort);
+console.log(`realtime gateway running on :${realtimePort}`);

@@ -4,30 +4,32 @@
  * Roda como processo separado: `bun run worker` (ver package.json).
  * Em produção, escale com várias instâncias — BullMQ distribui via Redis.
  */
-import type { Job } from "bullmq";
+import { UnrecoverableError, type Job } from "bullmq";
 import { databaseConnectionsRepository } from "../src/features/database-connections/repository";
 import { environmentVariablesController } from "../src/features/environment-variables/controller";
 import { triggersRepository } from "../src/features/triggers/repository";
-import { resyncEnabledCronTriggers } from "../src/features/triggers/scheduler";
+import {
+  resyncEnabledCronTriggers,
+  resyncEnabledIntervalTriggers,
+} from "../src/features/triggers/scheduler";
 import { workflowRunsRepository } from "../src/features/workflow-runs/repository";
-import { workflowRunEventsRepository } from "../src/features/workflow-runs/events-repository";
 import { workflowVersionsRepository } from "../src/features/workflow-versions/repository";
 import { workflowsController } from "../src/features/workflows/controller";
 import { workflowsRepository } from "../src/features/workflows/repository";
-import { CancelledError, executeRun } from "../src/lib/engine";
+import { CancelledError, RetryableError, executeRun } from "../src/lib/engine";
 import { logger } from "../src/lib/logger";
-import { publishRunEvent } from "../src/lib/run-events";
+import { BatchedRunEventPublisher, subscribeCancel } from "../src/lib/run-events";
 import {
   createCronSchedulerWorker,
-  createWorkflowWorker,
+  createWorkflowWorkers,
+  findWorkflowJobAcrossLanes,
   type CronTriggerJob,
   type WorkflowJob,
-  workflowQueue,
   workflowQueueEvents,
 } from "../src/lib/queue";
 
 const workflowLog = logger.child({ component: "workflow-worker" });
-const cronLog = logger.child({ component: "cron-worker" });
+const cronLog = logger.child({ component: "scheduler-worker" });
 
 // ── Workflows ─────────────────────────────────────────────────────────
 async function processWorkflow(job: Job<WorkflowJob>) {
@@ -43,24 +45,30 @@ async function processWorkflow(job: Job<WorkflowJob>) {
 
   log.info("start");
   await workflowRunsRepository.markRunning(runId, job.id ?? "");
-  const publishEvent = async (
-    type: import("../src/lib/run-events").RunEvent["type"],
+  // Batcher per-run: agrupa eventos em janelas de 50ms ou força flush
+  // imediato em eventos terminais (workflow.*). Reduz IO em workflows
+  // com muitos nós. Drain garantido no finally — não vazamos eventos.
+  const eventPublisher = new BatchedRunEventPublisher();
+  // Cancel signal — assinatura em Redis para evitar polling no DB entre nós.
+  // Checagem inicial cobre janela onde o cancel foi publicado *antes* de
+  // assinarmos (a flag no DB é a fonte de verdade pra esse caso).
+  const cancelSub = await subscribeCancel(runId);
+  const initialRun = await workflowRunsRepository.findByIdRaw(runId);
+  const initiallyCancelled = Boolean(initialRun?.cancelRequested);
+  const publishEvent = (
+    type: import("../src/lib/run-events").RunEventType,
     payload: Record<string, unknown> = {},
     nodeId?: string,
-  ) => {
-    const at = new Date().toISOString();
-    await workflowRunEventsRepository.create({
+  ) =>
+    eventPublisher.enqueue({
       runId,
       workflowId,
       organizationId,
+      type,
       nodeId,
-      eventType: type,
-      source: "worker",
       payload,
-      occurredAt: new Date(at),
+      occurredAt: new Date(),
     });
-    await publishRunEvent({ type, runId, at, data: payload });
-  };
   await publishEvent("workflow.started");
 
   try {
@@ -107,11 +115,10 @@ async function processWorkflow(job: Job<WorkflowJob>) {
         if (!row) return null;
         return { connectionString: row.connectionString, kind: row.kind };
       },
-      // Polling cooperativo do flag `cancelRequested` entre nós.
-      checkCancelled: async () => {
-        const r = await workflowRunsRepository.findByIdRaw(runId);
-        return Boolean(r?.cancelRequested);
-      },
+      // Cancelamento cooperativo entre nós: in-memory, sem hit no DB.
+      // Sinal vem por Redis pubsub (`run:{id}:cancel`); a flag inicial
+      // cobre cancels publicados antes do worker assinar.
+      checkCancelled: async () => initiallyCancelled || cancelSub.isCancelled(),
       onStepEvent: (event) =>
         publishEvent(
           event.type === "step-start"
@@ -146,12 +153,96 @@ async function processWorkflow(job: Job<WorkflowJob>) {
       log.info("cancelled");
       return { cancelled: true };
     }
+
     const e = err as Error;
     const payload = { message: e.message, stack: e.stack };
+    const attemptsMade = job.attemptsMade + 1;
+    const maxAttempts = job.opts.attempts ?? 1;
+    const isRetryable = err instanceof RetryableError;
+    const willRetry = isRetryable && attemptsMade < maxAttempts;
+
+    if (willRetry) {
+      // Não marca o run como falhado ainda — BullMQ vai re-disparar o
+      // processWorkflow com o mesmo runId. O worker faz markRunning de novo
+      // no início. Só logamos o aviso pra observability.
+      log.warn(
+        { err: payload, attemptsMade, maxAttempts },
+        "retryable failure — BullMQ will retry",
+      );
+      throw err;
+    }
+
+    // Falha definitiva — vira DLQ (BullMQ mantém em `failed` por 7 dias).
     await workflowRunsRepository.markFailed(runId, payload);
     await publishEvent("workflow.failed", payload);
-    log.error({ err: payload }, "failed");
+    log.error({ err: payload, attemptsMade }, "failed");
+    // Fan-out para `error_trigger`s subscritos. Best-effort — uma falha aqui
+    // não deve mascarar o erro original; só logamos warning.
+    void fanOutErrorTriggers({ workflowId, runId, organizationId, error: payload }).catch(
+      (fanoutErr) => log.warn({ err: fanoutErr }, "error_trigger fanout failed"),
+    );
+    // Erros não-retentáveis viram UnrecoverableError → BullMQ marca failed
+    // imediatamente sem consumir attempts restantes. Retryables esgotados
+    // chegam aqui também (willRetry=false na última tentativa) e seguem
+    // o caminho normal — `throw err` mantém o stack original.
+    if (!isRetryable) {
+      throw new UnrecoverableError(e.message);
+    }
     throw err;
+  } finally {
+    // Garante flush do buffer antes do worker liberar o job — eventos
+    // terminais já forçam flush, mas chamamos por segurança contra erros
+    // inesperados que possam pular o caminho de markFailed/markSuccess.
+    await eventPublisher.drain();
+    await cancelSub.close().catch(() => {});
+  }
+}
+
+// ── error_trigger fanout ──────────────────────────────────────────────
+// Lista todos os `error_trigger` habilitados e enfileira um run para cada um
+// que esteja interessado neste workflow. Config esperada por trigger:
+//   - watch: "all" | "specific"
+//   - workflowIds?: string[]   (quando watch = "specific")
+async function fanOutErrorTriggers(args: {
+  workflowId: string;
+  runId: string;
+  organizationId: string;
+  error: { message: string; stack?: string };
+}) {
+  const subscribers = await triggersRepository.listEnabledByType("error_trigger");
+  for (const trigger of subscribers) {
+    if (trigger.organizationId !== args.organizationId) continue;
+    const cfg = trigger.config as { watch?: unknown; workflowIds?: unknown };
+    const watch = cfg.watch === "specific" ? "specific" : "all";
+    if (watch === "specific") {
+      const ids = Array.isArray(cfg.workflowIds) ? cfg.workflowIds.map(String) : [];
+      if (!ids.includes(args.workflowId)) continue;
+    }
+    const result = await workflowsController.run(
+      trigger.organizationId,
+      trigger.workflowId,
+      null,
+      {
+        environmentId: trigger.environmentId,
+        workflowVersionId: trigger.workflowVersionId,
+        input: {
+          workflowId: args.workflowId,
+          runId: args.runId,
+          error: args.error,
+        },
+      },
+    );
+    if ("error" in result) {
+      workflowLog.warn(
+        { triggerId: trigger.id, err: result.error },
+        "error_trigger dispatch failed",
+      );
+      continue;
+    }
+    await triggersRepository.updateRaw(trigger.id, {
+      lastTriggeredAt: new Date(),
+      lastRunId: result.runId,
+    });
   }
 }
 
@@ -189,9 +280,10 @@ async function runSubWorkflow(args: SubRunArgs) {
   log.info({ subRunId: enqueued.runId, jobId }, "sub-workflow enqueued");
 
   try {
-    const job = await workflowQueue.getJob(jobId);
-    if (!job) throw new Error(`execute_workflow: job ${jobId} sumiu antes de waitUntilFinished`);
-    await job.waitUntilFinished(workflowQueueEvents, args.timeoutMs);
+    const found = await findWorkflowJobAcrossLanes(jobId);
+    if (!found)
+      throw new Error(`execute_workflow: job ${jobId} sumiu antes de waitUntilFinished`);
+    await found.job.waitUntilFinished(workflowQueueEvents[found.lane], args.timeoutMs);
   } catch (err) {
     const msg = (err as Error).message ?? "";
     if (msg.includes("timed out") || msg.includes("timeout")) {
@@ -210,13 +302,19 @@ async function runSubWorkflow(args: SubRunArgs) {
   return { runId: enqueued.runId, status, output };
 }
 
-const workflowWorker = createWorkflowWorker(processWorkflow);
-workflowWorker.on("ready", () => workflowLog.info("ready"));
-workflowWorker.on("error", (err) => workflowLog.error({ err }, "error"));
+// Workers por lane — quantos rodam aqui depende de WORKFLOW_BUN_LANES.
+// Default: todas. Pra delegar uma lane a um worker externo (ex.: Go
+// consumindo "scraping"), defina `WORKFLOW_BUN_LANES=default,heavy`.
+const workflowWorkers = createWorkflowWorkers(processWorkflow);
+for (const w of workflowWorkers) {
+  w.on("ready", () => workflowLog.info({ queue: w.name }, "ready"));
+  w.on("error", (err) => workflowLog.error({ queue: w.name, err }, "error"));
+}
 
-// ── Cron scheduler ─────────────────────────────────────────────────────
-// Cada disparo cron resolve o trigger e enfileira uma execução normal.
-async function processCron(job: Job<CronTriggerJob>) {
+// ── Scheduler (cron + interval) ────────────────────────────────────────
+// A fila `cron-scheduler` é compartilhada entre triggers cron e interval —
+// o BullMQ chama com `triggerId` e aqui resolvemos o tipo via DB.
+async function processScheduledTrigger(job: Job<CronTriggerJob>) {
   const { triggerId } = job.data;
   const log = cronLog.child({ triggerId });
   log.info("fire");
@@ -256,23 +354,26 @@ async function processCron(job: Job<CronTriggerJob>) {
   log.info({ runId: result.runId }, "enqueued run for trigger");
 }
 
-// Re-registra todos os triggers cron habilitados antes do worker subir.
-// Protege contra perda de estado do Redis (deploy, flush, migração).
+// Re-registra todos os triggers scheduler-driven (cron + interval) antes do
+// worker subir. Protege contra perda de estado do Redis (deploy, flush, migração).
 try {
-  const result = await resyncEnabledCronTriggers();
-  cronLog.info(result, "resynced cron triggers");
+  const [cronResult, intervalResult] = await Promise.all([
+    resyncEnabledCronTriggers(),
+    resyncEnabledIntervalTriggers(),
+  ]);
+  cronLog.info({ cron: cronResult, interval: intervalResult }, "resynced triggers");
 } catch (err) {
   cronLog.error({ err }, "resync failed");
 }
 
-const cronWorker = createCronSchedulerWorker(processCron);
+const cronWorker = createCronSchedulerWorker(processScheduledTrigger);
 cronWorker.on("ready", () => cronLog.info("ready"));
 cronWorker.on("error", (err) => cronLog.error({ err }, "error"));
 
 // ── Shutdown ─────────────────────────────────────────────────────────
 async function shutdown(signal: string) {
   logger.info({ signal }, "received signal, closing");
-  await Promise.all([workflowWorker.close(), cronWorker.close()]);
+  await Promise.all([...workflowWorkers.map((w) => w.close()), cronWorker.close()]);
   process.exit(0);
 }
 process.on("SIGINT", () => void shutdown("SIGINT"));

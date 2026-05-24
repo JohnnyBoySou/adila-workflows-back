@@ -1,4 +1,4 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import { db } from "../../db";
 import { triggers, type NewTrigger, type TriggerType } from "../../db/schema";
 
@@ -58,6 +58,17 @@ export const triggersRepository = {
       .where(and(eq(triggers.type, "cron"), eq(triggers.enabled, true)));
   },
 
+  /**
+   * Lista global de triggers habilitados por tipo. Usado pelos workers de
+   * polling/listener no boot e em respostas a `trigger-updates` (futuro).
+   */
+  async listEnabledByType(type: TriggerType) {
+    return db
+      .select()
+      .from(triggers)
+      .where(and(eq(triggers.type, type), eq(triggers.enabled, true)));
+  },
+
   async create(data: NewTrigger) {
     const [row] = await db.insert(triggers).values(data).returning();
     return row!;
@@ -86,6 +97,49 @@ export const triggersRepository = {
       .where(eq(triggers.id, id))
       .returning();
     return row ?? null;
+  },
+
+  /**
+   * Atualiza `workflowVersionId` em N triggers de uma vez. Devolve as linhas
+   * com os `id` e a versão anterior, pra audit log "from → to".
+   * Usado pelo bulk promote — escopo por workflow garante atomicidade.
+   */
+  async bulkUpdateVersion(
+    organizationId: string,
+    workflowId: string,
+    ids: string[],
+    workflowVersionId: string | null,
+  ) {
+    if (ids.length === 0) return [];
+    // Snapshot do estado atual para o audit log (versão anterior por trigger).
+    const before = await db
+      .select({ id: triggers.id, workflowVersionId: triggers.workflowVersionId })
+      .from(triggers)
+      .where(
+        and(
+          inArray(triggers.id, ids),
+          eq(triggers.workflowId, workflowId),
+          eq(triggers.organizationId, organizationId),
+        ),
+      );
+    const previousByTrigger = new Map(before.map((r) => [r.id, r.workflowVersionId]));
+
+    const updated = await db
+      .update(triggers)
+      .set({ workflowVersionId, updatedAt: new Date() })
+      .where(
+        and(
+          inArray(triggers.id, ids),
+          eq(triggers.workflowId, workflowId),
+          eq(triggers.organizationId, organizationId),
+        ),
+      )
+      .returning();
+
+    return updated.map((row) => ({
+      trigger: row,
+      previousWorkflowVersionId: previousByTrigger.get(row.id) ?? null,
+    }));
   },
 
   async remove(organizationId: string, workflowId: string, id: string) {

@@ -1,5 +1,6 @@
 import {
   type AnyPgColumn,
+  bigserial,
   boolean,
   index,
   integer,
@@ -10,6 +11,7 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { organization, user } from "./auth-schema";
 
 // ───────────────────────────── folders ─────────────────────────────
@@ -181,6 +183,10 @@ export const workflowRuns = pgTable("workflow_runs", {
   // Erro estruturado: { message, stack?, code? }.
   error: jsonb("error").$type<Record<string, unknown> | null>(),
   triggeredBy: text("triggered_by").references(() => user.id, { onDelete: "set null" }),
+  // Trigger que originou este run (NULL para runs manuais ou pré-feature).
+  triggerId: uuid("trigger_id").references((): AnyPgColumn => triggers.id, {
+    onDelete: "set null",
+  }),
   // Cancelamento cooperativo: o endpoint seta true; o executor checa entre
   // nós e aborta com CancelledError. Worker grava status='cancelled'.
   cancelRequested: boolean("cancel_requested").notNull().default(false),
@@ -252,10 +258,14 @@ export const workflowRunEvents = pgTable(
     payload: jsonb("payload").$type<Record<string, unknown>>().notNull().default({}),
     occurredAt: timestamp("occurred_at", { withTimezone: true }).defaultNow().notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    // Sequência monotônica global — usada pelo SSE para resume via
+    // `Last-Event-Id`. Ordem física de INSERT define ordering dentro do run.
+    seq: bigserial("seq", { mode: "number" }).notNull(),
   },
   (t) => [
     index("workflow_run_events_run_occurred_idx").on(t.runId, t.occurredAt),
     index("workflow_run_events_type_idx").on(t.eventType),
+    uniqueIndex("workflow_run_events_run_seq_idx").on(t.runId, t.seq),
   ],
 );
 
@@ -291,7 +301,21 @@ export type NewCollaborationSnapshot = typeof collaborationSnapshots.$inferInser
 
 // ──────────────────────────────── triggers ────────────────────────────────
 
-export const triggerType = ["cron", "webhook"] as const;
+export const triggerType = [
+  "cron",
+  "webhook",
+  // Disparadores adicionais — config específica em `triggers.config` JSONB.
+  "interval_trigger",
+  "schedule_trigger",
+  "email_trigger",
+  "form_trigger",
+  "chat_trigger",
+  "error_trigger",
+  "workflow_called_trigger",
+  "rss_trigger",
+  "postgres_trigger",
+  "redis_trigger",
+] as const;
 export type TriggerType = (typeof triggerType)[number];
 
 export const triggers = pgTable(
@@ -326,8 +350,29 @@ export const triggers = pgTable(
     cronExpression: text("cron_expression"),
     timezone: text("timezone").default("UTC"),
 
+    // Config específica por tipo (interval: {every,unit}, email: {host,port,...},
+    // rss: {url,pollIntervalMinutes,lastSeenGuid}, etc). JSONB livre — validado
+    // por tipo no schema TypeBox e consumido pelo poller/listener correspondente.
+    config: jsonb("config")
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default(sql`'{}'::jsonb`),
+
     // Webhook — token único usado na URL pública /hooks/:token.
     webhookToken: text("webhook_token").unique(),
+    /**
+     * Métodos HTTP aceitos no endpoint público /hooks/:token. Default ['POST'].
+     * Validado pelo webhook-router antes de criar o run.
+     */
+    allowedMethods: text("allowed_methods")
+      .array()
+      .notNull()
+      .default(sql`ARRAY['POST']::text[]`),
+    /**
+     * Segredo opcional para validação HMAC-SHA256. Quando setado, o webhook-router
+     * exige header `X-Signature-256: sha256=<hex>` calculado sobre o raw body.
+     */
+    hmacSecret: text("hmac_secret"),
     /**
      * ID do node no `definition.nodes[]` ao qual este trigger está associado
      * (tipicamente um `webhook_trigger` ou `cron_trigger`). Nulo em triggers
@@ -354,6 +399,9 @@ export const triggers = pgTable(
     index("triggers_workflow_version_id_idx").on(t.workflowVersionId),
   ],
 );
+
+// FK trigger_id ⇢ triggers.id é adicionada via SQL puro na migração (evita
+// ciclo de import na definição de tabela).
 
 export type Trigger = typeof triggers.$inferSelect;
 export type NewTrigger = typeof triggers.$inferInsert;

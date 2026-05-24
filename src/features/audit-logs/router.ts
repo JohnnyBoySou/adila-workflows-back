@@ -17,6 +17,7 @@ export const auditLogsRouter = new Elysia({ prefix: "/audit-logs" })
         action: query.action,
         resourceType: query.resourceType,
         resourceId: query.resourceId,
+        workflowId: query.workflowId,
         actorUserId: query.actorUserId,
         limit: query.limit ?? 50,
         offset: query.offset ?? 0,

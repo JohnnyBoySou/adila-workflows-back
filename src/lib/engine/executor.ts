@@ -25,7 +25,7 @@ import type {
 /** Tipo do callback de sub-workflow — espelha o de `ExecutionContext`. */
 type SubWorkflowRunner = NonNullable<ExecutionContext["subWorkflowRunner"]>;
 type ConnectionResolver = NonNullable<ExecutionContext["resolveConnection"]>;
-import { nodeTypes, visualNodeTypes } from "./types";
+import { nodeTypes, visualNodeTypes, TRIGGER_NODE_TYPES } from "./types";
 
 // Suporta loops controlados (split_in_batches). 1000 cobre arrays típicos;
 // proteção real contra loop runaway fica no próprio handler de batches.
@@ -39,6 +39,23 @@ export class CancelledError extends Error {
   constructor() {
     super("run cancelled");
     this.name = "CancelledError";
+  }
+}
+
+/**
+ * Erro que sinaliza ao worker que o job vale a pena ser retentado pelo BullMQ.
+ * Handlers devem lançar isso para falhas transientes (timeout de rede, 5xx,
+ * Redis offline). Erros normais (validação, regra de negócio) não devem ser
+ * retentados — o worker chama `job.discard()` para forçar `attempts: 1`.
+ *
+ * Pode envolver o erro original via `cause` (preserva stack).
+ */
+export class RetryableError extends Error {
+  readonly cause?: unknown;
+  constructor(message: string, options?: { cause?: unknown }) {
+    super(message);
+    this.name = "RetryableError";
+    this.cause = options?.cause;
   }
 }
 
@@ -139,10 +156,11 @@ export function normalizeDefinition(raw: unknown): WorkflowDefinition {
   return { nodes, edges };
 }
 
-/** Acha o nó de start; aceita explícito (type=start ou webhook_trigger) ou inferido. */
+/** Acha o nó de start; aceita explícito (qualquer trigger type) ou inferido. */
 function findStart(def: WorkflowDefinition): WorkflowNode | null {
   // Trigger nodes têm prioridade — são os entry points "nomeados" do canvas.
-  const explicit = def.nodes.find((n) => n.type === "start" || n.type === "webhook_trigger");
+  // TRIGGER_NODE_TYPES centraliza a lista (start, webhook, cron, email, etc).
+  const explicit = def.nodes.find((n) => TRIGGER_NODE_TYPES.has(n.type));
   if (explicit) return explicit;
   // Visuais (sticky_note, container) não devem ser elegíveis como start —
   // eles vivem soltos no canvas sem edges de entrada.

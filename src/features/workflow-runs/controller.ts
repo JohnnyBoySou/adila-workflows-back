@@ -1,4 +1,9 @@
-import { workflowQueue } from "../../lib/queue";
+import {
+  findWorkflowJobAcrossLanes,
+  pickLaneForDefinition,
+  workflowQueues,
+} from "../../lib/queue";
+import { publishCancel } from "../../lib/run-events";
 import { workflowsRepository } from "../workflows/repository";
 import { workflowRunsRepository } from "./repository";
 
@@ -23,8 +28,9 @@ export const workflowRunsController = {
       // Ainda não pegou worker — basta tirar da fila.
       if (run.jobId) {
         try {
-          const job = await workflowQueue.getJob(run.jobId);
-          await job?.remove();
+          // Job pode estar em qualquer lane — varremos todas pra achar.
+          const found = await findWorkflowJobAcrossLanes(run.jobId);
+          await found?.job.remove();
         } catch {
           // Job pode ter saído da fila entre o check e o remove — ok.
         }
@@ -34,7 +40,13 @@ export const workflowRunsController = {
     }
 
     // status === "running": sinal cooperativo.
+    // Dois canais: (1) flag persistido no DB cobre worker que ainda não
+    // assinou pubsub ou subiu depois; (2) Redis publish notifica
+    // instantaneamente quem já está executando, sem polling.
     const updated = await workflowRunsRepository.requestCancel(runId);
+    void publishCancel(runId).catch(() => {
+      // Best-effort: a flag no DB já garante eventual cancelamento.
+    });
     return { run: updated! };
   },
 
@@ -70,7 +82,8 @@ export const workflowRunsController = {
       triggeredBy,
     });
 
-    const job = await workflowQueue.add(
+    const lane = pickLaneForDefinition(workflow.definition);
+    const job = await workflowQueues[lane].add(
       "execute",
       {
         runId: newRun.id,
