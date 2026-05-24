@@ -135,7 +135,19 @@ const app = new Elysia({ name: "realtime-gateway" })
     async message(ws, message) {
       const workflowId = ws.data.params.workflowId;
       const now = Date.now();
-      const state = sockets.get(ws);
+      // Espera até 2s o `open` async terminar de popular `sockets`. Sem isso,
+      // mensagens que chegam entre o upgrade e o fim do authorize/subscribe
+      // são tratadas como anônimas e o socket é derrubado (race observado em
+      // prod: cliente envia user.joined logo após o upgrade, antes do server
+      // completar `sockets.set(ws, …)`).
+      let state = sockets.get(ws);
+      if (!state?.userId) {
+        const deadline = Date.now() + 2_000;
+        while (Date.now() < deadline && !sockets.get(ws)?.userId) {
+          await new Promise((r) => setTimeout(r, 25));
+        }
+        state = sockets.get(ws);
+      }
       if (!state?.userId) {
         ws.send({ type: "error", error: "unauthorized" });
         ws.close();
