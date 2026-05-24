@@ -6,6 +6,13 @@ import { requireOrganization } from "../../lib/auth-middleware";
 import { httpRequestHandler } from "../../lib/engine/nodes/http-request";
 import { s3Handler } from "../../lib/engine/nodes/s3";
 import { vectorStoreHandler } from "../../lib/engine/nodes/vector-store";
+import { chatMemoryHandler } from "../../lib/engine/nodes/chat-memory";
+import { embeddingsHandler } from "../../lib/engine/nodes/embeddings";
+import { documentLoaderHandler } from "../../lib/engine/nodes/document-loader";
+import { codeHandler } from "../../lib/engine/nodes/code";
+import { splitInBatchesHandler } from "../../lib/engine/nodes/split-in-batches";
+import { waitHandler } from "../../lib/engine/nodes/wait";
+import { setVariableHandler } from "../../lib/engine/nodes/set-variable";
 import { environmentVariablesRepository } from "../environment-variables/repository";
 import { workflowsController } from "./controller";
 
@@ -221,6 +228,324 @@ export const workflowNodesRouter = new Elysia({ prefix: "/workflows/:id/nodes/:n
         config: t.Record(t.String(), t.Unknown()),
         input: t.Optional(t.Record(t.String(), t.Unknown())),
         environmentId: t.Optional(t.Union([t.String({ format: "uuid" }), t.Null()])),
+      }),
+    },
+  )
+
+  // Dry-run do `chat_memory` — precisa do env pra resolver
+  // `{{env.MEMORY_DB_URL}}` (ou afim) na connectionString.
+  .post(
+    "/dry-run-chat-memory",
+    async ({ organizationId, params, body, status }) => {
+      const workflow = await workflowsController.findById(organizationId, params.id);
+      if (!workflow) return status(404, { error: "workflow_not_found" });
+
+      const env = await loadEnv(organizationId, body.environmentId);
+      const startedAt = Date.now();
+      try {
+        const result = await chatMemoryHandler({
+          node: { id: params.nodeId, type: "chat_memory", config: body.config },
+          context: {
+            input: body.input ?? {},
+            vars: {},
+            env,
+            steps: {},
+          },
+        });
+        return {
+          ok: true as const,
+          output: result.output,
+          durationMs: Date.now() - startedAt,
+        };
+      } catch (err) {
+        return {
+          ok: false as const,
+          error: (err as Error).message,
+          durationMs: Date.now() - startedAt,
+        };
+      }
+    },
+    {
+      params: t.Object({
+        id: t.String({ format: "uuid" }),
+        nodeId: t.String({ minLength: 1, maxLength: 128 }),
+      }),
+      body: t.Object({
+        config: t.Record(t.String(), t.Unknown()),
+        input: t.Optional(t.Record(t.String(), t.Unknown())),
+        environmentId: t.Optional(t.Union([t.String({ format: "uuid" }), t.Null()])),
+      }),
+    },
+  )
+
+  // Dry-run do `embeddings` — provider openai precisa de OPENAI_API_KEY;
+  // provider custom pode pegar baseUrl/apiKey templates do env.
+  .post(
+    "/dry-run-embeddings",
+    async ({ organizationId, params, body, status }) => {
+      const workflow = await workflowsController.findById(organizationId, params.id);
+      if (!workflow) return status(404, { error: "workflow_not_found" });
+
+      const env = await loadEnv(organizationId, body.environmentId);
+      const startedAt = Date.now();
+      try {
+        const result = await embeddingsHandler({
+          node: { id: params.nodeId, type: "embeddings", config: body.config },
+          context: {
+            input: body.input ?? {},
+            vars: {},
+            env,
+            steps: {},
+          },
+        });
+        return {
+          ok: true as const,
+          output: result.output,
+          durationMs: Date.now() - startedAt,
+        };
+      } catch (err) {
+        return {
+          ok: false as const,
+          error: (err as Error).message,
+          durationMs: Date.now() - startedAt,
+        };
+      }
+    },
+    {
+      params: t.Object({
+        id: t.String({ format: "uuid" }),
+        nodeId: t.String({ minLength: 1, maxLength: 128 }),
+      }),
+      body: t.Object({
+        config: t.Record(t.String(), t.Unknown()),
+        input: t.Optional(t.Record(t.String(), t.Unknown())),
+        environmentId: t.Optional(t.Union([t.String({ format: "uuid" }), t.Null()])),
+      }),
+    },
+  )
+
+  // Dry-run do `document_loader` — puro (sem env vars, sem I/O).
+  // Mantemos o env loading por consistência caso config use {{env.X}}.
+  .post(
+    "/dry-run-document-loader",
+    async ({ organizationId, params, body, status }) => {
+      const workflow = await workflowsController.findById(organizationId, params.id);
+      if (!workflow) return status(404, { error: "workflow_not_found" });
+
+      const env = await loadEnv(organizationId, body.environmentId);
+      const startedAt = Date.now();
+      try {
+        const result = await documentLoaderHandler({
+          node: { id: params.nodeId, type: "document_loader", config: body.config },
+          context: {
+            input: body.input ?? {},
+            vars: {},
+            env,
+            steps: {},
+          },
+        });
+        return {
+          ok: true as const,
+          output: result.output,
+          durationMs: Date.now() - startedAt,
+        };
+      } catch (err) {
+        return {
+          ok: false as const,
+          error: (err as Error).message,
+          durationMs: Date.now() - startedAt,
+        };
+      }
+    },
+    {
+      params: t.Object({
+        id: t.String({ format: "uuid" }),
+        nodeId: t.String({ minLength: 1, maxLength: 128 }),
+      }),
+      body: t.Object({
+        config: t.Record(t.String(), t.Unknown()),
+        input: t.Optional(t.Record(t.String(), t.Unknown())),
+        environmentId: t.Optional(t.Union([t.String({ format: "uuid" }), t.Null()])),
+      }),
+    },
+  )
+
+  // Dry-run do `code` — diferente dos outros, aceita steps/vars mockados
+  // pra simular dependências upstream (em vez de só `input`).
+  .post(
+    "/dry-run-code",
+    async ({ organizationId, params, body, status }) => {
+      const workflow = await workflowsController.findById(organizationId, params.id);
+      if (!workflow) return status(404, { error: "workflow_not_found" });
+
+      const env = await loadEnv(organizationId, body.environmentId);
+      const startedAt = Date.now();
+      try {
+        const result = await codeHandler({
+          node: { id: params.nodeId, type: "code", config: body.config },
+          context: {
+            input: body.input ?? {},
+            vars: body.vars ?? {},
+            env,
+            steps: (body.steps ?? {}) as Record<string, Record<string, unknown>>,
+          },
+        });
+        return {
+          ok: true as const,
+          output: result.output,
+          durationMs: Date.now() - startedAt,
+        };
+      } catch (err) {
+        return {
+          ok: false as const,
+          error: (err as Error).message,
+          durationMs: Date.now() - startedAt,
+        };
+      }
+    },
+    {
+      params: t.Object({
+        id: t.String({ format: "uuid" }),
+        nodeId: t.String({ minLength: 1, maxLength: 128 }),
+      }),
+      body: t.Object({
+        config: t.Record(t.String(), t.Unknown()),
+        input: t.Optional(t.Record(t.String(), t.Unknown())),
+        vars: t.Optional(t.Record(t.String(), t.Unknown())),
+        steps: t.Optional(t.Record(t.String(), t.Record(t.String(), t.Unknown()))),
+        environmentId: t.Optional(t.Union([t.String({ format: "uuid" }), t.Null()])),
+      }),
+    },
+  )
+
+  // Dry-run do `split_in_batches` — simula UMA iteração. Como o handler
+  // mantém estado por nó em `context.loopState`, criamos um state local
+  // efêmero pra cada chamada (cada dry-run começa do cursor=0).
+  .post(
+    "/dry-run-split",
+    async ({ organizationId, params, body, status }) => {
+      const workflow = await workflowsController.findById(organizationId, params.id);
+      if (!workflow) return status(404, { error: "workflow_not_found" });
+
+      const startedAt = Date.now();
+      try {
+        const result = await splitInBatchesHandler({
+          node: { id: params.nodeId, type: "split_in_batches", config: body.config },
+          context: {
+            input: body.input ?? {},
+            vars: {},
+            env: {},
+            steps: (body.steps ?? {}) as Record<string, Record<string, unknown>>,
+            loopState: {},
+          },
+        });
+        return {
+          ok: true as const,
+          output: result.output,
+          nextLabel: result.nextLabel,
+          durationMs: Date.now() - startedAt,
+        };
+      } catch (err) {
+        return {
+          ok: false as const,
+          error: (err as Error).message,
+          durationMs: Date.now() - startedAt,
+        };
+      }
+    },
+    {
+      params: t.Object({
+        id: t.String({ format: "uuid" }),
+        nodeId: t.String({ minLength: 1, maxLength: 128 }),
+      }),
+      body: t.Object({
+        config: t.Record(t.String(), t.Unknown()),
+        input: t.Optional(t.Record(t.String(), t.Unknown())),
+        steps: t.Optional(t.Record(t.String(), t.Record(t.String(), t.Unknown()))),
+      }),
+    },
+  )
+
+  // Dry-run do `wait` — cap em 10s na UI; chamada real já tem MAX 1h.
+  .post(
+    "/dry-run-wait",
+    async ({ organizationId, params, body, status }) => {
+      const workflow = await workflowsController.findById(organizationId, params.id);
+      if (!workflow) return status(404, { error: "workflow_not_found" });
+
+      const startedAt = Date.now();
+      try {
+        const result = await waitHandler({
+          node: { id: params.nodeId, type: "wait", config: body.config },
+          context: { input: body.input ?? {}, vars: {}, env: {}, steps: {} },
+        });
+        return {
+          ok: true as const,
+          output: result.output,
+          durationMs: Date.now() - startedAt,
+        };
+      } catch (err) {
+        return {
+          ok: false as const,
+          error: (err as Error).message,
+          durationMs: Date.now() - startedAt,
+        };
+      }
+    },
+    {
+      params: t.Object({
+        id: t.String({ format: "uuid" }),
+        nodeId: t.String({ minLength: 1, maxLength: 128 }),
+      }),
+      body: t.Object({
+        config: t.Record(t.String(), t.Unknown()),
+        input: t.Optional(t.Record(t.String(), t.Unknown())),
+      }),
+    },
+  )
+
+  // Dry-run do `set_variable` — mostra o que vai ser merged em `vars`.
+  .post(
+    "/dry-run-set-variable",
+    async ({ organizationId, params, body, status }) => {
+      const workflow = await workflowsController.findById(organizationId, params.id);
+      if (!workflow) return status(404, { error: "workflow_not_found" });
+
+      const startedAt = Date.now();
+      try {
+        const result = await setVariableHandler({
+          node: { id: params.nodeId, type: "set_variable", config: body.config },
+          context: {
+            input: body.input ?? {},
+            vars: body.vars ?? {},
+            env: {},
+            steps: (body.steps ?? {}) as Record<string, Record<string, unknown>>,
+          },
+        });
+        return {
+          ok: true as const,
+          output: result.output,
+          vars: result.vars,
+          durationMs: Date.now() - startedAt,
+        };
+      } catch (err) {
+        return {
+          ok: false as const,
+          error: (err as Error).message,
+          durationMs: Date.now() - startedAt,
+        };
+      }
+    },
+    {
+      params: t.Object({
+        id: t.String({ format: "uuid" }),
+        nodeId: t.String({ minLength: 1, maxLength: 128 }),
+      }),
+      body: t.Object({
+        config: t.Record(t.String(), t.Unknown()),
+        input: t.Optional(t.Record(t.String(), t.Unknown())),
+        vars: t.Optional(t.Record(t.String(), t.Unknown())),
+        steps: t.Optional(t.Record(t.String(), t.Record(t.String(), t.Unknown()))),
       }),
     },
   );

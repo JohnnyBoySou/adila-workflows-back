@@ -182,10 +182,18 @@ const app = new Elysia({ name: "realtime-gateway" })
     },
   });
 
-// Em prod (Railway), cada service tem sua própria `PORT` injetada — não
-// existe "API + 1". Em dev rodamos os dois no mesmo Bun e separamos por
-// offset. `REALTIME_PORT` cobre o caso prod (override explícito); fallback
-// é `PORT + 1` pro dev.
-const realtimePort = Number(process.env.REALTIME_PORT ?? env.PORT + 1);
-app.listen(realtimePort);
-console.log(`realtime gateway running on :${realtimePort}`);
+// Resolução da porta:
+//   1. REALTIME_PORT explícito (preferido em dev — API roda em PORT,
+//      realtime em REALTIME_PORT, ambos no mesmo host)
+//   2. PORT injetada pelo orquestrador (Railway/k8s) — em prod o service
+//      realtime tem sua própria PORT exposta, não compartilha com a API
+//
+// Atenção: NÃO usar `PORT + 1` aqui. Em dev funciona por coincidência;
+// em prod Railway só roteia tráfego pra `PORT`, então `PORT + 1` causa
+// healthcheck timeout silencioso.
+const realtimePort = Number(process.env.REALTIME_PORT ?? env.PORT);
+// Bind explícito em 0.0.0.0 — orquestradores (Railway/k8s) executam
+// healthcheck a partir de fora do loopback do container; default localhost
+// faz o health passar em dev mas falhar silenciosamente em prod.
+app.listen({ port: realtimePort, hostname: "0.0.0.0" });
+console.log(`realtime gateway running on 0.0.0.0:${realtimePort}`);
