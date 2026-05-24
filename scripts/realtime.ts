@@ -9,8 +9,13 @@ import { workflows } from "../src/db/schema";
 import { collaborationRepository } from "../src/features/workflow-runs/collaboration-repository";
 
 const gateway = new CollaborationGateway();
+// IMPORTANTE: a key é `ws.id` (string atribuída pelo Elysia no upgrade),
+// NÃO o próprio `ws`. Elysia entrega proxies diferentes do `ws` em cada
+// callback (open/message/close) — usar `ws` como key faz `Map.get` retornar
+// undefined em message/close mesmo depois do open ter setado, derrubando
+// toda conexão como "unauthorized" 2s depois.
 const sockets = new Map<
-  unknown,
+  string,
   {
     userId?: string;
     role?: string;
@@ -128,9 +133,9 @@ const app = new Elysia({ name: "realtime-gateway" })
       const unsubscribe = await gateway.subscribe(workflowId, (event) => {
         ws.send(event);
       });
-      sockets.set(ws, { ...authz, unsubscribe });
+      sockets.set(ws.id, { ...authz, unsubscribe });
       ws.send({ type: "room.ready", workflowId, connectionId: token });
-      console.log("[ws] room.ready", { workflowId, userId: authz.userId });
+      console.log("[ws] room.ready", { workflowId, userId: authz.userId, wsId: ws.id });
     },
     async message(ws, message) {
       const workflowId = ws.data.params.workflowId;
@@ -140,13 +145,13 @@ const app = new Elysia({ name: "realtime-gateway" })
       // são tratadas como anônimas e o socket é derrubado (race observado em
       // prod: cliente envia user.joined logo após o upgrade, antes do server
       // completar `sockets.set(ws, …)`).
-      let state = sockets.get(ws);
+      let state = sockets.get(ws.id);
       if (!state?.userId) {
         const deadline = Date.now() + 2_000;
-        while (Date.now() < deadline && !sockets.get(ws)?.userId) {
+        while (Date.now() < deadline && !sockets.get(ws.id)?.userId) {
           await new Promise((r) => setTimeout(r, 25));
         }
-        state = sockets.get(ws);
+        state = sockets.get(ws.id);
       }
       if (!state?.userId) {
         ws.send({ type: "error", error: "unauthorized" });
@@ -190,15 +195,15 @@ const app = new Elysia({ name: "realtime-gateway" })
     },
     async close(ws) {
       const workflowId = ws.data.params.workflowId;
-      const state = sockets.get(ws);
+      const state = sockets.get(ws.id);
       const userId = state?.userId;
-      console.log("[ws] close", { workflowId, userId });
+      console.log("[ws] close", { workflowId, userId, wsId: ws.id });
       if (typeof userId === "string" && userId.length > 0) {
         await gateway.removePresence(workflowId, userId);
         await gateway.publish({ type: "user.left", workflowId, userId });
       }
       await state?.unsubscribe?.();
-      sockets.delete(ws);
+      sockets.delete(ws.id);
     },
   });
 
