@@ -108,6 +108,8 @@ const app = new Elysia({ name: "realtime-gateway" })
       userId: t.String(),
       cursor: t.Optional(t.Object({ x: t.Number(), y: t.Number() })),
       selectedNodeId: t.Optional(t.String()),
+      // String vazia = release explícito (limpa o lock). Undefined = sem mudança.
+      grabbedNodeId: t.Optional(t.String()),
       viewport: t.Optional(t.Object({ x: t.Number(), y: t.Number(), zoom: t.Number() })),
       updateBase64: t.Optional(t.String()),
     }),
@@ -169,6 +171,11 @@ const app = new Elysia({ name: "realtime-gateway" })
         workflowId,
         cursor: message.cursor ?? { x: 0, y: 0 },
         selectedNodeId: message.selectedNodeId,
+        // "" no wire = release (apaga o lock). Undefined preserva (nada
+        // muda nessa mensagem).
+        ...(message.grabbedNodeId !== undefined && {
+          grabbedNodeId: message.grabbedNodeId === "" ? undefined : message.grabbedNodeId,
+        }),
         viewport: message.viewport,
         updatedAt: now,
       };

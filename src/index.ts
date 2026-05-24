@@ -4,6 +4,7 @@ import { swagger } from "@elysiajs/swagger";
 import { env } from "./config/env";
 import { aiRouter } from "./features/ai/router";
 import { auditLogsRouter } from "./features/audit-logs/router";
+import { commentsRouter } from "./features/comments/router";
 import { databaseConnectionsRouter } from "./features/database-connections/router";
 import { environmentVariablesRouter } from "./features/environment-variables/router";
 import { environmentsRouter } from "./features/environments/router";
@@ -89,6 +90,7 @@ const app = new Elysia()
   .use(workflowRunsRouter)
   .use(workflowNodesRouter)
   .use(triggersRouter)
+  .use(commentsRouter)
   .use(databaseConnectionsRouter)
   .use(auditLogsRouter)
   .use(aiRouter)

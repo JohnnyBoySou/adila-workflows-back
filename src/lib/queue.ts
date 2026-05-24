@@ -18,6 +18,12 @@ export interface WorkflowJob {
    * desses nós e usa o output fornecido. Opcional pra compat com jobs antigos.
    */
   pinnedData?: Record<string, Record<string, unknown>>;
+  /**
+   * Modo debug: engine para após executar o nó com este id. Útil pra
+   * "play até aqui" no editor — geralmente vem com pinnedData nos upstream.
+   * Opcional; ausente = roda até o end natural.
+   */
+  stopAtNodeId?: string;
 }
 
 /**

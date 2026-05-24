@@ -10,8 +10,30 @@ export type Presence = {
   workflowId: string;
   cursor: { x: number; y: number };
   selectedNodeId?: string;
+  /**
+   * ID do node que o usuário está manipulando ativamente (arrastando ou
+   * editando config). Outros clientes usam isso pra mostrar lock + nome
+   * do usuário sobre o node, e bloqueiam edição local enquanto setado.
+   * Limpo quando o usuário solta o node ou fecha o painel de config.
+   */
+  grabbedNodeId?: string;
   viewport?: { x: number; y: number; zoom: number };
   updatedAt: number;
+};
+
+export type CommentBroadcast = {
+  id: string;
+  organizationId: string;
+  workflowId: string;
+  parentId: string | null;
+  authorId: string;
+  body: string;
+  mentions: string[];
+  x: number | null;
+  y: number | null;
+  resolved: boolean;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type AwarenessEvent =
@@ -20,7 +42,10 @@ export type AwarenessEvent =
   | { type: "cursor.move"; workflowId: string; presence: Presence }
   | { type: "node.selected"; workflowId: string; presence: Presence }
   | { type: "viewport.changed"; workflowId: string; presence: Presence }
-  | { type: "yjs.update"; workflowId: string; updateBase64: string; at: number };
+  | { type: "yjs.update"; workflowId: string; updateBase64: string; at: number }
+  | { type: "comment.created"; workflowId: string; comment: CommentBroadcast }
+  | { type: "comment.updated"; workflowId: string; comment: CommentBroadcast }
+  | { type: "comment.deleted"; workflowId: string; commentId: string };
 
 export class CollaborationGateway {
   private readonly pub = new Redis(env.REDIS_URL, { maxRetriesPerRequest: null });

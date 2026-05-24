@@ -123,6 +123,7 @@ export const workflowsRouter = new Elysia({ prefix: "/workflows" })
         environmentId: body?.environmentId,
         input: body?.input,
         pinnedData: body?.pinnedData,
+        stopAtNodeId: body?.stopAtNodeId,
         queuePriority: body?.queuePriority,
       });
       if ("error" in result) {

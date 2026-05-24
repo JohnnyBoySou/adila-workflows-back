@@ -1,4 +1,5 @@
 import { aggregateHandler } from "./aggregate";
+import { aiAgentHandler } from "./ai-agent";
 import { aiChatHandler } from "./ai-chat";
 import { chatMemoryHandler } from "./chat-memory";
 import { chatTriggerHandler } from "./chat-trigger";
@@ -26,6 +27,7 @@ import { ifHandler } from "./if";
 import { intervalTriggerHandler } from "./interval-trigger";
 import { itemListsHandler } from "./item-lists";
 import { jsonHandler } from "./json";
+import { manualTriggerHandler } from "./manual-trigger";
 import { jwtHandler } from "./jwt";
 import { limitHandler } from "./limit";
 import { markdownHandler } from "./markdown";
@@ -52,10 +54,12 @@ import { splitInBatchesHandler } from "./split-in-batches";
 import { splitOutHandler } from "./split-out";
 import { startHandler } from "./start";
 import { stickyNoteHandler } from "./sticky-note";
+import { stopAndErrorHandler } from "./stop-and-error";
 import { switchHandler } from "./switch";
 import { telegramSendHandler } from "./telegram-send";
 import { templateHandler } from "./template";
 import { textManipulationHandler } from "./text-manipulation";
+import { transformHandler } from "./transform";
 import { urlToolsHandler } from "./url-tools";
 import { uuidHandler } from "./uuid";
 import { vectorStoreHandler } from "./vector-store";
@@ -70,11 +74,15 @@ import type { NodeHandler, NodeType } from "../types";
 /** Tabela de despacho — type → handler. */
 export const nodeHandlers: Record<NodeType, NodeHandler> = {
   start: startHandler,
+  manual_trigger: manualTriggerHandler,
   webhook_trigger: webhookTriggerHandler,
   end: endHandler,
   set_variable: setVariableHandler,
   http_request: httpRequestHandler,
   ai_chat: aiChatHandler,
+  ai_agent: aiAgentHandler,
+  stop_and_error: stopAndErrorHandler,
+  transform: transformHandler,
   if: ifHandler,
   noop: noopHandler,
   wait: waitHandler,

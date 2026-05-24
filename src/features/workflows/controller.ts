@@ -100,6 +100,12 @@ export const workflowsController = {
       /** Outputs pinados pelo editor — pulam o handler do nó correspondente. */
       pinnedData?: Record<string, Record<string, unknown>>;
       /**
+       * Modo debug "play até aqui" — engine para após executar este nó e
+       * devolve o output dele. Combinado com `pinnedData`, permite iterar
+       * só no nó alvo sem disparar os upstream (APIs, IA, DB).
+       */
+      stopAtNodeId?: string;
+      /**
        * Versão pinada (ex.: vinda de `triggers.workflowVersionId`). Quando
        * setado, ignora ensureLatest e dispara exatamente este snapshot. Erra
        * se a versão não existir ou pertencer a outro workflow.
@@ -174,6 +180,7 @@ export const workflowsController = {
         // Pinned data não persistimos no run — é por-disparo. Vai direto pro
         // job e some quando o BullMQ limpa.
         pinnedData: opts.pinnedData ?? {},
+        ...(opts.stopAtNodeId && { stopAtNodeId: opts.stopAtNodeId }),
       },
       {
         priority: opts.queuePriority ?? 5,

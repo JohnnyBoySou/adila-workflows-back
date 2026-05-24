@@ -2,6 +2,7 @@ import {
   type AnyPgColumn,
   bigserial,
   boolean,
+  doublePrecision,
   index,
   integer,
   jsonb,
@@ -318,6 +319,44 @@ export const collaborationSnapshots = pgTable(
 
 export type CollaborationSnapshot = typeof collaborationSnapshots.$inferSelect;
 export type NewCollaborationSnapshot = typeof collaborationSnapshots.$inferInsert;
+
+// ─────────────────────────── workflow comments ───────────────────────────
+// Threads de comentários ancorados em coords do canvas (estilo Figma).
+// - Raiz: parentId=null, x/y obrigatórios (posição mundo).
+// - Reply: parentId aponta pra raiz, x/y null (herda do pai).
+// - mentions: lista de userIds notificados (in-room toast).
+// - resolved: marcado na raiz; cascade lógico nas replies via UI.
+
+export const workflowComments = pgTable(
+  "workflow_comments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    workflowId: uuid("workflow_id")
+      .notNull()
+      .references(() => workflows.id, { onDelete: "cascade" }),
+    parentId: uuid("parent_id"),
+    authorId: text("author_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    body: text("body").notNull(),
+    mentions: text("mentions").array().default(sql`ARRAY[]::text[]`).notNull(),
+    x: doublePrecision("x"),
+    y: doublePrecision("y"),
+    resolved: boolean("resolved").default(false).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index("workflow_comments_workflow_idx").on(t.workflowId, t.createdAt),
+    index("workflow_comments_parent_idx").on(t.parentId),
+  ],
+);
+
+export type WorkflowComment = typeof workflowComments.$inferSelect;
+export type NewWorkflowComment = typeof workflowComments.$inferInsert;
 
 // ──────────────────────────────── triggers ────────────────────────────────
 

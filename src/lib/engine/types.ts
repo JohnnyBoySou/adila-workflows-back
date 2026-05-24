@@ -57,6 +57,10 @@ export const nodeTypes = [
   "text_manipulation",
   "math",
   "shuffle",
+  "manual_trigger",
+  "stop_and_error",
+  "transform",
+  "ai_agent",
   "schedule_trigger",
   "interval_trigger",
   "email_trigger",
@@ -98,6 +102,7 @@ export const visualNodeTypes = new Set<NodeType>(["sticky_note", "container"]);
  */
 export const TRIGGER_NODE_TYPES = new Set<NodeType>([
   "start",
+  "manual_trigger",
   "webhook_trigger",
   "schedule_trigger",
   "interval_trigger",

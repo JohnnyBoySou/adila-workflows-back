@@ -33,8 +33,16 @@ const cronLog = logger.child({ component: "scheduler-worker" });
 
 // ── Workflows ─────────────────────────────────────────────────────────
 async function processWorkflow(job: Job<WorkflowJob>) {
-  const { runId, workflowId, workflowVersionId, organizationId, environmentId, input, pinnedData } =
-    job.data;
+  const {
+    runId,
+    workflowId,
+    workflowVersionId,
+    organizationId,
+    environmentId,
+    input,
+    pinnedData,
+    stopAtNodeId,
+  } = job.data;
   const log = workflowLog.child({
     runId,
     workflowId,
@@ -99,6 +107,7 @@ async function processWorkflow(job: Job<WorkflowJob>) {
       input: input ?? {},
       env: variables,
       pinnedData: pinnedData ?? {},
+      ...(stopAtNodeId && { stopAtNodeId }),
       subWorkflowRunner: (args) =>
         runSubWorkflow({
           parentOrganizationId: organizationId,
