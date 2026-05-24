@@ -13,6 +13,10 @@ import { codeHandler } from "../../lib/engine/nodes/code";
 import { splitInBatchesHandler } from "../../lib/engine/nodes/split-in-batches";
 import { waitHandler } from "../../lib/engine/nodes/wait";
 import { setVariableHandler } from "../../lib/engine/nodes/set-variable";
+import { respondToWebhookHandler } from "../../lib/engine/nodes/respond-to-webhook";
+import { aggregateHandler } from "../../lib/engine/nodes/aggregate";
+import { dateTimeHandler } from "../../lib/engine/nodes/date-time";
+import { itemListsHandler } from "../../lib/engine/nodes/item-lists";
 import { environmentVariablesRepository } from "../environment-variables/repository";
 import { workflowsController } from "./controller";
 
@@ -526,6 +530,141 @@ export const workflowNodesRouter = new Elysia({ prefix: "/workflows/:id/nodes/:n
           ok: true as const,
           output: result.output,
           vars: result.vars,
+          durationMs: Date.now() - startedAt,
+        };
+      } catch (err) {
+        return {
+          ok: false as const,
+          error: (err as Error).message,
+          durationMs: Date.now() - startedAt,
+        };
+      }
+    },
+    {
+      params: t.Object({
+        id: t.String({ format: "uuid" }),
+        nodeId: t.String({ minLength: 1, maxLength: 128 }),
+      }),
+      body: t.Object({
+        config: t.Record(t.String(), t.Unknown()),
+        input: t.Optional(t.Record(t.String(), t.Unknown())),
+        vars: t.Optional(t.Record(t.String(), t.Unknown())),
+        steps: t.Optional(t.Record(t.String(), t.Record(t.String(), t.Unknown()))),
+      }),
+    },
+  )
+
+  // Dry-run do `respond_to_webhook` — devolve o envelope HTTP resolvido.
+  .post(
+    "/dry-run-respond",
+    async ({ organizationId, params, body, status }) => {
+      const workflow = await workflowsController.findById(organizationId, params.id);
+      if (!workflow) return status(404, { error: "workflow_not_found" });
+
+      const startedAt = Date.now();
+      try {
+        const result = await respondToWebhookHandler({
+          node: { id: params.nodeId, type: "respond_to_webhook", config: body.config },
+          context: {
+            input: body.input ?? {},
+            vars: body.vars ?? {},
+            env: {},
+            steps: (body.steps ?? {}) as Record<string, Record<string, unknown>>,
+          },
+        });
+        return {
+          ok: true as const,
+          output: result.output,
+          durationMs: Date.now() - startedAt,
+        };
+      } catch (err) {
+        return {
+          ok: false as const,
+          error: (err as Error).message,
+          durationMs: Date.now() - startedAt,
+        };
+      }
+    },
+    {
+      params: t.Object({
+        id: t.String({ format: "uuid" }),
+        nodeId: t.String({ minLength: 1, maxLength: 128 }),
+      }),
+      body: t.Object({
+        config: t.Record(t.String(), t.Unknown()),
+        input: t.Optional(t.Record(t.String(), t.Unknown())),
+        vars: t.Optional(t.Record(t.String(), t.Unknown())),
+        steps: t.Optional(t.Record(t.String(), t.Record(t.String(), t.Unknown()))),
+      }),
+    },
+  )
+
+  // Dry-run do `aggregate` — operação sobre `items`.
+  .post(
+    "/dry-run-aggregate",
+    async ({ organizationId, params, body, status }) => {
+      const workflow = await workflowsController.findById(organizationId, params.id);
+      if (!workflow) return status(404, { error: "workflow_not_found" });
+
+      const startedAt = Date.now();
+      try {
+        const result = await aggregateHandler({
+          node: { id: params.nodeId, type: "aggregate", config: body.config },
+          context: {
+            input: body.input ?? {},
+            vars: body.vars ?? {},
+            env: {},
+            steps: (body.steps ?? {}) as Record<string, Record<string, unknown>>,
+          },
+        });
+        return {
+          ok: true as const,
+          output: result.output,
+          durationMs: Date.now() - startedAt,
+        };
+      } catch (err) {
+        return {
+          ok: false as const,
+          error: (err as Error).message,
+          durationMs: Date.now() - startedAt,
+        };
+      }
+    },
+    {
+      params: t.Object({
+        id: t.String({ format: "uuid" }),
+        nodeId: t.String({ minLength: 1, maxLength: 128 }),
+      }),
+      body: t.Object({
+        config: t.Record(t.String(), t.Unknown()),
+        input: t.Optional(t.Record(t.String(), t.Unknown())),
+        vars: t.Optional(t.Record(t.String(), t.Unknown())),
+        steps: t.Optional(t.Record(t.String(), t.Record(t.String(), t.Unknown()))),
+      }),
+    },
+  )
+
+  // Dry-run do `date_time` — qualquer operação.
+  .post(
+    "/dry-run-date",
+    async ({ organizationId, params, body, status }) => {
+      const workflow = await workflowsController.findById(organizationId, params.id);
+      if (!workflow) return status(404, { error: "workflow_not_found" });
+
+      const startedAt = Date.now();
+      try {
+        const result = await dateTimeHandler({
+          node: { id: params.nodeId, type: "date_time", config: body.config },
+          context: {
+            input: body.input ?? {},
+            vars: body.vars ?? {},
+            env: {},
+            steps: (body.steps ?? {}) as Record<string, Record<string, unknown>>,
+          },
+        });
+        return {
+          ok: true as const,
+          output: result.output,
           durationMs: Date.now() - startedAt,
         };
       } catch (err) {
