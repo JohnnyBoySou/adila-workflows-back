@@ -36,6 +36,29 @@ const webhookMethodEnum = t.Union([
   t.Literal("DELETE"),
 ]);
 
+const webhookFieldSchema = t.Object({
+  type: t.Union([
+    t.Literal("string"),
+    t.Literal("number"),
+    t.Literal("integer"),
+    t.Literal("boolean"),
+    t.Literal("object"),
+    t.Literal("array"),
+  ]),
+  description: t.Optional(t.String({ maxLength: 300 })),
+  minLength: t.Optional(t.Integer({ minimum: 0 })),
+  maxLength: t.Optional(t.Integer({ minimum: 0 })),
+  pattern: t.Optional(t.String({ maxLength: 200 })),
+  enum: t.Optional(t.Array(t.String(), { maxItems: 50 })),
+  minimum: t.Optional(t.Number()),
+  maximum: t.Optional(t.Number()),
+});
+
+const webhookInputSchema = t.Object({
+  properties: t.Record(t.String(), webhookFieldSchema),
+  required: t.Optional(t.Array(t.String(), { maxItems: 100 })),
+});
+
 const webhookFields = {
   webhookResponseMode: t.Optional(t.Union([t.Literal("async"), t.Literal("sync")])),
   webhookResponseTimeoutMs: t.Optional(t.Integer({ minimum: 1000, maximum: 120_000 })),
@@ -43,6 +66,8 @@ const webhookFields = {
   allowedMethods: t.Optional(t.Array(webhookMethodEnum, { minItems: 1, maxItems: 5 })),
   /** Segredo HMAC. Null/undefined remove a exigência de assinatura. */
   hmacSecret: t.Optional(t.Union([t.String({ minLength: 16, maxLength: 256 }), t.Null()])),
+  /** Schema de validação do body. Null remove a validação. */
+  inputSchema: t.Optional(t.Union([webhookInputSchema, t.Null()])),
 };
 
 // Config de `interval_trigger`. Validado estritamente porque o scheduler

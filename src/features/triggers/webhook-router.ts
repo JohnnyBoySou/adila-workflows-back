@@ -8,6 +8,7 @@ import { workflowRunStepsRepository } from "../workflow-runs/steps-repository";
 import { workflowRunsRepository } from "../workflow-runs/repository";
 import { triggersRepository } from "./repository";
 import { webhookParams } from "./schema";
+import type { WebhookInputSchema, WebhookFieldSchema } from "../../db/schema";
 
 /**
  * Endpoint público (sem auth) para disparar workflows via webhook.
@@ -27,6 +28,92 @@ import { webhookParams } from "./schema";
  *       status/headers/body customizados;
  *     • caso contrário, o `output` final do run como JSON com status 200.
  */
+/* -------------------------------------------------------------------------- */
+/* Validação de schema de entrada                                              */
+/* -------------------------------------------------------------------------- */
+
+interface FieldError {
+  path: string;
+  message: string;
+}
+
+function validateField(path: string, value: unknown, schema: WebhookFieldSchema): FieldError[] {
+  const errors: FieldError[] = [];
+
+  if (value === undefined || value === null) return errors; // required é checado antes
+
+  const { type } = schema;
+
+  if (type === "string") {
+    if (typeof value !== "string") {
+      errors.push({ path, message: "Deve ser uma string" });
+      return errors;
+    }
+    if (schema.minLength !== undefined && value.length < schema.minLength)
+      errors.push({ path, message: `Mínimo de ${schema.minLength} caracteres` });
+    if (schema.maxLength !== undefined && value.length > schema.maxLength)
+      errors.push({ path, message: `Máximo de ${schema.maxLength} caracteres` });
+    if (schema.pattern !== undefined && !new RegExp(schema.pattern).test(value))
+      errors.push({ path, message: `Não corresponde ao padrão ${schema.pattern}` });
+    if (schema.enum !== undefined && !schema.enum.includes(value))
+      errors.push({ path, message: `Deve ser um de: ${schema.enum.join(", ")}` });
+  } else if (type === "number") {
+    if (typeof value !== "number" || !Number.isFinite(value)) {
+      errors.push({ path, message: "Deve ser um número" });
+      return errors;
+    }
+    if (schema.minimum !== undefined && value < schema.minimum)
+      errors.push({ path, message: `Deve ser ≥ ${schema.minimum}` });
+    if (schema.maximum !== undefined && value > schema.maximum)
+      errors.push({ path, message: `Deve ser ≤ ${schema.maximum}` });
+  } else if (type === "integer") {
+    if (typeof value !== "number" || !Number.isInteger(value)) {
+      errors.push({ path, message: "Deve ser um inteiro" });
+      return errors;
+    }
+    if (schema.minimum !== undefined && value < schema.minimum)
+      errors.push({ path, message: `Deve ser ≥ ${schema.minimum}` });
+    if (schema.maximum !== undefined && value > schema.maximum)
+      errors.push({ path, message: `Deve ser ≤ ${schema.maximum}` });
+  } else if (type === "boolean") {
+    if (typeof value !== "boolean")
+      errors.push({ path, message: "Deve ser true ou false" });
+  } else if (type === "object") {
+    if (typeof value !== "object" || Array.isArray(value) || value === null)
+      errors.push({ path, message: "Deve ser um objeto" });
+  } else if (type === "array") {
+    if (!Array.isArray(value))
+      errors.push({ path, message: "Deve ser um array" });
+  }
+
+  return errors;
+}
+
+function validateBody(body: unknown, schema: WebhookInputSchema): FieldError[] {
+  const errors: FieldError[] = [];
+
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return [{ path: "$", message: "O body deve ser um objeto JSON" }];
+  }
+
+  const obj = body as Record<string, unknown>;
+
+  // Campos obrigatórios
+  for (const key of schema.required ?? []) {
+    if (obj[key] === undefined || obj[key] === null) {
+      errors.push({ path: key, message: "Campo obrigatório" });
+    }
+  }
+
+  // Validação por campo
+  for (const [key, fieldSchema] of Object.entries(schema.properties)) {
+    if (obj[key] === undefined || obj[key] === null) continue; // já checado acima se required
+    errors.push(...validateField(key, obj[key], fieldSchema));
+  }
+
+  return errors;
+}
+
 const MAX_TIMEOUT_MS = 120_000;
 const SUPPORTED_METHODS = ["POST", "GET", "PUT", "PATCH", "DELETE"] as const;
 type Method = (typeof SUPPORTED_METHODS)[number];
@@ -116,6 +203,18 @@ async function handleWebhook(ctx: HandlerCtx) {
       request.headers.get("x-signature-256") ?? request.headers.get("x-hub-signature-256");
     if (!verifyHmac(trigger.hmacSecret, rawBody, sig)) {
       return status(401, { error: "invalid_signature" });
+    }
+  }
+
+  // Validação de schema de entrada (quando configurado no trigger).
+  if (trigger.inputSchema) {
+    const schemaErrors = validateBody(body, trigger.inputSchema as WebhookInputSchema);
+    if (schemaErrors.length > 0) {
+      return status(400, {
+        error: "invalid_body",
+        message: "O body do webhook não passou na validação do schema",
+        fields: schemaErrors,
+      });
     }
   }
 

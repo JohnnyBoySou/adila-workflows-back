@@ -17,6 +17,7 @@ import { respondToWebhookHandler } from "../../lib/engine/nodes/respond-to-webho
 import { aggregateHandler } from "../../lib/engine/nodes/aggregate";
 import { dateTimeHandler } from "../../lib/engine/nodes/date-time";
 import { itemListsHandler } from "../../lib/engine/nodes/item-lists";
+import { cryptoHandler } from "../../lib/engine/nodes/crypto-node";
 import { environmentVariablesRepository } from "../environment-variables/repository";
 import { workflowsController } from "./controller";
 
@@ -655,6 +656,51 @@ export const workflowNodesRouter = new Elysia({ prefix: "/workflows/:id/nodes/:n
       try {
         const result = await dateTimeHandler({
           node: { id: params.nodeId, type: "date_time", config: body.config },
+          context: {
+            input: body.input ?? {},
+            vars: body.vars ?? {},
+            env: {},
+            steps: (body.steps ?? {}) as Record<string, Record<string, unknown>>,
+          },
+        });
+        return {
+          ok: true as const,
+          output: result.output,
+          durationMs: Date.now() - startedAt,
+        };
+      } catch (err) {
+        return {
+          ok: false as const,
+          error: (err as Error).message,
+          durationMs: Date.now() - startedAt,
+        };
+      }
+    },
+    {
+      params: t.Object({
+        id: t.String({ format: "uuid" }),
+        nodeId: t.String({ minLength: 1, maxLength: 128 }),
+      }),
+      body: t.Object({
+        config: t.Record(t.String(), t.Unknown()),
+        input: t.Optional(t.Record(t.String(), t.Unknown())),
+        vars: t.Optional(t.Record(t.String(), t.Unknown())),
+        steps: t.Optional(t.Record(t.String(), t.Record(t.String(), t.Unknown()))),
+      }),
+    },
+  )
+
+  // Dry-run do `crypto` — qualquer operação (hash/hmac/uuid/random/base64).
+  .post(
+    "/dry-run-crypto",
+    async ({ organizationId, params, body, status }) => {
+      const workflow = await workflowsController.findById(organizationId, params.id);
+      if (!workflow) return status(404, { error: "workflow_not_found" });
+
+      const startedAt = Date.now();
+      try {
+        const result = await cryptoHandler({
+          node: { id: params.nodeId, type: "crypto", config: body.config },
           context: {
             input: body.input ?? {},
             vars: body.vars ?? {},

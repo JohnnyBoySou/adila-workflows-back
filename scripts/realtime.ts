@@ -108,12 +108,18 @@ const app = new Elysia({ name: "realtime-gateway" })
     }),
     async open(ws) {
       const workflowId = ws.data.params.workflowId;
+      console.log("[ws] open attempt", {
+        workflowId,
+        hasCookie: Boolean(ws.data.headers.cookie),
+        origin: ws.data.headers.origin,
+      });
       const authHeaders = new Headers();
       for (const [k, v] of Object.entries(ws.data.headers)) {
         if (typeof v === "string") authHeaders.set(k, v);
       }
       const authz = await authorize(authHeaders, workflowId);
       if (!authz) {
+        console.log("[ws] unauthorized — closing", { workflowId });
         ws.send({ type: "error", error: "unauthorized" });
         ws.close();
         return;
@@ -124,6 +130,7 @@ const app = new Elysia({ name: "realtime-gateway" })
       });
       sockets.set(ws, { ...authz, unsubscribe });
       ws.send({ type: "room.ready", workflowId, connectionId: token });
+      console.log("[ws] room.ready", { workflowId, userId: authz.userId });
     },
     async message(ws, message) {
       const workflowId = ws.data.params.workflowId;
@@ -173,6 +180,7 @@ const app = new Elysia({ name: "realtime-gateway" })
       const workflowId = ws.data.params.workflowId;
       const state = sockets.get(ws);
       const userId = state?.userId;
+      console.log("[ws] close", { workflowId, userId });
       if (typeof userId === "string" && userId.length > 0) {
         await gateway.removePresence(workflowId, userId);
         await gateway.publish({ type: "user.left", workflowId, userId });

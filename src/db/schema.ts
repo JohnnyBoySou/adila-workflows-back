@@ -14,6 +14,26 @@ import {
 import { sql } from "drizzle-orm";
 import { organization, user } from "./auth-schema";
 
+// ── Tipos compartilhados ──────────────────────────────────────────────────────
+
+export type WebhookFieldSchema = {
+  type: "string" | "number" | "integer" | "boolean" | "object" | "array";
+  description?: string;
+  // string
+  minLength?: number;
+  maxLength?: number;
+  pattern?: string;
+  enum?: string[];
+  // number/integer
+  minimum?: number;
+  maximum?: number;
+};
+
+export type WebhookInputSchema = {
+  properties: Record<string, WebhookFieldSchema>;
+  required?: string[];
+};
+
 // ───────────────────────────── folders ─────────────────────────────
 
 export const folders = pgTable("folders", {
@@ -385,6 +405,13 @@ export const triggers = pgTable(
     webhookResponseMode: text("webhook_response_mode").$type<"async" | "sync">().default("async"),
     // Limite máximo de espera em modo sync. Default 30s; suficiente pra request-response típico.
     webhookResponseTimeoutMs: integer("webhook_response_timeout_ms").default(30_000),
+    /**
+     * Schema de validação do body de entrada (subconjunto de JSON Schema).
+     * Quando definido, o webhook-router valida o body antes de criar o run.
+     * Retorna 400 com erros por campo se inválido.
+     * Shape: { properties: Record<string, FieldSchema>, required?: string[] }
+     */
+    inputSchema: jsonb("input_schema").$type<WebhookInputSchema | null>(),
 
     lastTriggeredAt: timestamp("last_triggered_at", { withTimezone: true }),
     lastRunId: uuid("last_run_id").references(() => workflowRuns.id, {
