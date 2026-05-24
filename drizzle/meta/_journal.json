@@ -141,6 +141,13 @@
       "when": 1779586764521,
       "tag": "0021_shallow_the_hand",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1779596400000,
+      "tag": "0022_trigger_input_schema",
+      "breakpoints": true
     }
   ]
 }
