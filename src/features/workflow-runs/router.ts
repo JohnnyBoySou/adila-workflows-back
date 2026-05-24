@@ -1,18 +1,88 @@
 import { Elysia } from "elysia";
+import { env } from "../../config/env";
 import { requireOrganization } from "../../lib/auth-middleware";
+import { workflowQueue } from "../../lib/queue";
 import { subscribeToRun } from "../../lib/run-events";
 import { auditLog } from "../audit-logs/service";
 import { workflowRunsController } from "./controller";
+import { workflowRunEventsRepository } from "./events-repository";
 import { workflowRunsRepository } from "./repository";
 import { workflowRunStepsRepository } from "./steps-repository";
 import { listRunsParams, listRunsQuery, runParams } from "./schema";
 
 // Status terminais — quando recebemos um evento desses fechamos o SSE.
-const TERMINAL_EVENTS = new Set(["run-success", "run-failed", "run-cancelled"]);
+const TERMINAL_EVENTS = new Set([
+  "run-success",
+  "run-failed",
+  "run-cancelled",
+  "workflow.finished",
+  "workflow.failed",
+  "workflow.cancelled",
+]);
 
 // Sub-rota de workflows → /workflows/:id/runs.
 export const workflowRunsRouter = new Elysia({ prefix: "/workflows/:id/runs" })
   .use(requireOrganization)
+
+  .get(
+    "/throughput",
+    async ({ organizationId, params }) => {
+      const windowMinutes = 15;
+      const since = new Date(Date.now() - windowMinutes * 60_000);
+      const events = await workflowRunEventsRepository.listWorkflowFinishedEvents(
+        organizationId,
+        params.id,
+        since,
+      );
+      const counts = new Map<string, number>();
+      for (const event of events) {
+        const bucket = new Date(event.occurredAt);
+        bucket.setSeconds(0, 0);
+        const key = bucket.toISOString();
+        counts.set(key, (counts.get(key) ?? 0) + 1);
+      }
+      const series = Array.from(counts.entries())
+        .sort(([a], [b]) => (a < b ? -1 : 1))
+        .map(([minute, runs]) => ({ minute, runs }));
+      const jobCounts = await workflowQueue.getJobCounts(
+        "waiting",
+        "prioritized",
+        "active",
+        "completed",
+        "failed",
+        "delayed",
+      );
+      const runsPerSecond = Number((events.length / (windowMinutes * 60)).toFixed(3));
+      return {
+        windowMinutes,
+        finishedRuns: events.length,
+        runsPerSecond,
+        workerConcurrency: env.WORKFLOW_WORKER_CONCURRENCY,
+        queue: jobCounts,
+        series,
+      };
+    },
+    { params: listRunsParams },
+  )
+
+  .get(
+    "/:runId/timeline",
+    async ({ organizationId, params, status }) => {
+      const run = await workflowRunsRepository.findById(organizationId, params.id, params.runId);
+      if (!run) return status(404, { error: "not_found" });
+      const events = await workflowRunEventsRepository.listByRun(
+        organizationId,
+        params.id,
+        params.runId,
+      );
+      const firstAt = events[0]?.occurredAt?.getTime() ?? null;
+      return events.map((event) => ({
+        ...event,
+        deltaMs: firstAt === null ? 0 : event.occurredAt.getTime() - firstAt,
+      }));
+    },
+    { params: runParams },
+  )
 
   .get(
     "/",

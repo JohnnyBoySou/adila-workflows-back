@@ -105,6 +105,7 @@ export const workflowsController = {
        * se a versão não existir ou pertencer a outro workflow.
        */
       workflowVersionId?: string | null;
+      queuePriority?: number;
     } = {},
   ) {
     const workflow = await workflowsRepository.findById(organizationId, id);
@@ -143,6 +144,7 @@ export const workflowsController = {
       status: "queued",
       input: opts.input ?? {},
       triggeredBy,
+      queuePriority: opts.queuePriority ?? 5,
     });
 
     const job = await workflowQueue.add(
@@ -158,7 +160,11 @@ export const workflowsController = {
         // job e some quando o BullMQ limpa.
         pinnedData: opts.pinnedData ?? {},
       },
-      { removeOnComplete: 1000, removeOnFail: 5000 },
+      {
+        priority: opts.queuePriority ?? 5,
+        removeOnComplete: 1000,
+        removeOnFail: 5000,
+      },
     );
 
     // Guarda o jobId pra correlacionar com o BullMQ.
@@ -169,6 +175,7 @@ export const workflowsController = {
       jobId: job.id,
       workflowId: workflow.id,
       environmentId: opts.environmentId ?? null,
+      queuePriority: opts.queuePriority ?? 5,
     };
   },
 };

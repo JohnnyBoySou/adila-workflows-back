@@ -19,7 +19,9 @@
     "format": "oxfmt --ignore-path .oxfmtignore",
     "format:check": "oxfmt --ignore-path .oxfmtignore --check",
     "check": "bun run lint && bun run format:check && bun run typecheck",
-    "prepare": "test -d .git && lefthook install || true"
+    "prepare": "test -d .git && lefthook install || true",
+    "start:realtime": "bun run scripts/realtime.ts",
+    "realtime": "bun run --watch scripts/realtime.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.79",

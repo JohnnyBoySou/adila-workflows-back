@@ -121,6 +121,7 @@ export const workflowsRouter = new Elysia({ prefix: "/workflows" })
         environmentId: body?.environmentId,
         input: body?.input,
         pinnedData: body?.pinnedData,
+        queuePriority: body?.queuePriority,
       });
       if ("error" in result) {
         return status(result.error === "not_found" ? 404 : 400, { error: result.error });
@@ -131,7 +132,11 @@ export const workflowsRouter = new Elysia({ prefix: "/workflows" })
         action: "workflow.ran",
         resourceType: "workflow",
         resourceId: params.id,
-        metadata: { runId: result.runId, environmentId: body?.environmentId ?? null },
+        metadata: {
+          runId: result.runId,
+          environmentId: body?.environmentId ?? null,
+          queuePriority: body?.queuePriority ?? 5,
+        },
         request,
       });
       return status(202, result);

@@ -26,6 +26,7 @@ const EnvSchema = Type.Object({
   DATABASE_URL: Type.String({ minLength: 1 }),
 
   REDIS_URL: Type.String({ default: "redis://127.0.0.1:6379" }),
+  WORKFLOW_WORKER_CONCURRENCY: Type.Number({ default: 20 }),
 
   // Obrigatório no servidor HTTP; o worker não carrega `lib/auth` e por
   // isso roda sem essa variável. A checagem dura mora em `lib/auth.ts`.
