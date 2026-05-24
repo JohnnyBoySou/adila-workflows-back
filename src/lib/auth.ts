@@ -126,12 +126,22 @@ export const auth = betterAuth({
     // Front e back em origens distintas em dev (Vite 5173 ↔ Elysia 3000):
     // SameSite=None + Secure é o único combo que faz o cookie viajar em fetch
     // cross-origin com credentials. Browsers aceitam Secure em http://localhost.
-    // Em prod, prefira hospedar back/front em subdomínios do mesmo eTLD+1 e
-    // habilite crossSubDomainCookies pra trocar pra SameSite=Lax.
     defaultCookieAttributes: {
       sameSite: "none",
       secure: true,
+      ...(env.AUTH_COOKIE_DOMAIN ? { domain: env.AUTH_COOKIE_DOMAIN } : {}),
     },
+    // Em prod, api.* e realtime.* precisam compartilhar o cookie de sessão.
+    // Setar `AUTH_COOKIE_DOMAIN=.workflow.lai.ia.br` no api+realtime emite
+    // o cookie com Domain=.workflow.lai.ia.br — qualquer subdomain recebe.
+    ...(env.AUTH_COOKIE_DOMAIN
+      ? {
+          crossSubDomainCookies: {
+            enabled: true,
+            domain: env.AUTH_COOKIE_DOMAIN,
+          },
+        }
+      : {}),
   },
 
   plugins: [

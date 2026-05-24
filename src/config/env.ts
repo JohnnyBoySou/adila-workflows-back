@@ -33,6 +33,13 @@ const EnvSchema = Type.Object({
   BETTER_AUTH_SECRET: Type.Optional(Type.String({ minLength: 1 })),
   BETTER_AUTH_URL: Type.String({ default: "http://localhost:3000" }),
 
+  // Domínio para cookies cross-subdomain (ex.: ".workflow.lai.ia.br").
+  // Quando setado, o cookie de sessão é emitido com Domain=<valor>, fazendo
+  // o browser enviar a sessão para *.workflow.lai.ia.br — necessário para
+  // o serviço realtime em `realtime.workflow.lai.ia.br` reconhecer a sessão
+  // emitida por `api.workflow.lai.ia.br`. Não setar em dev.
+  AUTH_COOKIE_DOMAIN: Type.Optional(Type.String({ minLength: 1 })),
+
   // Chave simétrica para AES-256-GCM (criptografia de secrets em repouso).
   // 32 bytes em base64. Gere com: openssl rand -base64 32
   ENCRYPTION_KEY: Type.String({ minLength: 1 }),
