@@ -10,27 +10,21 @@ import { connection } from "./redis";
  * porque o protocolo bloqueia a conexão em modo subscribe.
  */
 
-export type RunEvent =
-  | {
-      type: "run-start" | "run-success" | "run-failed" | "run-cancelled";
-      runId: string;
-      at: string;
-      data?: Record<string, unknown>;
-    }
-  | {
-      type: "step-start" | "step-success" | "step-failed";
-      runId: string;
-      at: string;
-      step: {
-        index: number;
-        nodeId: string;
-        nodeType: string;
-        status: "running" | "success" | "failed";
-        output?: Record<string, unknown> | null;
-        error?: Record<string, unknown> | null;
-        durationMs?: number | null;
-      };
-    };
+export type RunEvent = {
+  type: string;
+  runId: string;
+  at: string;
+  data?: Record<string, unknown>;
+  step?: {
+    index: number;
+    nodeId: string;
+    nodeType: string;
+    status: "running" | "success" | "failed";
+    output?: Record<string, unknown> | null;
+    error?: Record<string, unknown> | null;
+    durationMs?: number | null;
+  };
+};
 
 function channel(runId: string) {
   return `run:${runId}`;

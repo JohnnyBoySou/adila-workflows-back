@@ -174,6 +174,8 @@ export const workflowRuns = pgTable("workflow_runs", {
   status: text("status").$type<WorkflowRunStatus>().notNull().default("queued"),
   // Referência ao job BullMQ enquanto a execução está viva.
   jobId: text("job_id"),
+  // Prioridade da fila BullMQ: menor número = maior prioridade.
+  queuePriority: integer("queue_priority").notNull().default(5),
   input: jsonb("input").$type<Record<string, unknown>>().notNull().default({}),
   output: jsonb("output").$type<Record<string, unknown> | null>(),
   // Erro estruturado: { message, stack?, code? }.
@@ -226,6 +228,66 @@ export const workflowRunSteps = pgTable("workflow_run_steps", {
 
 export type WorkflowRunStep = typeof workflowRunSteps.$inferSelect;
 export type NewWorkflowRunStep = typeof workflowRunSteps.$inferInsert;
+
+// ────────────────────────── workflow_run_events ──────────────────────────
+// Event log append-only por execução. Cada transição relevante vira evento
+// (run/step/retry/etc). Fonte para replay, timeline, métricas e analytics.
+
+export const workflowRunEvents = pgTable(
+  "workflow_run_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    runId: uuid("run_id")
+      .notNull()
+      .references(() => workflowRuns.id, { onDelete: "cascade" }),
+    workflowId: uuid("workflow_id")
+      .notNull()
+      .references(() => workflows.id, { onDelete: "cascade" }),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    nodeId: text("node_id"),
+    eventType: text("event_type").notNull(),
+    source: text("source").notNull().default("worker"),
+    payload: jsonb("payload").$type<Record<string, unknown>>().notNull().default({}),
+    occurredAt: timestamp("occurred_at", { withTimezone: true }).defaultNow().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index("workflow_run_events_run_occurred_idx").on(t.runId, t.occurredAt),
+    index("workflow_run_events_type_idx").on(t.eventType),
+  ],
+);
+
+export type WorkflowRunEvent = typeof workflowRunEvents.$inferSelect;
+export type NewWorkflowRunEvent = typeof workflowRunEvents.$inferInsert;
+
+// ───────────────────── collaboration_snapshots ─────────────────────
+// Snapshots/patches incrementais de colaboração (Yjs/awareness) por workflow.
+
+export const collaborationSnapshots = pgTable(
+  "collaboration_snapshots",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    workflowId: uuid("workflow_id")
+      .notNull()
+      .references(() => workflows.id, { onDelete: "cascade" }),
+    kind: text("kind").$type<"snapshot" | "patch">().notNull(),
+    updateBase64: text("update_base64").notNull(),
+    sourceUserId: text("source_user_id").references(() => user.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index("collab_snapshots_workflow_created_idx").on(t.workflowId, t.createdAt),
+    index("collab_snapshots_kind_idx").on(t.kind),
+  ],
+);
+
+export type CollaborationSnapshot = typeof collaborationSnapshots.$inferSelect;
+export type NewCollaborationSnapshot = typeof collaborationSnapshots.$inferInsert;
 
 // ──────────────────────────────── triggers ────────────────────────────────
 

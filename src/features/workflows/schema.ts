@@ -49,6 +49,8 @@ export const runWorkflowBody = t.Optional(
     // Útil pra desenvolvimento: não dispara API externa, não consome créditos
     // de AI, etc. Chave = nodeId; valor = output completo do nó.
     pinnedData: t.Optional(t.Record(t.String(), t.Record(t.String(), t.Unknown()))),
+    // BullMQ priority: menor número executa antes (1=alta, 5=normal, 10=baixa).
+    queuePriority: t.Optional(t.Numeric({ minimum: 1, maximum: 10, default: 5 })),
   }),
 );
 

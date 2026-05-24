@@ -10,6 +10,7 @@ import { environmentVariablesController } from "../src/features/environment-vari
 import { triggersRepository } from "../src/features/triggers/repository";
 import { resyncEnabledCronTriggers } from "../src/features/triggers/scheduler";
 import { workflowRunsRepository } from "../src/features/workflow-runs/repository";
+import { workflowRunEventsRepository } from "../src/features/workflow-runs/events-repository";
 import { workflowVersionsRepository } from "../src/features/workflow-versions/repository";
 import { workflowsController } from "../src/features/workflows/controller";
 import { workflowsRepository } from "../src/features/workflows/repository";
@@ -42,7 +43,25 @@ async function processWorkflow(job: Job<WorkflowJob>) {
 
   log.info("start");
   await workflowRunsRepository.markRunning(runId, job.id ?? "");
-  await publishRunEvent({ type: "run-start", runId, at: new Date().toISOString() });
+  const publishEvent = async (
+    type: import("../src/lib/run-events").RunEvent["type"],
+    payload: Record<string, unknown> = {},
+    nodeId?: string,
+  ) => {
+    const at = new Date().toISOString();
+    await workflowRunEventsRepository.create({
+      runId,
+      workflowId,
+      organizationId,
+      nodeId,
+      eventType: type,
+      source: "worker",
+      payload,
+      occurredAt: new Date(at),
+    });
+    await publishRunEvent({ type, runId, at, data: payload });
+  };
+  await publishEvent("workflow.started");
 
   try {
     // Executa contra o snapshot imutável quando disponível; fallback para o
@@ -94,11 +113,13 @@ async function processWorkflow(job: Job<WorkflowJob>) {
         return Boolean(r?.cancelRequested);
       },
       onStepEvent: (event) =>
-        publishRunEvent({
-          type: event.type,
-          runId,
-          at: new Date().toISOString(),
-          step: {
+        publishEvent(
+          event.type === "step-start"
+            ? "node.started"
+            : event.type === "step-success"
+              ? "node.finished"
+              : "node.failed",
+          {
             index: event.index,
             nodeId: event.nodeId,
             nodeType: event.nodeType,
@@ -107,38 +128,28 @@ async function processWorkflow(job: Job<WorkflowJob>) {
             error: event.error ?? null,
             durationMs: event.durationMs ?? null,
           },
-        }),
+          event.nodeId,
+        ),
     });
 
     await workflowRunsRepository.markSuccess(runId, result.output);
-    await publishRunEvent({
-      type: "run-success",
-      runId,
-      at: new Date().toISOString(),
-      data: { output: result.output, stepsExecuted: result.stepsExecuted },
+    await publishEvent("workflow.finished", {
+      output: result.output,
+      stepsExecuted: result.stepsExecuted,
     });
     log.info({ steps: result.stepsExecuted }, "success");
     return result.output;
   } catch (err) {
     if (err instanceof CancelledError) {
       await workflowRunsRepository.markCancelled(runId);
-      await publishRunEvent({
-        type: "run-cancelled",
-        runId,
-        at: new Date().toISOString(),
-      });
+      await publishEvent("workflow.cancelled");
       log.info("cancelled");
       return { cancelled: true };
     }
     const e = err as Error;
     const payload = { message: e.message, stack: e.stack };
     await workflowRunsRepository.markFailed(runId, payload);
-    await publishRunEvent({
-      type: "run-failed",
-      runId,
-      at: new Date().toISOString(),
-      data: payload,
-    });
+    await publishEvent("workflow.failed", payload);
     log.error({ err: payload }, "failed");
     throw err;
   }

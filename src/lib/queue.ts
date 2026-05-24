@@ -1,4 +1,5 @@
 import { Queue, QueueEvents, Worker, type Processor } from "bullmq";
+import { env } from "../config/env";
 import { connection } from "./redis";
 
 // ─── Workflows ──────────────────────────────────────────────
@@ -29,7 +30,10 @@ export const workflowQueue = new Queue<WorkflowJob>("workflows", { connection })
 export const workflowQueueEvents = new QueueEvents("workflows", { connection });
 
 export function createWorkflowWorker(processor: Processor<WorkflowJob>) {
-  return new Worker<WorkflowJob>("workflows", processor, { connection });
+  return new Worker<WorkflowJob>("workflows", processor, {
+    connection,
+    concurrency: env.WORKFLOW_WORKER_CONCURRENCY,
+  });
 }
 
 // ─── Cron scheduler ─────────────────────────────────────────
