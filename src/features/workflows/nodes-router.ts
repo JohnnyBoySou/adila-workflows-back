@@ -525,6 +525,8 @@ export const workflowNodesRouter = new Elysia({ prefix: "/workflows/:id/nodes/:n
             vars: body.vars ?? {},
             env: {},
             steps: (body.steps ?? {}) as Record<string, Record<string, unknown>>,
+            prev: body.input ?? {},
+            loopState: {},
           },
         });
         return {
@@ -571,6 +573,8 @@ export const workflowNodesRouter = new Elysia({ prefix: "/workflows/:id/nodes/:n
             vars: body.vars ?? {},
             env: {},
             steps: (body.steps ?? {}) as Record<string, Record<string, unknown>>,
+            prev: body.input ?? {},
+            loopState: {},
           },
         });
         return {
@@ -616,6 +620,8 @@ export const workflowNodesRouter = new Elysia({ prefix: "/workflows/:id/nodes/:n
             vars: body.vars ?? {},
             env: {},
             steps: (body.steps ?? {}) as Record<string, Record<string, unknown>>,
+            prev: body.input ?? {},
+            loopState: {},
           },
         });
         return {
@@ -661,6 +667,8 @@ export const workflowNodesRouter = new Elysia({ prefix: "/workflows/:id/nodes/:n
             vars: body.vars ?? {},
             env: {},
             steps: (body.steps ?? {}) as Record<string, Record<string, unknown>>,
+            prev: body.input ?? {},
+            loopState: {},
           },
         });
         return {
@@ -706,6 +714,8 @@ export const workflowNodesRouter = new Elysia({ prefix: "/workflows/:id/nodes/:n
             vars: body.vars ?? {},
             env: {},
             steps: (body.steps ?? {}) as Record<string, Record<string, unknown>>,
+            prev: body.input ?? {},
+            loopState: {},
           },
         });
         return {
@@ -751,6 +761,8 @@ export const workflowNodesRouter = new Elysia({ prefix: "/workflows/:id/nodes/:n
             vars: body.vars ?? {},
             env: {},
             steps: (body.steps ?? {}) as Record<string, Record<string, unknown>>,
+            prev: body.input ?? {},
+            loopState: {},
           },
         });
         return {

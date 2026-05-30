@@ -420,6 +420,12 @@ export const triggers = pgTable(
     // Webhook — token único usado na URL pública /hooks/:token.
     webhookToken: text("webhook_token").unique(),
     /**
+     * Path personalizado opcional. Quando setado, o webhook responde também em
+     * /hooks/<path> além do token. Útil pra alias amigável (ex.: "clinicare1"
+     * em vez de "5b63103cd3ef..."). Único globalmente. Slug ascii [a-z0-9-_].
+     */
+    webhookPath: text("webhook_path").unique(),
+    /**
      * Métodos HTTP aceitos no endpoint público /hooks/:token. Default ['POST'].
      * Validado pelo webhook-router antes de criar o run.
      */

@@ -76,8 +76,20 @@ export const redisHandler: NodeHandler = async ({ node, context }) => {
   try {
     await client.connect();
     const command = client[operation as keyof Redis] as (...a: unknown[]) => Promise<unknown>;
-    const result = await command.apply(client, args);
-    return { output: { operation, result } };
+    try {
+      const result = await command.apply(client, args);
+      return { output: { operation, result } };
+    } catch (err) {
+      // n8n compat: o `get` do n8n é "smart" — quando a chave é list, retorna
+      // o conteúdo completo (LRANGE 0 -1). Aqui caímos no fallback se o
+      // GET der WRONGTYPE.
+      const msg = (err as Error).message ?? "";
+      if (operation === "get" && msg.includes("WRONGTYPE")) {
+        const lrangeResult = await client.lrange(String(args[0] ?? ""), 0, -1);
+        return { output: { operation, result: lrangeResult, fallback: "lrange" } };
+      }
+      throw err;
+    }
   } finally {
     client.disconnect();
   }

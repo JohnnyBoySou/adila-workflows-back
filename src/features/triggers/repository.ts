@@ -44,6 +44,12 @@ export const triggersRepository = {
     return row ?? null;
   },
 
+  /** Lookup por path personalizado (alias amigável tipo /hooks/clinicare1). */
+  async findByWebhookPath(path: string) {
+    const [row] = await db.select().from(triggers).where(eq(triggers.webhookPath, path)).limit(1);
+    return row ?? null;
+  },
+
   /** Lookup global usado pelo worker do cron scheduler. */
   async findByIdRaw(id: string) {
     const [row] = await db.select().from(triggers).where(eq(triggers.id, id)).limit(1);

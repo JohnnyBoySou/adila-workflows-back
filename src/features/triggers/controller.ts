@@ -159,6 +159,7 @@ export const triggersController = {
       }),
       ...(body.allowedMethods !== undefined && { allowedMethods: body.allowedMethods }),
       ...(body.hmacSecret !== undefined && { hmacSecret: body.hmacSecret }),
+      ...(body.webhookPath !== undefined && { webhookPath: body.webhookPath }),
       ...(mergedConfig !== undefined && { config: mergedConfig }),
     });
     if (!updated) return { error: "not_found" as const };

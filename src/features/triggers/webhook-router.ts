@@ -181,7 +181,13 @@ async function handleWebhook(ctx: HandlerCtx) {
     return status(429, { error: "rate_limited" });
   }
 
-  const trigger = await triggersRepository.findByWebhookToken(params.token);
+  // Lookup: tenta como path personalizado primeiro (alias amigável tipo
+  // /hooks/clinicare1), depois como token cru. Path tem prioridade pra que
+  // colisões raras com prefixo de token resolvam pro alias.
+  let trigger = await triggersRepository.findByWebhookPath(params.token);
+  if (!trigger) {
+    trigger = await triggersRepository.findByWebhookToken(params.token);
+  }
   if (!trigger || trigger.type !== "webhook") {
     return status(404, { error: "not_found" });
   }

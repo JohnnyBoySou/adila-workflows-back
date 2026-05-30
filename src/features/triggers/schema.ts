@@ -68,6 +68,14 @@ const webhookFields = {
   hmacSecret: t.Optional(t.Union([t.String({ minLength: 16, maxLength: 256 }), t.Null()])),
   /** Schema de validação do body. Null remove a validação. */
   inputSchema: t.Optional(t.Union([webhookInputSchema, t.Null()])),
+  /**
+   * Path personalizado opcional pra URL pública. Quando setado, o endpoint
+   * /hooks/<webhookPath> responde além do default /hooks/<token>. Slug
+   * ascii: letras minúsculas, números, hífen e underscore. Null remove o alias.
+   */
+  webhookPath: t.Optional(
+    t.Union([t.String({ pattern: "^[a-z0-9_-]{2,64}$", minLength: 2, maxLength: 64 }), t.Null()]),
+  ),
 };
 
 // Config de `interval_trigger`. Validado estritamente porque o scheduler
@@ -135,7 +143,9 @@ export const triggerParams = t.Object({
 });
 
 export const webhookParams = t.Object({
-  token: t.String({ minLength: 16, maxLength: 128 }),
+  // Aceita tanto token cripto (64 chars hex) quanto path personalizado (2-64
+  // chars slug). minLength=2 cobre os dois; o handler distingue via lookup.
+  token: t.String({ minLength: 2, maxLength: 128 }),
 });
 
 // Body do endpoint de promote — explícito e separado do update genérico

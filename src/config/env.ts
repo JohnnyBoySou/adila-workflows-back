@@ -60,6 +60,11 @@ const EnvSchema = Type.Object({
 
   ANTHROPIC_API_KEY: Type.Optional(Type.String()),
   OPENAI_API_KEY: Type.Optional(Type.String()),
+
+  // Delay mínimo entre nós executados, em ms. Útil em dev/demo pra que a
+  // animação no front consiga acompanhar cada nó individualmente — sem
+  // isso, steps de 1-10ms passam imperceptíveis na UI. Em prod = 0.
+  STEP_MIN_DELAY_MS: Type.Number({ default: 0 }),
 });
 
 // Aplica defaults → converte tipos (string → number/boolean) → valida → decode.

@@ -22,6 +22,7 @@
  *   - falha em qualquer nó interrompe o run (todas as branches em curso)
  */
 import { eq } from "drizzle-orm";
+import { env } from "../../config/env";
 import { db } from "../../db";
 import { workflowRunSteps } from "../../db/schema";
 import { nodeHandlers } from "./nodes";
@@ -225,11 +226,37 @@ export async function executeRun(args: RunExecutionInput): Promise<RunExecutionR
   const start = findStart(def);
   if (!start) throw new Error("definition: nenhum nó de start encontrado");
 
+  // nameToId: mapa nome-do-nó-no-n8n → id-do-nó-no-adila. Permite que `$('Nome')`
+  // no code/template resolva pro step output correto. Lemos `config.n8nName`
+  // (gravado pelo importer) com fallback pra `config._editor.title` e pra
+  // `node.name` (quando o user nomeou via UI).
+  const nodeNameToId: Record<string, string> = {};
+  for (const n of def.nodes) {
+    const cfg = n.config as Record<string, unknown> | undefined;
+    const editor = cfg?._editor as Record<string, unknown> | undefined;
+    // n.name não existe no tipo WorkflowNode (engine), mas pode vir no JSON
+    // bruto da definition — lemos via cast seguro pra capturar nomes legados.
+    const nName = (n as unknown as { name?: unknown }).name;
+    const candidates = [
+      typeof cfg?.n8nName === "string" ? cfg.n8nName : null,
+      typeof editor?.title === "string" ? editor.title : null,
+      typeof nName === "string" && nName ? nName : null,
+    ];
+    for (const name of candidates) {
+      if (name && !(name in nodeNameToId)) nodeNameToId[name] = n.id;
+    }
+  }
+
   const ctx: ExecutionContext = {
     input: args.input ?? {},
-    vars: {},
+    vars: { _nodeNameToId: nodeNameToId },
     env: args.env ?? {},
     steps: {},
+    // `prev` começa apontando pro input do run. Após cada nó executar, o
+    // executor sobrescreve com `result.output`. Permite que expressões
+    // `{{ prev.X }}` (traduzidas de `$json.X` do n8n) sempre resolvam pro
+    // output mais recente sem o usuário precisar saber qual foi o nó anterior.
+    prev: args.input ?? {},
     loopState: {},
     subWorkflowRunner: args.subWorkflowRunner,
     resolveConnection: args.resolveConnection,
@@ -248,17 +275,39 @@ export async function executeRun(args: RunExecutionInput): Promise<RunExecutionR
     if (!adjForCyclic.has(e.from)) adjForCyclic.set(e.from, []);
     adjForCyclic.get(e.from)!.push(e);
   }
+  // Detecta nós que estão num ciclo (path próprio de tamanho > 0 de volta
+  // ao mesmo nó). Bug fix: `reachable(adj, n, n)` retorna true imediato pelo
+  // base case `from === target`. Aqui partimos dos NEIGHBORS pra exigir
+  // path real de tamanho >= 1. Sem isso, TODOS os nós eram marcados cíclicos
+  // e o deadEdges loop pulava propagateDead, quebrando fan-in (IF→Switch).
   const cyclicNodes = new Set<NodeId>();
   for (const n of def.nodes) {
-    if (reachable(adjForCyclic, n.id, n.id)) cyclicNodes.add(n.id);
+    const outs = adjForCyclic.get(n.id) ?? [];
+    for (const e of outs) {
+      if (e.to === n.id || reachable(adjForCyclic, e.to, n.id)) {
+        cyclicNodes.add(n.id);
+        break;
+      }
+    }
   }
+  // Edges com label `ai_*` (ai_languageModel, ai_memory, ai_tool, ai_embedding)
+  // são "side channels" do n8n LangChain — não são fluxo executável, são
+  // ligações de configuração entre sub-nodes (OpenAI Chat Model → Agent).
+  // Não contam pra in-degree do destino, não disparam o source.
+  // O ai_agent lê config direto do próprio config — não precisa esses sub-nodes.
+  const isSideChannelEdge = (e: WorkflowEdge): boolean =>
+    typeof e.label === "string" && e.label.startsWith("ai_");
+
   const meta = new Map<NodeId, NodeMeta>();
   for (const n of def.nodes) {
     if (visualNodeTypes.has(n.type)) continue;
     meta.set(n.id, {
       node: n,
-      outgoing: def.edges.filter((e) => e.from === n.id),
-      forwardIncoming: def.edges.filter((e) => e.to === n.id && !backEdges.has(e)),
+      // Outgoing também filtra side channels — não disparamos targets via ai_*.
+      outgoing: def.edges.filter((e) => e.from === n.id && !isSideChannelEdge(e)),
+      forwardIncoming: def.edges.filter(
+        (e) => e.to === n.id && !backEdges.has(e) && !isSideChannelEdge(e),
+      ),
       remaining: 0,
       liveDoneCount: 0,
       status: "pending",
@@ -351,6 +400,22 @@ export async function executeRun(args: RunExecutionInput): Promise<RunExecutionR
       const result = pinned ? { output: pinned } : await handler({ node, context: ctx });
       const finishedAt = new Date();
       ctx.steps[node.id] = result.output;
+      // `prev` sempre aponta pro output mais recente — espelha `$json` do n8n
+      // (item atual fluindo entre nós). Resolve o gap "items[]" sem refator
+      // estrutural.
+      ctx.prev = result.output;
+      // Trigger nodes (start/webhook/manual/schedule/interval/etc.) DEFINEM
+      // o `input` do run. Webhooks reais já chegam com `ctx.input` populado
+      // via job.data.input, mas no "play" do editor o front não passa input,
+      // só `pinnedData[start.id]`. Resultado: ctx.input fica `{}` e templates
+      // `{{ input.body.X }}` quebram em qualquer nó downstream do switch
+      // (onde `prev` já foi sobrescrito).
+      // Solução: assim que o trigger executa, espelha o output dele em
+      // ctx.input. Idempotente: se o input já vinha do job, sobrescreve com
+      // o mesmo conteúdo do pin (são equivalentes por contrato).
+      if (TRIGGER_NODE_TYPES.has(node.type) && result.output && typeof result.output === "object") {
+        ctx.input = result.output as Record<string, unknown>;
+      }
       lastOutput = result.output;
       if ("vars" in result && result.vars) Object.assign(ctx.vars, result.vars);
 
@@ -415,6 +480,14 @@ export async function executeRun(args: RunExecutionInput): Promise<RunExecutionR
         if (backEdges.has(edge)) continue; // back morta é só não-disparo
         if (cyclicNodes.has(node.id)) continue; // fonte cíclica pode revisitar
         propagateDead(edge.to);
+      }
+
+      // Delay mínimo entre nós — útil em dev/demo pra animação no front
+      // conseguir mostrar cada nó individualmente. Não atrasa nós que já
+      // demoraram naturalmente (ex.: wait, http_request lento).
+      const minDelay = env.STEP_MIN_DELAY_MS;
+      if (minDelay > 0 && durationMs < minDelay) {
+        await new Promise((r) => setTimeout(r, minDelay - durationMs));
       }
     } catch (err) {
       const e = err as Error;

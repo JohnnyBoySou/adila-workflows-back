@@ -152,6 +152,18 @@ export interface ExecutionContext {
   env: Record<string, string>;
   steps: Record<NodeId, Record<string, unknown>>;
   /**
+   * Output do step imediatamente anterior — análogo ao `$json` do n8n.
+   * Inicializa = `input` no boot do run; é sobrescrito pelo executor
+   * após cada nó. Permite que workflows importados do n8n com expressões
+   * `{{ $json.X }}` (rewritter traduz pra `{{ prev.X }}`) resolvam corretamente
+   * sem precisar saber qual foi o nó anterior.
+   *
+   * Opcional pra que callers que constroem context manualmente (dry-runs,
+   * preview endpoints em nodes-router) não precisem passar — o template
+   * engine cai pro fallback de `input`/`vars` quando undefined.
+   */
+  prev?: Record<string, unknown>;
+  /**
    * Estado opaco compartilhado entre handlers iterativos (split_in_batches).
    * Não usar fora deles — não é parte do template engine.
    */
