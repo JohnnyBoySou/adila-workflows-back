@@ -30,5 +30,18 @@ export const variableListQuery = t.Object({
   reveal: t.Optional(t.BooleanString()),
 });
 
+// Variáveis com escopo de workflow → /workflows/:id/environments/:environmentId/variables.
+// `:id` é o workflow (consistente com as demais rotas /workflows/:id/...).
+export const wfVariableListParams = t.Object({
+  id: t.String({ format: "uuid" }),
+  environmentId: t.String({ format: "uuid" }),
+});
+
+export const wfVariableParams = t.Object({
+  id: t.String({ format: "uuid" }),
+  environmentId: t.String({ format: "uuid" }),
+  variableId: t.String({ format: "uuid" }),
+});
+
 export type CreateVariableBody = typeof createVariableBody.static;
 export type UpdateVariableBody = typeof updateVariableBody.static;

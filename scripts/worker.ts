@@ -95,7 +95,7 @@ async function processWorkflow(job: Job<WorkflowJob>) {
 
     // Resolve variáveis do ambiente (vazio se não foi escolhido um).
     const variables = environmentId
-      ? await environmentVariablesController.resolveForRun(organizationId, environmentId)
+      ? await environmentVariablesController.resolveForRun(organizationId, environmentId, workflowId)
       : {};
 
     // ── Execução do workflow ──

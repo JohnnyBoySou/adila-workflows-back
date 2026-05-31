@@ -1,4 +1,4 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, isNull, type SQL } from "drizzle-orm";
 import { db } from "../../db";
 import {
   environmentVariables,
@@ -16,8 +16,16 @@ function decryptRow(row: EnvironmentVariable): EnvironmentVariable {
   return { ...row, value: decrypt(row.value) };
 }
 
+// Filtro de escopo: NULL = variáveis da org; uuid = variáveis do workflow.
+// Postgres compara NULL como distinto em `=`, então precisamos do `isNull`.
+function scopeWorkflow(workflowId: string | null): SQL {
+  return workflowId === null
+    ? isNull(environmentVariables.workflowId)
+    : eq(environmentVariables.workflowId, workflowId);
+}
+
 export const environmentVariablesRepository = {
-  async list(organizationId: string, environmentId: string) {
+  async list(organizationId: string, environmentId: string, workflowId: string | null) {
     const rows = await db
       .select()
       .from(environmentVariables)
@@ -25,13 +33,19 @@ export const environmentVariablesRepository = {
         and(
           eq(environmentVariables.organizationId, organizationId),
           eq(environmentVariables.environmentId, environmentId),
+          scopeWorkflow(workflowId),
         ),
       )
       .orderBy(asc(environmentVariables.key));
     return rows.map(decryptRow);
   },
 
-  async findById(organizationId: string, environmentId: string, id: string) {
+  async findById(
+    organizationId: string,
+    environmentId: string,
+    workflowId: string | null,
+    id: string,
+  ) {
     const [row] = await db
       .select()
       .from(environmentVariables)
@@ -40,13 +54,19 @@ export const environmentVariablesRepository = {
           eq(environmentVariables.id, id),
           eq(environmentVariables.environmentId, environmentId),
           eq(environmentVariables.organizationId, organizationId),
+          scopeWorkflow(workflowId),
         ),
       )
       .limit(1);
     return row ? decryptRow(row) : null;
   },
 
-  async findByKey(organizationId: string, environmentId: string, key: string) {
+  async findByKey(
+    organizationId: string,
+    environmentId: string,
+    workflowId: string | null,
+    key: string,
+  ) {
     const [row] = await db
       .select()
       .from(environmentVariables)
@@ -55,6 +75,7 @@ export const environmentVariablesRepository = {
           eq(environmentVariables.organizationId, organizationId),
           eq(environmentVariables.environmentId, environmentId),
           eq(environmentVariables.key, key),
+          scopeWorkflow(workflowId),
         ),
       )
       .limit(1);
@@ -71,6 +92,7 @@ export const environmentVariablesRepository = {
   async update(
     organizationId: string,
     environmentId: string,
+    workflowId: string | null,
     id: string,
     patch: Partial<NewEnvironmentVariable>,
   ) {
@@ -86,6 +108,7 @@ export const environmentVariablesRepository = {
             eq(environmentVariables.id, id),
             eq(environmentVariables.environmentId, environmentId),
             eq(environmentVariables.organizationId, organizationId),
+            scopeWorkflow(workflowId),
           ),
         )
         .limit(1);
@@ -105,13 +128,14 @@ export const environmentVariablesRepository = {
           eq(environmentVariables.id, id),
           eq(environmentVariables.environmentId, environmentId),
           eq(environmentVariables.organizationId, organizationId),
+          scopeWorkflow(workflowId),
         ),
       )
       .returning();
     return row ? decryptRow(row) : null;
   },
 
-  async remove(organizationId: string, environmentId: string, id: string) {
+  async remove(organizationId: string, environmentId: string, workflowId: string | null, id: string) {
     const [row] = await db
       .delete(environmentVariables)
       .where(
@@ -119,6 +143,7 @@ export const environmentVariablesRepository = {
           eq(environmentVariables.id, id),
           eq(environmentVariables.environmentId, environmentId),
           eq(environmentVariables.organizationId, organizationId),
+          scopeWorkflow(workflowId),
         ),
       )
       .returning({ id: environmentVariables.id });

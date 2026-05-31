@@ -13,6 +13,7 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:seed": "bun run scripts/seed.ts",
+    "db:seed:templates": "bun run scripts/seed-templates.ts",
     "worker": "bun run --watch scripts/worker.ts",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
@@ -42,6 +43,7 @@
     "pdf-parse": "^2.4.5",
     "pino": "^10.3.1",
     "postgres": "^3.4.9",
+    "stripe": "^22.2.0",
     "ws": "^8.21.0",
     "yaml": "^2.9.0",
     "yjs": "^13.6.30"

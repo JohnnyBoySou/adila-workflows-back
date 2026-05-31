@@ -10,7 +10,10 @@ import type { NodeHandler } from "../types";
  * metadata jsonb). Esquema responsável pelo usuário — flexibilidade > convenção.
  *
  * Config:
- *   - connectionString: string (templatable)
+ *   - connectionRef: string            — UUID (legado) OU nome lógico ("db_main").
+ *                                        Resolvido via context.resolveConnection
+ *                                        (worker/dry-run); a URL crua nunca aparece aqui.
+ *   - connectionId: string             — alias legado de connectionRef (compat).
  *   - table?: string  — default "documents"
  *   - operation: "insert" | "search"
  *
@@ -34,12 +37,32 @@ const TABLE_RE = /^[A-Za-z_][A-Za-z0-9_]*$/;
 export const vectorStoreHandler: NodeHandler = async ({ node, context }) => {
   const cfg = renderTemplate(node.config, context) as Record<string, unknown>;
 
-  const connectionString = cfg.connectionString;
-  if (typeof connectionString !== "string" || !connectionString) {
-    throw new Error("vector_store: config.connectionString é obrigatório");
+  // `connectionRef` é o canônico (nome lógico ou uuid); `connectionId` é o
+  // alias legado preservado por compat. A URL crua nunca aparece na config —
+  // só a referência, resolvida via `context.resolveConnection`. pgvector é
+  // Postgres, então a connection pode ser do tipo "pgvector" (novo, canônico
+  // pra vector store) ou "postgres" (compat com nós antigos).
+  const rawRef = (cfg.connectionRef ?? cfg.connectionId) as unknown;
+  if (typeof rawRef !== "string" || !rawRef) {
+    throw new Error(
+      "vector_store: config.connectionRef é obrigatório (nome lógico ou uuid de uma connection registrada)",
+    );
   }
+  if (!context.resolveConnection) {
+    throw new Error("vector_store: resolveConnection ausente do contexto — execute via worker");
+  }
+  const resolved = await context.resolveConnection(rawRef);
+  if (!resolved) {
+    throw new Error(`vector_store: connection ${rawRef} não encontrada no workflow`);
+  }
+  if (resolved.kind !== "postgres" && resolved.kind !== "pgvector") {
+    throw new Error(
+      `vector_store: connection ${rawRef} é do tipo ${resolved.kind}, esperado pgvector/postgres`,
+    );
+  }
+  const connectionString = resolved.connectionString;
   if (connectionString === context.env?.DATABASE_URL) {
-    throw new Error("vector_store: connectionString não pode apontar pro DB do app");
+    throw new Error("vector_store: connection não pode apontar pro DB do app");
   }
 
   const table = typeof cfg.table === "string" && cfg.table ? cfg.table : "documents";

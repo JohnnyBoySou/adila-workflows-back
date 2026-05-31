@@ -20,6 +20,7 @@ const ERROR_TO_STATUS: Record<string, number> = {
   invalid_protocol: 400,
   app_owned_url: 400,
   not_supported_for_kind: 400,
+  invalid_database: 400,
   introspection_failed: 502,
 };
 function statusFor(err: string | undefined): number {
@@ -177,6 +178,7 @@ export const databaseConnectionsRouter = new Elysia({
 
       const result = await databaseConnectionsController.schema(params.id, params.connectionId, {
         force: query.refresh === true,
+        database: query.database,
       });
       if ("error" in result) {
         return status(statusFor(result.error), {

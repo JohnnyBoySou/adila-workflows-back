@@ -4,7 +4,11 @@ import { t } from "elysia";
 // e no dialog do node Postgres/Redis.
 const namePattern = "^[A-Za-z][A-Za-z0-9 _-]{0,63}$";
 
-const kindLiteral = t.Union([t.Literal("postgres"), t.Literal("redis")]);
+const kindLiteral = t.Union([
+  t.Literal("postgres"),
+  t.Literal("redis"),
+  t.Literal("pgvector"),
+]);
 
 export const createConnectionBody = t.Object({
   name: t.String({ pattern: namePattern, minLength: 1, maxLength: 64 }),
@@ -40,9 +44,15 @@ export const connectionListQuery = t.Object({
   environmentId: t.Optional(t.String()),
 });
 
+// Database é um identificador permissivo (dígito inicial, `$`, `-`). Espelha
+// `DATABASE_NAME_RE` em studio.ts e `databasePattern` em studio-schema.ts.
+const databasePattern = "^[A-Za-z0-9_][A-Za-z0-9_$-]{0,62}$";
+
 export const schemaQuery = t.Object({
   /** `refresh=true` ignora o cache de 5min e refaz a introspection. */
   refresh: t.Optional(t.BooleanString()),
+  /** Database alvo no cluster. Omitido = database default da connection. */
+  database: t.Optional(t.String({ pattern: databasePattern, minLength: 1, maxLength: 63 })),
 });
 
 export type CreateConnectionBody = typeof createConnectionBody.static;

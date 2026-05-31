@@ -5,11 +5,17 @@ import { env } from "./config/env";
 import { aiRouter } from "./features/ai/router";
 import { auditLogsRouter } from "./features/audit-logs/router";
 import { commentsRouter } from "./features/comments/router";
+import { copilotRouter } from "./features/copilot/router";
 import { databaseConnectionsRouter } from "./features/database-connections/router";
-import { environmentVariablesRouter } from "./features/environment-variables/router";
+import { databaseStudioRouter } from "./features/database-connections/studio-router";
+import {
+  environmentVariablesRouter,
+  workflowEnvironmentVariablesRouter,
+} from "./features/environment-variables/router";
 import { environmentsRouter } from "./features/environments/router";
 import { foldersRouter } from "./features/folders/router";
 import { healthRouter } from "./features/health/router";
+import { stripeWebhookRouter, templatesRouter } from "./features/templates/router";
 import { triggersRouter } from "./features/triggers/router";
 import { webhookRouter } from "./features/triggers/webhook-router";
 import { workflowRunsRouter } from "./features/workflow-runs/router";
@@ -85,6 +91,7 @@ const app = new Elysia()
   .use(foldersRouter)
   .use(environmentsRouter)
   .use(environmentVariablesRouter)
+  .use(workflowEnvironmentVariablesRouter)
   .use(workflowsRouter)
   .use(workflowVersionsRouter)
   .use(workflowRunsRouter)
@@ -92,10 +99,15 @@ const app = new Elysia()
   .use(triggersRouter)
   .use(commentsRouter)
   .use(databaseConnectionsRouter)
+  .use(databaseStudioRouter)
   .use(auditLogsRouter)
   .use(aiRouter)
+  .use(copilotRouter)
+  .use(templatesRouter)
   // Webhook é público (sem requireOrganization) — fica mountado na raiz.
   .use(webhookRouter)
+  // Webhook do Stripe — público, raw body para verificar assinatura.
+  .use(stripeWebhookRouter)
   .listen(env.PORT);
 
 logger.info({ host: app.server?.hostname, port: app.server?.port }, "Elysia running");

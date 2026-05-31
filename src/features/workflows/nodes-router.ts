@@ -18,23 +18,37 @@ import { aggregateHandler } from "../../lib/engine/nodes/aggregate";
 import { dateTimeHandler } from "../../lib/engine/nodes/date-time";
 import { itemListsHandler } from "../../lib/engine/nodes/item-lists";
 import { cryptoHandler } from "../../lib/engine/nodes/crypto-node";
-import { environmentVariablesRepository } from "../environment-variables/repository";
+import { environmentVariablesController } from "../environment-variables/controller";
+import { databaseConnectionsRepository } from "../database-connections/repository";
 import { workflowsController } from "./controller";
 
 /**
- * Carrega as env vars decriptadas de um environment. Devolve `{}` quando
- * `environmentId` é null/undefined ou não pertence à org. Usado por dry-runs
- * pra que `{{env.X}}` resolva igual em runs reais.
+ * Carrega as env vars decriptadas de um environment para o dry-run, em
+ * camadas (org + workflow, workflow vence) — idêntico ao que o worker injeta
+ * num run real, pra que `{{env.X}}` resolva igual. Devolve `{}` quando
+ * `environmentId` é null/undefined ou não pertence à org.
  */
 async function loadEnv(
   organizationId: string,
   environmentId: string | null | undefined,
+  workflowId: string,
 ): Promise<Record<string, string>> {
   if (!environmentId) return {};
-  const rows = await environmentVariablesRepository.list(organizationId, environmentId);
-  const env: Record<string, string> = {};
-  for (const v of rows) env[v.key] = v.value;
-  return env;
+  return environmentVariablesController.resolveForRun(organizationId, environmentId, workflowId);
+}
+
+/**
+ * Closure de resolução de connections pro dry-run — espelha a do worker
+ * (scripts/worker.ts), bound ao workflow + environment do preview. Permite que
+ * o botão "Testar" dos nodes postgres-backed (vector_store, chat_memory)
+ * resolva `connectionRef` (nome lógico ou uuid) sem nunca tocar em URL crua.
+ */
+function makeResolveConnection(workflowId: string, environmentId: string | null | undefined) {
+  return async (ref: string) => {
+    const row = await databaseConnectionsRepository.resolve(workflowId, ref, environmentId ?? null);
+    if (!row) return null;
+    return { connectionString: row.connectionString, kind: row.kind };
+  };
 }
 
 /**
@@ -153,7 +167,7 @@ export const workflowNodesRouter = new Elysia({ prefix: "/workflows/:id/nodes/:n
       const workflow = await workflowsController.findById(organizationId, params.id);
       if (!workflow) return status(404, { error: "workflow_not_found" });
 
-      const env = await loadEnv(organizationId, body.environmentId);
+      const env = await loadEnv(organizationId, body.environmentId, params.id);
       const startedAt = Date.now();
       try {
         const result = await s3Handler({
@@ -191,15 +205,16 @@ export const workflowNodesRouter = new Elysia({ prefix: "/workflows/:id/nodes/:n
     },
   )
 
-  // Dry-run do `vector_store` — também precisa do env pra resolver
-  // `{{env.DATABASE_VECTOR_STORE_URL}}` na connectionString.
+  // Dry-run do `vector_store` — precisa do env (pra `{{env.X}}` em outros
+  // campos) e do `resolveConnection` (pra resolver o `connectionRef` da
+  // credencial tipada, igual ao worker faz num run real).
   .post(
     "/dry-run-vector",
     async ({ organizationId, params, body, status }) => {
       const workflow = await workflowsController.findById(organizationId, params.id);
       if (!workflow) return status(404, { error: "workflow_not_found" });
 
-      const env = await loadEnv(organizationId, body.environmentId);
+      const env = await loadEnv(organizationId, body.environmentId, params.id);
       const startedAt = Date.now();
       try {
         const result = await vectorStoreHandler({
@@ -209,6 +224,7 @@ export const workflowNodesRouter = new Elysia({ prefix: "/workflows/:id/nodes/:n
             vars: {},
             env,
             steps: {},
+            resolveConnection: makeResolveConnection(params.id, body.environmentId),
           },
         });
         return {
@@ -237,15 +253,16 @@ export const workflowNodesRouter = new Elysia({ prefix: "/workflows/:id/nodes/:n
     },
   )
 
-  // Dry-run do `chat_memory` — precisa do env pra resolver
-  // `{{env.MEMORY_DB_URL}}` (ou afim) na connectionString.
+  // Dry-run do `chat_memory` — precisa do env (pra `{{env.X}}` em outros
+  // campos) e do `resolveConnection` (pra resolver o `connectionRef` da
+  // credencial tipada, igual ao worker faz num run real).
   .post(
     "/dry-run-chat-memory",
     async ({ organizationId, params, body, status }) => {
       const workflow = await workflowsController.findById(organizationId, params.id);
       if (!workflow) return status(404, { error: "workflow_not_found" });
 
-      const env = await loadEnv(organizationId, body.environmentId);
+      const env = await loadEnv(organizationId, body.environmentId, params.id);
       const startedAt = Date.now();
       try {
         const result = await chatMemoryHandler({
@@ -255,6 +272,7 @@ export const workflowNodesRouter = new Elysia({ prefix: "/workflows/:id/nodes/:n
             vars: {},
             env,
             steps: {},
+            resolveConnection: makeResolveConnection(params.id, body.environmentId),
           },
         });
         return {
@@ -291,7 +309,7 @@ export const workflowNodesRouter = new Elysia({ prefix: "/workflows/:id/nodes/:n
       const workflow = await workflowsController.findById(organizationId, params.id);
       if (!workflow) return status(404, { error: "workflow_not_found" });
 
-      const env = await loadEnv(organizationId, body.environmentId);
+      const env = await loadEnv(organizationId, body.environmentId, params.id);
       const startedAt = Date.now();
       try {
         const result = await embeddingsHandler({
@@ -337,7 +355,7 @@ export const workflowNodesRouter = new Elysia({ prefix: "/workflows/:id/nodes/:n
       const workflow = await workflowsController.findById(organizationId, params.id);
       if (!workflow) return status(404, { error: "workflow_not_found" });
 
-      const env = await loadEnv(organizationId, body.environmentId);
+      const env = await loadEnv(organizationId, body.environmentId, params.id);
       const startedAt = Date.now();
       try {
         const result = await documentLoaderHandler({
@@ -383,7 +401,7 @@ export const workflowNodesRouter = new Elysia({ prefix: "/workflows/:id/nodes/:n
       const workflow = await workflowsController.findById(organizationId, params.id);
       if (!workflow) return status(404, { error: "workflow_not_found" });
 
-      const env = await loadEnv(organizationId, body.environmentId);
+      const env = await loadEnv(organizationId, body.environmentId, params.id);
       const startedAt = Date.now();
       try {
         const result = await codeHandler({

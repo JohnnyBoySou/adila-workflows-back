@@ -6,6 +6,7 @@ import { environmentsRepository } from "../environments/repository";
 import { fetchPostgresSchema, invalidateIntrospection } from "./introspection";
 import { databaseConnectionsRepository, type DecryptedConnection } from "./repository";
 import type { CreateConnectionBody, UpdateConnectionBody } from "./schema";
+import { applyDatabase, StudioError } from "./studio";
 
 // ── Saneamento ────────────────────────────────────────────────────────
 //
@@ -41,18 +42,19 @@ function normalizeUrl(url: string): string {
   }
 }
 
+// pgvector é Postgres: mesma URL crua, mesmo DB do app a proteger.
 function isAppOwnedUrl(url: string, kind: DatabaseConnectionKind): boolean {
   const target = normalizeUrl(url);
-  if (kind === "postgres") return target === normalizeUrl(env.DATABASE_URL);
-  return target === normalizeUrl(env.REDIS_URL);
+  if (kind === "redis") return target === normalizeUrl(env.REDIS_URL);
+  return target === normalizeUrl(env.DATABASE_URL);
 }
 
 function validateProtocol(url: string, kind: DatabaseConnectionKind): boolean {
   const trimmed = url.trim();
-  if (kind === "postgres") {
-    return trimmed.startsWith("postgres://") || trimmed.startsWith("postgresql://");
+  if (kind === "redis") {
+    return trimmed.startsWith("redis://") || trimmed.startsWith("rediss://");
   }
-  return trimmed.startsWith("redis://") || trimmed.startsWith("rediss://");
+  return trimmed.startsWith("postgres://") || trimmed.startsWith("postgresql://");
 }
 
 // ── Test connection ────────────────────────────────────────────────────
@@ -217,20 +219,41 @@ export const databaseConnectionsController = {
   async test(workflowId: string, id: string): Promise<{ error: string } | TestResult> {
     const row = await databaseConnectionsRepository.findById(workflowId, id);
     if (!row) return { error: "not_found" };
-    if (row.kind === "postgres") return testPostgres(row.connectionString);
-    return testRedis(row.connectionString);
+    if (row.kind === "redis") return testRedis(row.connectionString);
+    return testPostgres(row.connectionString);
   },
 
   /**
-   * Lista tabelas + colunas via information_schema. Cache em memória (5 min);
-   * `?refresh=true` força refetch — útil quando o usuário acabou de migrar.
+   * Lista tabelas + colunas via information_schema. Cache em memória (5 min)
+   * por `(connectionId, database)`; `?refresh=true` força refetch. `database`
+   * (opcional) aponta pra outro database do mesmo cluster — útil pra clusters
+   * multi-db numa única connection.
    */
-  async schema(workflowId: string, id: string, opts: { force?: boolean } = {}) {
+  async schema(
+    workflowId: string,
+    id: string,
+    opts: { force?: boolean; database?: string } = {},
+  ) {
     const row = await databaseConnectionsRepository.findById(workflowId, id);
     if (!row) return { error: "not_found" as const };
-    if (row.kind !== "postgres") return { error: "not_supported_for_kind" as const };
+    // pgvector é Postgres — introspecção via information_schema funciona igual.
+    if (row.kind === "redis") return { error: "not_supported_for_kind" as const };
+
+    let connectionString = row.connectionString;
+    if (opts.database) {
+      try {
+        connectionString = applyDatabase(row.connectionString, opts.database);
+      } catch (err) {
+        if (err instanceof StudioError) return { error: "invalid_database" as const };
+        throw err;
+      }
+    }
+
     try {
-      const result = await fetchPostgresSchema(row.id, row.connectionString, opts);
+      const result = await fetchPostgresSchema(row.id, connectionString, {
+        force: opts.force,
+        database: opts.database,
+      });
       return { schema: result };
     } catch (err) {
       return { error: "introspection_failed" as const, message: (err as Error).message };

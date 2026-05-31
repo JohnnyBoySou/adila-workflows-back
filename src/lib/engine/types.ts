@@ -85,6 +85,7 @@ export const nodeTypes = [
   "s3",
   "pdf_extract",
   "websocket",
+  "db_query",
 ] as const;
 export type NodeType = (typeof nodeTypes)[number];
 
@@ -196,7 +197,8 @@ export interface ExecutionContext {
    */
   resolveConnection?: (
     ref: string,
-  ) => Promise<{ connectionString: string; kind: "postgres" | "redis" } | null>;
+    // pgvector é Postgres (mesma URL/driver); o handler vector_store aceita ambos.
+  ) => Promise<{ connectionString: string; kind: "postgres" | "redis" | "pgvector" } | null>;
 }
 
 /**

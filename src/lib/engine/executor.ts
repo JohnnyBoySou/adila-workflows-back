@@ -94,6 +94,16 @@ export interface RunExecutionResult {
   stepsExecuted: number;
 }
 
+/**
+ * Aliases de tipos legados → tipo canônico. Templates antigos podem trazer
+ * nós com nomes abreviados; sem normalizar, o filtro de `nodeTypes` abaixo
+ * descartaria o nó silenciosamente. Mantém em sincronia com o
+ * `LEGACY_TYPE_ALIASES` do frontend (definition.ts).
+ */
+const LEGACY_TYPE_ALIASES: Record<string, NodeType> = {
+  http: "http_request",
+};
+
 export function normalizeDefinition(raw: unknown): WorkflowDefinition {
   if (!raw || typeof raw !== "object") return { nodes: [], edges: [] };
   const obj = raw as Record<string, unknown>;
@@ -105,8 +115,9 @@ export function normalizeDefinition(raw: unknown): WorkflowDefinition {
       if (!n || typeof n !== "object") continue;
       const node = n as Record<string, unknown>;
       const id = node.id;
-      const type = node.type;
-      if (typeof id !== "string" || typeof type !== "string") continue;
+      const rawType = node.type;
+      if (typeof id !== "string" || typeof rawType !== "string") continue;
+      const type = LEGACY_TYPE_ALIASES[rawType] ?? rawType;
       if (!(nodeTypes as readonly string[]).includes(type)) continue;
       nodes.push({
         id,

@@ -10,6 +10,7 @@ import { containerHandler } from "./container";
 import { cryptoHandler } from "./crypto-node";
 import { csvHandler } from "./csv";
 import { dateTimeHandler } from "./date-time";
+import { dbQueryHandler } from "./db-query";
 import { discordWebhookHandler } from "./discord-webhook";
 import { documentLoaderHandler } from "./document-loader";
 import { editFieldsHandler } from "./edit-fields";
@@ -147,4 +148,5 @@ export const nodeHandlers: Record<NodeType, NodeHandler> = {
   s3: s3Handler,
   pdf_extract: pdfExtractHandler,
   websocket: websocketHandler,
+  db_query: dbQueryHandler,
 };

@@ -162,6 +162,27 @@
       "when": 1779640093210,
       "tag": "0024_cooing_dragon_man",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1780145042868,
+      "tag": "0025_typical_loki",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1780148868487,
+      "tag": "0026_greedy_fantastic_four",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1780151402355,
+      "tag": "0027_medical_callisto",
+      "breakpoints": true
     }
   ]
 }
