@@ -1,5 +1,11 @@
 # Worker Go — Lane `scraping`
 
+> **ARQUIVADO (2026-07-05) — fora do escopo do MVP.** Sem worker Go, a lane
+> `scraping` é consumida pelo worker Node como qualquer outra; nada quebra.
+> Retomar este plano só quando volume/isolamento de scraping justificar um
+> processo dedicado. Mantido aqui como referência de design, não como backlog
+> ativo.
+
 > Contexto: a arquitetura multi-lane do BullMQ ficou pronta em 2026-05-23
 > (ver `src/lib/queue.ts` — `LANE_NAMES`, `pickLaneForDefinition`,
 > `findWorkflowJobAcrossLanes`). A lane `scraping` já é roteada a partir
