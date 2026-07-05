@@ -33,6 +33,23 @@ function generateWebhookToken() {
   return randomBytes(32).toString("hex");
 }
 
+/**
+ * Tipos de trigger que existem no schema e no editor mas ainda NÃO têm
+ * mecanismo de dispatch (router HTTP público ou worker de polling/listener).
+ * Criá-los geraria triggers órfãos que nunca disparam. Bloqueamos na API pra
+ * fechar a porta mesmo quando o front é contornado — a UI já esconde esses nós
+ * via `FEATURES.advancedTriggers`. Reativar cada tipo conforme a infra de
+ * dispatch correspondente for entregue (ver `TODO-triggers-dispatch.md`).
+ */
+const UNAVAILABLE_TRIGGER_TYPES = new Set<TriggerType>([
+  "email_trigger",
+  "form_trigger",
+  "chat_trigger",
+  "rss_trigger",
+  "postgres_trigger",
+  "redis_trigger",
+]);
+
 export const triggersController = {
   list(organizationId: string, workflowId: string, type?: TriggerType) {
     return triggersRepository.list({ organizationId, workflowId, type });
@@ -43,6 +60,10 @@ export const triggersController = {
   },
 
   async create(organizationId: string, workflowId: string, body: CreateTriggerBody) {
+    if (UNAVAILABLE_TRIGGER_TYPES.has(body.type)) {
+      return { error: "trigger_type_unavailable" as const };
+    }
+
     if (body.environmentId) {
       const env = await environmentsRepository.findById(organizationId, body.environmentId);
       if (!env) return { error: "environment_not_found" as const };

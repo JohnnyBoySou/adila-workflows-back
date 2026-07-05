@@ -25,6 +25,7 @@ const ERROR_TO_STATUS: Record<string, number> = {
   webhook_fields_on_cron: 400,
   not_webhook: 400,
   use_promote_endpoint: 400,
+  trigger_type_unavailable: 422,
 };
 
 function statusFor(err: string | undefined): number {
