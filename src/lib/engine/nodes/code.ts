@@ -1,7 +1,8 @@
 import type { NodeHandler } from "../types";
 
 /**
- * Executa JavaScript arbitrário fornecido pelo usuário.
+ * Executa JavaScript arbitrário fornecido pelo usuário, ISOLADO numa thread
+ * (Bun Worker) — ver `code-worker.ts`.
  *
  * Config:
  *   - code: string  — corpo da função; tem acesso a:
@@ -9,96 +10,120 @@ import type { NodeHandler } from "../types";
  *     • `$input`, `$json`, `$node`, `$vars`, `$env`,
  *       `$now`, `$today`, `$execution`, `$workflow`,
  *       `$prevNode`, `$items()`                — polyfills compatíveis com n8n
- *   - timeoutMs?: number  — timeout para código *async*. Default 5000, máx 30000.
+ *   - timeoutMs?: number  — timeout de parede. Default 5000, máx 30000.
  *
  * Output:
  *   - retorno do código (objeto) vira `output`. Retornos não-objeto entram como `{ result }`.
  *
- * Sandbox:
- *   - usa `new Function(...)` — sem acesso a `require`, `process`, ou globais
- *     adicionais. Globais nativos (Math, JSON, Date, etc) continuam disponíveis.
- *   - código síncrono com loop infinito *não* é interrompível (limite do JS);
- *     o timeout só protege contra Promises que não resolvem.
- *   - desenvolvido pra payload-shaping confiável, não pra rodar código de terceiros.
+ * Sandbox (isolamento de thread):
+ *   - roda num Worker com heap próprio — não enxerga conexões/segredos em
+ *     memória do worker BullMQ.
+ *   - **loop síncrono infinito é interrompível**: o timeout mata a thread com
+ *     `worker.terminate()` (ao contrário do `new Function` in-process anterior,
+ *     onde só Promises pendentes eram interrompíveis).
+ *   - um crash no código do usuário fica contido na thread — não derruba o worker.
+ *   - globais perigosos (`process`, `Bun`, `require`, `Function`, ...) são
+ *     neutralizados por shadowing léxico (ver `SHADOWED_GLOBALS`). `eval`
+ *     indireto continua sendo vetor residual — isolamento real contra código
+ *     hostil exige sandbox no nível do SO.
  *
- * Polyfills n8n (best-effort):
- *   - `$input.all() / .first() / .last() / .item.json` retornam o `input` global
- *     (não há items[] real; cada chamada vê o mesmo objeto envelopado).
- *   - `$json` é o `input` (item atual aproximado).
- *   - `$('NomeDoNo')` resolve via `nodeNameToId` injetado pelo importer em `vars._nodeNameToId`,
- *     caindo em `steps[id]` quando achar. Sem o mapa, devolve `{ json: {} }`.
- *   - `$now` / `$today` são `Date` (sem helpers Luxon).
- *   - `$execution` / `$workflow` expõem só `id` e `mode`/`name` quando disponíveis.
+ * Polyfills n8n: ver `code-shims.ts`.
  */
 const DEFAULT_TIMEOUT_MS = 5000;
 const MAX_TIMEOUT_MS = 30_000;
 
-type NodeNameMap = Record<string, string>;
+interface WorkerOk {
+  ok: true;
+  result: unknown;
+}
+interface WorkerErr {
+  ok: false;
+  error: { message: string; name?: string; stack?: string };
+}
+type WorkerReply = WorkerOk | WorkerErr;
 
-function buildN8nShims(
-  input: Record<string, unknown>,
-  prev: Record<string, unknown>,
-  vars: Record<string, unknown>,
-  steps: Record<string, Record<string, unknown>>,
-  env: Record<string, string>,
-): Record<string, unknown> {
-  const nameToId = (vars._nodeNameToId as NodeNameMap | undefined) ?? {};
-  // Item atual fluindo entre nós = output do step anterior (`prev`), com
-  // fallback pro input do run quando prev tá vazio (1º nó depois do trigger).
-  const currentItem = prev && Object.keys(prev).length > 0 ? prev : input;
-  const itemAsObj = { json: currentItem, binary: {} };
-  const items = [itemAsObj];
+interface CodeJob {
+  code: string;
+  input: Record<string, unknown>;
+  prev: Record<string, unknown>;
+  vars: Record<string, unknown>;
+  steps: Record<string, Record<string, unknown>>;
+  env: Record<string, string>;
+}
 
-  const $input = {
-    all: () => items,
-    first: () => itemAsObj,
-    last: () => itemAsObj,
-    item: itemAsObj,
-    params: input,
-  };
+/**
+ * Roda um job de código num Worker efêmero e resolve com o retorno cru.
+ * O Worker é sempre terminado (sucesso, erro OU timeout) — no timeout o
+ * `terminate()` mata inclusive código síncrono travado. Spawn-por-execução:
+ * um Worker terminado não é reutilizável, e a simplicidade vale mais que o
+ * custo (~poucos ms) frente ao timeout de segundos do próprio nó.
+ */
+function runCodeInWorker(job: CodeJob, timeoutMs: number): Promise<unknown> {
+  return new Promise<unknown>((resolve, reject) => {
+    let settled = false;
+    const worker = new Worker(new URL("./code-worker.ts", import.meta.url).href, {
+      type: "module",
+    });
 
-  const $items = () => items;
-
-  const node = (name: string) => {
-    const id = nameToId[name];
-    const stepOut = id ? steps[id] : undefined;
-    const data = stepOut && typeof stepOut === "object" ? (stepOut as Record<string, unknown>) : {};
-    return {
-      json: data,
-      item: { json: data, binary: {} },
-      all: () => [{ json: data, binary: {} }],
-      first: () => ({ json: data, binary: {} }),
-      last: () => ({ json: data, binary: {} }),
+    const finish = (fn: () => void) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      worker.terminate();
+      fn();
     };
-  };
 
-  const now = new Date();
-  return {
-    // `items` é shim só pra compat n8n. Se o user código declara `const items`
-    // / `let items`, prefixar como param causa erro de redeclaração em strict
-    // mode — quem chama o shim deve filtrar via detectUserDeclaredItems().
-    items,
-    $input,
-    $items,
-    $json: currentItem,
-    $node: new Proxy(
-      {},
-      {
-        get(_t, name) {
-          if (typeof name !== "string") return undefined;
-          return node(name);
+    const timer = setTimeout(() => {
+      finish(() => reject(new Error(`code: timeout após ${timeoutMs}ms`)));
+    }, timeoutMs);
+
+    worker.onmessage = (event: MessageEvent<WorkerReply>) => {
+      const reply = event.data;
+      if (reply?.ok) {
+        finish(() => resolve(reply.result));
+      } else {
+        const err = new Error(reply?.error?.message ?? "code: erro desconhecido no sandbox");
+        err.name = reply?.error?.name ?? "Error";
+        if (reply?.error?.stack) err.stack = reply.error.stack;
+        finish(() => reject(err));
+      }
+    };
+
+    worker.onerror = (event: ErrorEvent) => {
+      finish(() => reject(new Error(`code: erro no sandbox — ${event.message || "desconhecido"}`)));
+    };
+
+    worker.postMessage(job);
+  });
+}
+
+/**
+ * Modela o retorno cru do sandbox no `output` do nó. Espelha a convenção n8n
+ * `return [{ json: {...} }]` (unwrap) e envelopa não-objetos em `{ result }`.
+ */
+function shapeOutput(result: unknown): { output: Record<string, unknown> } {
+  if (result === null || result === undefined) return { output: {} };
+  if (typeof result === "object" && !Array.isArray(result)) {
+    return { output: result as Record<string, unknown> };
+  }
+  // n8n convention: `return [{ json: {...} }]`. Quando vier nesse shape,
+  // unwrap pra que `prev.X` resolva direto (em vez de `prev.result[0].json.X`).
+  if (Array.isArray(result) && result.length > 0) {
+    const first = result[0] as { json?: unknown } | null | undefined;
+    if (first && typeof first === "object" && first.json && typeof first.json === "object") {
+      if (result.length === 1) {
+        return { output: first.json as Record<string, unknown> };
+      }
+      // Múltiplos items: expõe como `_items` E mantém shape do primeiro como prev.
+      return {
+        output: {
+          ...(first.json as Record<string, unknown>),
+          _items: result.map((r) => (r as { json: unknown }).json),
         },
-      },
-    ),
-    $: node,
-    $vars: vars,
-    $env: env,
-    $now: now,
-    $today: now,
-    $execution: { id: env.RUN_ID ?? "", mode: "production" },
-    $workflow: { id: env.WORKFLOW_ID ?? "", name: env.WORKFLOW_NAME ?? "" },
-    $prevNode: { json: input },
-  };
+      };
+    }
+  }
+  return { output: { result } };
 }
 
 export const codeHandler: NodeHandler = async ({ node, context }) => {
@@ -113,83 +138,17 @@ export const codeHandler: NodeHandler = async ({ node, context }) => {
     MAX_TIMEOUT_MS,
   );
 
-  const shims = buildN8nShims(
-    context.input,
-    (context.prev ?? {}) as Record<string, unknown>,
-    context.vars,
-    context.steps,
-    context.env,
+  const result = await runCodeInWorker(
+    {
+      code,
+      input: context.input,
+      prev: (context.prev ?? {}) as Record<string, unknown>,
+      vars: context.vars,
+      steps: context.steps,
+      env: context.env,
+    },
+    timeoutMs,
   );
-  // Skip shims que colidem com declarações do usuário. Em strict mode,
-  // `const items = ...` falha se `items` foi passado como param de função —
-  // detectamos via regex e removemos o shim correspondente.
-  const collidingNames = ["items", "$json", "$input", "$vars", "$env"];
-  for (const n of collidingNames) {
-    const re = new RegExp(`\\b(const|let|var)\\s+\\${n.startsWith("$") ? "" : ""}${n}\\b`);
-    if (re.test(code)) delete shims[n];
-  }
-  const shimNames = Object.keys(shims);
-  const shimValues = shimNames.map((k) => shims[k]);
 
-  // Construído com `new Function` pra isolar do escopo léxico do worker.
-  // Argumentos: 4 adila-nativos + N polyfills n8n (sempre na ordem de `shimNames`).
-  type CodeFn = (
-    input: Record<string, unknown>,
-    vars: Record<string, unknown>,
-    steps: Record<string, Record<string, unknown>>,
-    env: Record<string, string>,
-    ...shimArgs: unknown[]
-  ) => unknown;
-  // Args nativos adila prefixados com `__adila_` pra não colidir com `const input
-  // = ...` ou `const vars = ...` que código n8n importado frequentemente declara.
-  // Quem quiser usar via JS, acesse $input/$vars/$env/items que são polyfills shim.
-  let fn: CodeFn;
-  try {
-    fn = new Function(
-      "__adila_input",
-      "__adila_vars",
-      "__adila_steps",
-      "__adila_env",
-      ...shimNames,
-      `"use strict";\n${code}`,
-    ) as CodeFn;
-  } catch (err) {
-    throw new Error(`code: erro de sintaxe — ${(err as Error).message}`, { cause: err });
-  }
-
-  const exec = (async () =>
-    fn(context.input, context.vars, context.steps, context.env, ...shimValues))();
-
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const timeout = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => reject(new Error(`code: timeout após ${timeoutMs}ms`)), timeoutMs);
-  });
-
-  try {
-    const result = await Promise.race([exec, timeout]);
-    if (result === null || result === undefined) return { output: {} };
-    if (typeof result === "object" && !Array.isArray(result)) {
-      return { output: result as Record<string, unknown> };
-    }
-    // n8n convention: `return [{ json: {...} }]`. Quando vier nesse shape,
-    // unwrap pra que `prev.X` resolva direto (em vez de `prev.result[0].json.X`).
-    if (Array.isArray(result) && result.length > 0) {
-      const first = result[0] as { json?: unknown } | null | undefined;
-      if (first && typeof first === "object" && first.json && typeof first.json === "object") {
-        if (result.length === 1) {
-          return { output: first.json as Record<string, unknown> };
-        }
-        // Múltiplos items: expõe como `items` E mantém shape do primeiro como prev.
-        return {
-          output: {
-            ...(first.json as Record<string, unknown>),
-            _items: result.map((r) => (r as { json: unknown }).json),
-          },
-        };
-      }
-    }
-    return { output: { result } };
-  } finally {
-    if (timer) clearTimeout(timer);
-  }
+  return shapeOutput(result);
 };

@@ -140,7 +140,23 @@ export const workflowVersions = pgTable(
       .references(() => user.id, { onDelete: "restrict" }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [uniqueIndex("workflow_versions_wf_version_uq").on(t.workflowId, t.version)],
+  (t) => [
+    uniqueIndex("workflow_versions_wf_version_uq").on(t.workflowId, t.version),
+    // Índice parcial NÃO-único sobre (workflow_id, definition_hash) para
+    // publishes anônimas (name IS NULL). Acelera lookup por hash e documenta a
+    // intenção de dedupe.
+    //
+    // Por que NÃO é `uniqueIndex`: a idempotência do `publish` só compara o draft
+    // contra a ÚLTIMA versão (`findLatest`), não contra todas. O fluxo
+    // `restore()` + `publish` legitimamente republica um `definition` idêntico a
+    // uma versão ANTIGA (não a latest), gerando duas rows com o mesmo
+    // (workflow_id, definition_hash) e name NULL. Um índice único rejeitaria esse
+    // insert válido. O backfill + a checagem contra a latest já previnem o caso
+    // comum de duplicata; este índice fica não-único de propósito.
+    index("workflow_versions_wf_defhash_null_name_idx")
+      .on(t.workflowId, t.definitionHash)
+      .where(sql`name is null`),
+  ],
 );
 
 export type WorkflowVersion = typeof workflowVersions.$inferSelect;

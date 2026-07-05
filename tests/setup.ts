@@ -23,8 +23,11 @@ process.env.ENCRYPTION_KEY = Buffer.alloc(32, "test").toString("base64");
 process.env.NODE_ENV = "test";
 process.env.LOG_LEVEL = "silent";
 
+// Caminho resolvido a partir deste arquivo (back/tests/setup.ts → back/drizzle),
+// não do cwd — assim o preload funciona mesmo rodando `bun test` da raiz do repo.
+const migrationsFolder = new URL("../drizzle", import.meta.url).pathname;
 const migrationClient = postgres(process.env.DATABASE_URL, { max: 1 });
-await migrate(drizzle(migrationClient), { migrationsFolder: "./drizzle" });
+await migrate(drizzle(migrationClient), { migrationsFolder });
 await migrationClient.end();
 
 // Ryuk (reaper do testcontainers) faz o cleanup mesmo se a gente não desligar
