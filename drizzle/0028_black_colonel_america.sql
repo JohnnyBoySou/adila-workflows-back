@@ -1,1 +1,1 @@
-CREATE INDEX "workflow_versions_wf_defhash_null_name_idx" ON "workflow_versions" USING btree ("workflow_id","definition_hash") WHERE name is null;
+CREATE INDEX IF NOT EXISTS "workflow_versions_wf_defhash_null_name_idx" ON "workflow_versions" USING btree ("workflow_id","definition_hash") WHERE name is null;
