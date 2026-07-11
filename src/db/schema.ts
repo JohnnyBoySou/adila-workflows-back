@@ -372,7 +372,10 @@ export const workflowComments = pgTable(
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
     body: text("body").notNull(),
-    mentions: text("mentions").array().default(sql`ARRAY[]::text[]`).notNull(),
+    mentions: text("mentions")
+      .array()
+      .default(sql`ARRAY[]::text[]`)
+      .notNull(),
     x: doublePrecision("x"),
     y: doublePrecision("y"),
     resolved: boolean("resolved").default(false).notNull(),
@@ -691,7 +694,10 @@ export const workflowTemplates = pgTable(
     // Preço em centavos (BRL). 0 para free. Fonte de verdade do valor cobrado.
     priceCents: integer("price_cents").notNull().default(0),
     // Tags para busca/filtro na vitrine.
-    tags: jsonb("tags").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+    tags: jsonb("tags")
+      .$type<string[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
     // Identificador do ícone (lucide) e cor de destaque para o card.
     icon: text("icon").notNull().default("Workflow"),
     accentColor: text("accent_color").notNull().default("#6366f1"),

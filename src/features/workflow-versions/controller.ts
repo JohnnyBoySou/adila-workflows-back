@@ -79,12 +79,7 @@ export const workflowVersionsController = {
    * continua imutável. Útil pra dar nome humano post-hoc
    * ("v17 — release Black Friday").
    */
-  async rename(
-    organizationId: string,
-    workflowId: string,
-    versionId: string,
-    name: string | null,
-  ) {
+  async rename(organizationId: string, workflowId: string, versionId: string, name: string | null) {
     const existing = await workflowVersionsRepository.findById(
       organizationId,
       workflowId,

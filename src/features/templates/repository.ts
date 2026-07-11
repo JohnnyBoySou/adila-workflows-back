@@ -179,9 +179,7 @@ export const templatesRepository = {
     const [row] = await db
       .select()
       .from(templateRatings)
-      .where(
-        and(eq(templateRatings.templateId, templateId), eq(templateRatings.userId, userId)),
-      )
+      .where(and(eq(templateRatings.templateId, templateId), eq(templateRatings.userId, userId)))
       .limit(1);
     return row ?? null;
   },

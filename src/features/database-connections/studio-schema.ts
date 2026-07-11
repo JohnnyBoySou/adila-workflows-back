@@ -13,7 +13,9 @@ const optionalSchema = t.Optional(t.String({ pattern: identPattern, minLength: 1
 // Database é um identificador mais permissivo (aceita dígito inicial, `$`, `-`).
 // Espelha `DATABASE_NAME_RE` em studio.ts.
 export const databasePattern = "^[A-Za-z0-9_][A-Za-z0-9_$-]{0,62}$";
-const optionalDatabase = t.Optional(t.String({ pattern: databasePattern, minLength: 1, maxLength: 63 }));
+const optionalDatabase = t.Optional(
+  t.String({ pattern: databasePattern, minLength: 1, maxLength: 63 }),
+);
 
 const filterOp = t.Union([
   t.Literal("="),
@@ -96,10 +98,33 @@ export const ddlBody = t.Union([
     table: ident,
     columns: t.Array(columnDef, { minItems: 1, maxItems: 100 }),
   }),
-  t.Object({ op: t.Literal("drop_table"), schema: optionalSchema, database: optionalDatabase, table: ident }),
-  t.Object({ op: t.Literal("rename_table"), schema: optionalSchema, database: optionalDatabase, table: ident, to: ident }),
-  t.Object({ op: t.Literal("add_column"), schema: optionalSchema, database: optionalDatabase, table: ident, column: columnDef }),
-  t.Object({ op: t.Literal("drop_column"), schema: optionalSchema, database: optionalDatabase, table: ident, column: ident }),
+  t.Object({
+    op: t.Literal("drop_table"),
+    schema: optionalSchema,
+    database: optionalDatabase,
+    table: ident,
+  }),
+  t.Object({
+    op: t.Literal("rename_table"),
+    schema: optionalSchema,
+    database: optionalDatabase,
+    table: ident,
+    to: ident,
+  }),
+  t.Object({
+    op: t.Literal("add_column"),
+    schema: optionalSchema,
+    database: optionalDatabase,
+    table: ident,
+    column: columnDef,
+  }),
+  t.Object({
+    op: t.Literal("drop_column"),
+    schema: optionalSchema,
+    database: optionalDatabase,
+    table: ident,
+    column: ident,
+  }),
   t.Object({
     op: t.Literal("rename_column"),
     schema: optionalSchema,
@@ -117,7 +142,12 @@ export const ddlBody = t.Union([
     unique: t.Optional(t.Boolean()),
     name: t.Optional(ident),
   }),
-  t.Object({ op: t.Literal("drop_index"), schema: optionalSchema, database: optionalDatabase, index: ident }),
+  t.Object({
+    op: t.Literal("drop_index"),
+    schema: optionalSchema,
+    database: optionalDatabase,
+    index: ident,
+  }),
   t.Object({
     op: t.Literal("add_foreign_key"),
     schema: optionalSchema,
@@ -131,7 +161,13 @@ export const ddlBody = t.Union([
     onUpdate: t.Optional(fkAction),
     onDelete: t.Optional(fkAction),
   }),
-  t.Object({ op: t.Literal("drop_constraint"), schema: optionalSchema, database: optionalDatabase, table: ident, name: ident }),
+  t.Object({
+    op: t.Literal("drop_constraint"),
+    schema: optionalSchema,
+    database: optionalDatabase,
+    table: ident,
+    name: ident,
+  }),
   t.Object({
     op: t.Literal("alter_column_type"),
     schema: optionalSchema,

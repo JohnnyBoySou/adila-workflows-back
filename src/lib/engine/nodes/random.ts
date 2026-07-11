@@ -41,7 +41,8 @@ export const randomHandler: NodeHandler = async ({ node, context }) => {
   }
 
   if (type === "string") {
-    const length = typeof cfg.length === "number" && cfg.length > 0 ? Math.min(cfg.length, 4096) : 16;
+    const length =
+      typeof cfg.length === "number" && cfg.length > 0 ? Math.min(cfg.length, 4096) : 16;
     const alphabet =
       typeof cfg.alphabet === "string" && cfg.alphabet.length > 0 ? cfg.alphabet : DEFAULT_ALPHABET;
     const bytes = randomBytes(length);
@@ -51,7 +52,8 @@ export const randomHandler: NodeHandler = async ({ node, context }) => {
   }
 
   if (type === "bytes") {
-    const length = typeof cfg.length === "number" && cfg.length > 0 ? Math.min(cfg.length, 4096) : 16;
+    const length =
+      typeof cfg.length === "number" && cfg.length > 0 ? Math.min(cfg.length, 4096) : 16;
     const enc = cfg.encoding === "base64" || cfg.encoding === "base64url" ? cfg.encoding : "hex";
     return { output: { value: randomBytes(length).toString(enc as BufferEncoding) } };
   }

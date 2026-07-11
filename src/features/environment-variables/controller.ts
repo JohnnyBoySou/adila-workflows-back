@@ -26,7 +26,11 @@ export const environmentVariablesController = {
     workflowId: string | null,
     reveal = false,
   ) {
-    const rows = await environmentVariablesRepository.list(organizationId, environmentId, workflowId);
+    const rows = await environmentVariablesRepository.list(
+      organizationId,
+      environmentId,
+      workflowId,
+    );
     return reveal ? rows : rows.map(maskSecret);
   },
 

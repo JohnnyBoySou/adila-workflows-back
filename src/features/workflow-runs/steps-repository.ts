@@ -44,12 +44,7 @@ export const workflowRunStepsRepository = {
         failures: sql<number>`sum(case when ${workflowRunSteps.status} = 'failed' then 1 else 0 end)::int`,
       })
       .from(workflowRunSteps)
-      .where(
-        and(
-          inArray(workflowRunSteps.runId, runIds),
-          isNotNull(workflowRunSteps.durationMs),
-        ),
-      )
+      .where(and(inArray(workflowRunSteps.runId, runIds), isNotNull(workflowRunSteps.durationMs)))
       .groupBy(workflowRunSteps.nodeId, workflowRunSteps.nodeType)
       .orderBy(desc(sql`avg(${workflowRunSteps.durationMs})`));
   },

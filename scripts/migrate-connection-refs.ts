@@ -58,9 +58,8 @@ function rewriteDefinition(
   const nextNodes = def.nodes.map((node) => {
     if (!node || typeof node !== "object") return node;
     const n = node as Record<string, unknown>;
-    const config = n.config && typeof n.config === "object"
-      ? (n.config as Record<string, unknown>)
-      : null;
+    const config =
+      n.config && typeof n.config === "object" ? (n.config as Record<string, unknown>) : null;
     if (!config) return node;
 
     // Já migrado — pula.
@@ -127,7 +126,10 @@ async function main() {
       if (!DRY_RUN) {
         await db
           .update(workflows)
-          .set({ definition: wfResult.definition as Record<string, unknown>, updatedAt: new Date() })
+          .set({
+            definition: wfResult.definition as Record<string, unknown>,
+            updatedAt: new Date(),
+          })
           .where(eq(workflows.id, wf.id));
       }
     }

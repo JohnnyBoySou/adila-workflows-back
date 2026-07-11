@@ -27,7 +27,14 @@ type FlowEdge = {
 };
 
 function edge(source: string, target: string): FlowEdge {
-  return { id: `${source}->${target}`, source, target, sourceHandle: null, targetHandle: null, data: {} };
+  return {
+    id: `${source}->${target}`,
+    source,
+    target,
+    sourceHandle: null,
+    targetHandle: null,
+    data: {},
+  };
 }
 
 function definition(nodes: FlowNode[], edges: FlowEdge[]) {

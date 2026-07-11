@@ -79,7 +79,13 @@ type ToolDef = {
   description: string;
   inputSchema?: unknown;
   action?:
-    | { type: "http"; url: string; method?: string; headers?: Record<string, string>; bodyFromInput?: boolean }
+    | {
+        type: "http";
+        url: string;
+        method?: string;
+        headers?: Record<string, string>;
+        bodyFromInput?: boolean;
+      }
     | { type: "echo" };
 };
 
@@ -91,7 +97,9 @@ function buildTools(
   const out: Record<string, unknown> = {};
   for (const t of raw as ToolDef[]) {
     if (!t || typeof t !== "object" || typeof t.name !== "string") continue;
-    const schema = jsonSchema((t.inputSchema as object | undefined) ?? { type: "object", properties: {} });
+    const schema = jsonSchema(
+      (t.inputSchema as object | undefined) ?? { type: "object", properties: {} },
+    );
     out[t.name] = tool({
       description: t.description ?? "",
       inputSchema: schema,

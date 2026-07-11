@@ -207,10 +207,7 @@ function normalizeRetry(raw: unknown): { count: number; delayMs: number } {
  * que carregam Content-Type implícito (json/form/multipart), só define o
  * header se o usuário ainda não tiver fixado.
  */
-function buildBody(
-  raw: unknown,
-  headers: Record<string, string>,
-): { body: RequestInit["body"] } {
+function buildBody(raw: unknown, headers: Record<string, string>): { body: RequestInit["body"] } {
   // Shape novo: { mode, content, rawContentType? }
   if (raw && typeof raw === "object" && "mode" in raw) {
     const b = raw as Partial<NormalizedBody>;
@@ -353,9 +350,7 @@ function applyQueryParams(url: string, params: Record<string, string>): string {
   if (entries.length === 0) return url;
   // Preserva qualquer query existente na URL — se houver "?", anexa com "&".
   const separator = url.includes("?") ? "&" : "?";
-  const qs = entries
-    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
-    .join("&");
+  const qs = entries.map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join("&");
   return `${url}${separator}${qs}`;
 }
 

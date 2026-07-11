@@ -91,12 +91,7 @@ export class CollaborationGateway {
   async upsertPresence(presence: Presence) {
     const userKey = this.presenceKey(presence.workflowId, presence.userId);
     const usersKey = this.roomUsersKey(presence.workflowId);
-    await this.pub.set(
-      userKey,
-      JSON.stringify(presence),
-      "EX",
-      PRESENCE_TTL_SECONDS,
-    );
+    await this.pub.set(userKey, JSON.stringify(presence), "EX", PRESENCE_TTL_SECONDS);
     await this.pub.sadd(usersKey, presence.userId);
     await this.pub.expire(usersKey, PRESENCE_TTL_SECONDS * 2);
   }

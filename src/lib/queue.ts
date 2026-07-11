@@ -144,7 +144,10 @@ export async function findWorkflowJobAcrossLanes(jobId: string) {
 function lanesForBunWorker(): LaneName[] {
   const raw = process.env.WORKFLOW_BUN_LANES?.trim();
   if (!raw) return [...LANE_NAMES];
-  const names = raw.split(",").map((s) => s.trim()).filter(Boolean);
+  const names = raw
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
   const filtered = names.filter((n): n is LaneName =>
     (LANE_NAMES as readonly string[]).includes(n),
   );
@@ -157,11 +160,12 @@ function lanesForBunWorker(): LaneName[] {
  * (sem lane explícita) cria todos os workers de uma vez.
  */
 export function createWorkflowWorkers(processor: Processor<WorkflowJob>): Worker<WorkflowJob>[] {
-  return lanesForBunWorker().map((lane) =>
-    new Worker<WorkflowJob>(queueName(lane), processor, {
-      connection,
-      concurrency: env.WORKFLOW_WORKER_CONCURRENCY,
-    }),
+  return lanesForBunWorker().map(
+    (lane) =>
+      new Worker<WorkflowJob>(queueName(lane), processor, {
+        connection,
+        concurrency: env.WORKFLOW_WORKER_CONCURRENCY,
+      }),
   );
 }
 

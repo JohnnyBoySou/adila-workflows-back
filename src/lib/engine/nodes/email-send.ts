@@ -20,7 +20,9 @@ import type { NodeHandler } from "../types";
  */
 export const emailSendHandler: NodeHandler = async ({ node, context }) => {
   if (!isSmtpConfigured()) {
-    throw new Error("email_send: SMTP não configurado (SMTP_HOST, SMTP_USER, SMTP_PASS, SMTP_FROM).");
+    throw new Error(
+      "email_send: SMTP não configurado (SMTP_HOST, SMTP_USER, SMTP_PASS, SMTP_FROM).",
+    );
   }
   const cfg = renderTemplate(node.config, context) as Record<string, unknown>;
   const to = cfg.to;

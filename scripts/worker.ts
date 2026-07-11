@@ -95,7 +95,11 @@ async function processWorkflow(job: Job<WorkflowJob>) {
 
     // Resolve variáveis do ambiente (vazio se não foi escolhido um).
     const variables = environmentId
-      ? await environmentVariablesController.resolveForRun(organizationId, environmentId, workflowId)
+      ? await environmentVariablesController.resolveForRun(
+          organizationId,
+          environmentId,
+          workflowId,
+        )
       : {};
 
     // ── Execução do workflow ──
@@ -227,20 +231,15 @@ async function fanOutErrorTriggers(args: {
       const ids = Array.isArray(cfg.workflowIds) ? cfg.workflowIds.map(String) : [];
       if (!ids.includes(args.workflowId)) continue;
     }
-    const result = await workflowsController.run(
-      trigger.organizationId,
-      trigger.workflowId,
-      null,
-      {
-        environmentId: trigger.environmentId,
-        workflowVersionId: trigger.workflowVersionId,
-        input: {
-          workflowId: args.workflowId,
-          runId: args.runId,
-          error: args.error,
-        },
+    const result = await workflowsController.run(trigger.organizationId, trigger.workflowId, null, {
+      environmentId: trigger.environmentId,
+      workflowVersionId: trigger.workflowVersionId,
+      input: {
+        workflowId: args.workflowId,
+        runId: args.runId,
+        error: args.error,
       },
-    );
+    });
     if ("error" in result) {
       workflowLog.warn(
         { triggerId: trigger.id, err: result.error },
@@ -290,8 +289,7 @@ async function runSubWorkflow(args: SubRunArgs) {
 
   try {
     const found = await findWorkflowJobAcrossLanes(jobId);
-    if (!found)
-      throw new Error(`execute_workflow: job ${jobId} sumiu antes de waitUntilFinished`);
+    if (!found) throw new Error(`execute_workflow: job ${jobId} sumiu antes de waitUntilFinished`);
     await found.job.waitUntilFinished(workflowQueueEvents[found.lane], args.timeoutMs);
   } catch (err) {
     const msg = (err as Error).message ?? "";

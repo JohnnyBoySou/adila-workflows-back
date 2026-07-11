@@ -4,11 +4,7 @@ import { t } from "elysia";
 // e no dialog do node Postgres/Redis.
 const namePattern = "^[A-Za-z][A-Za-z0-9 _-]{0,63}$";
 
-const kindLiteral = t.Union([
-  t.Literal("postgres"),
-  t.Literal("redis"),
-  t.Literal("pgvector"),
-]);
+const kindLiteral = t.Union([t.Literal("postgres"), t.Literal("redis"), t.Literal("pgvector")]);
 
 export const createConnectionBody = t.Object({
   name: t.String({ pattern: namePattern, minLength: 1, maxLength: 64 }),

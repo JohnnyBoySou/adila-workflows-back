@@ -40,8 +40,7 @@ export const s3Handler: NodeHandler = async ({ node, context }) => {
   const cfg = renderTemplate(node.config, context) as Record<string, unknown>;
   const op = cfg.operation;
 
-  const bucket =
-    (typeof cfg.bucket === "string" && cfg.bucket) || context.env?.AWS_S3_BUCKET_NAME;
+  const bucket = (typeof cfg.bucket === "string" && cfg.bucket) || context.env?.AWS_S3_BUCKET_NAME;
   if (!bucket) {
     throw new Error(
       "s3: bucket ausente — defina config.bucket ou a env var AWS_S3_BUCKET_NAME do workflow",

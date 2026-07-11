@@ -61,16 +61,26 @@ function evaluate(left: unknown, op: string, right: unknown, dataType: DataType)
   const l = coerce(left, dataType);
   const r = coerce(right, dataType);
   switch (op) {
-    case "eq":         return l === r;
-    case "neq":        return l !== r;
-    case "gt":         return (l as number) > (r as number);
-    case "gte":        return (l as number) >= (r as number);
-    case "lt":         return (l as number) < (r as number);
-    case "lte":        return (l as number) <= (r as number);
-    case "contains":   return String(l ?? "").includes(String(r ?? ""));
-    case "ncontains":  return !String(l ?? "").includes(String(r ?? ""));
-    case "startsWith": return String(l ?? "").startsWith(String(r ?? ""));
-    case "endsWith":   return String(l ?? "").endsWith(String(r ?? ""));
+    case "eq":
+      return l === r;
+    case "neq":
+      return l !== r;
+    case "gt":
+      return (l as number) > (r as number);
+    case "gte":
+      return (l as number) >= (r as number);
+    case "lt":
+      return (l as number) < (r as number);
+    case "lte":
+      return (l as number) <= (r as number);
+    case "contains":
+      return String(l ?? "").includes(String(r ?? ""));
+    case "ncontains":
+      return !String(l ?? "").includes(String(r ?? ""));
+    case "startsWith":
+      return String(l ?? "").startsWith(String(r ?? ""));
+    case "endsWith":
+      return String(l ?? "").endsWith(String(r ?? ""));
     case "regex": {
       try {
         return new RegExp(String(r ?? "")).test(String(l ?? ""));
@@ -78,7 +88,8 @@ function evaluate(left: unknown, op: string, right: unknown, dataType: DataType)
         return false;
       }
     }
-    default: return false;
+    default:
+      return false;
   }
 }
 
@@ -122,9 +133,15 @@ export const switchHandler: NodeHandler = async ({ node, context }) => {
   }
 
   // Compat: formato legado { value, cases: [{match, label}], default }.
-  interface LegacyCase { match: unknown; label: string }
+  interface LegacyCase {
+    match: unknown;
+    label: string;
+  }
   const isLegacyCase = (c: unknown): c is LegacyCase =>
-    !!c && typeof c === "object" && "label" in c && typeof (c as Record<string, unknown>).label === "string";
+    !!c &&
+    typeof c === "object" &&
+    "label" in c &&
+    typeof (c as Record<string, unknown>).label === "string";
   const value = cfg.value;
   const cases = Array.isArray(cfg.cases) ? cfg.cases.filter(isLegacyCase) : [];
   for (const c of cases) {

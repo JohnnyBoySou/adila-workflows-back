@@ -76,14 +76,12 @@ function validateField(path: string, value: unknown, schema: WebhookFieldSchema)
     if (schema.maximum !== undefined && value > schema.maximum)
       errors.push({ path, message: `Deve ser ≤ ${schema.maximum}` });
   } else if (type === "boolean") {
-    if (typeof value !== "boolean")
-      errors.push({ path, message: "Deve ser true ou false" });
+    if (typeof value !== "boolean") errors.push({ path, message: "Deve ser true ou false" });
   } else if (type === "object") {
     if (typeof value !== "object" || Array.isArray(value) || value === null)
       errors.push({ path, message: "Deve ser um objeto" });
   } else if (type === "array") {
-    if (!Array.isArray(value))
-      errors.push({ path, message: "Deve ser um array" });
+    if (!Array.isArray(value)) errors.push({ path, message: "Deve ser um array" });
   }
 
   return errors;
@@ -244,9 +242,7 @@ async function handleWebhook(ctx: HandlerCtx) {
       lastTriggeredAt: new Date(),
       lastRunId: result.runId,
     })
-    .catch((err) =>
-      logger.warn({ err, triggerId: trigger.id }, "trigger telemetry update failed"),
-    );
+    .catch((err) => logger.warn({ err, triggerId: trigger.id }, "trigger telemetry update failed"));
 
   if (trigger.webhookResponseMode !== "sync") {
     return status(202, {

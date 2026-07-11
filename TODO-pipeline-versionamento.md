@@ -407,16 +407,16 @@ restore e release atômico.
 
 ## 🔗 Referências cruzadas (já implementado nesta sessão)
 
-| Arquivo | O que tem |
-|---------|-----------|
+| Arquivo                                               | O que tem                                               |
+| ----------------------------------------------------- | ------------------------------------------------------- |
 | `src/features/database-connections/repository.ts:151` | `resolve(workflowId, ref, environmentId)` com UUID/nome |
-| `src/features/triggers/controller.ts:155` | método `promote()` |
-| `src/features/triggers/router.ts:122` | endpoint `POST /:triggerId/promote` |
-| `src/features/triggers/schema.ts` | `promoteTriggerBody` + `workflowVersionId` |
-| `src/features/workflows/controller.ts:121` | `run()` aceita `opts.workflowVersionId` |
-| `src/features/workflow-versions/router.ts` | publish/list/findById já wired |
-| `src/features/workflow-versions/controller.ts` | publish/list/findById/ensureLatest |
-| `scripts/worker.ts:86` | closure `resolveConnection` com env-fallback |
-| `scripts/worker.ts:231` | cron worker propaga `trigger.workflowVersionId` |
-| `src/features/triggers/webhook-router.ts:75` | webhook propaga `trigger.workflowVersionId` |
-| `drizzle/0010_daffy_morbius.sql` | migration `triggers.workflow_version_id` |
+| `src/features/triggers/controller.ts:155`             | método `promote()`                                      |
+| `src/features/triggers/router.ts:122`                 | endpoint `POST /:triggerId/promote`                     |
+| `src/features/triggers/schema.ts`                     | `promoteTriggerBody` + `workflowVersionId`              |
+| `src/features/workflows/controller.ts:121`            | `run()` aceita `opts.workflowVersionId`                 |
+| `src/features/workflow-versions/router.ts`            | publish/list/findById já wired                          |
+| `src/features/workflow-versions/controller.ts`        | publish/list/findById/ensureLatest                      |
+| `scripts/worker.ts:86`                                | closure `resolveConnection` com env-fallback            |
+| `scripts/worker.ts:231`                               | cron worker propaga `trigger.workflowVersionId`         |
+| `src/features/triggers/webhook-router.ts:75`          | webhook propaga `trigger.workflowVersionId`             |
+| `drizzle/0010_daffy_morbius.sql`                      | migration `triggers.workflow_version_id`                |

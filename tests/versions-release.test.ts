@@ -63,7 +63,12 @@ describe("versions-release — promoteBulk e diff (casos não cobertos)", () => 
     const v1 = await publish(wf.id);
 
     // Act
-    const res = await workflowVersionsController.promoteBulk(orgId, wf.id, v1.version.id, undefined);
+    const res = await workflowVersionsController.promoteBulk(
+      orgId,
+      wf.id,
+      v1.version.id,
+      undefined,
+    );
 
     // Assert
     if ("error" in res) throw new Error(`esperava sucesso, veio ${res.error}`);
@@ -83,7 +88,12 @@ describe("versions-release — promoteBulk e diff (casos não cobertos)", () => 
     const triggerId = tRes.trigger.id;
 
     // Act 1: promove pra v1 em massa (todos os triggers).
-    const toV1 = await workflowVersionsController.promoteBulk(orgId, wf.id, v1.version.id, undefined);
+    const toV1 = await workflowVersionsController.promoteBulk(
+      orgId,
+      wf.id,
+      v1.version.id,
+      undefined,
+    );
     if ("error" in toV1) throw new Error(toV1.error);
 
     // Assert 1: pino anterior era null.
@@ -92,7 +102,9 @@ describe("versions-release — promoteBulk e diff (casos não cobertos)", () => 
     expect(toV1.promoted[0].previousWorkflowVersionId).toBeNull();
 
     // Act 2: troca o pino pra v2 em massa.
-    const toV2 = await workflowVersionsController.promoteBulk(orgId, wf.id, v2.version.id, [triggerId]);
+    const toV2 = await workflowVersionsController.promoteBulk(orgId, wf.id, v2.version.id, [
+      triggerId,
+    ]);
     if ("error" in toV2) throw new Error(toV2.error);
 
     // Assert 2: novo pino é v2, anterior era v1 (rastreio from → to).
@@ -113,9 +125,13 @@ describe("versions-release — promoteBulk e diff (casos não cobertos)", () => 
     const triggerId = tRes.trigger.id;
 
     // Act: primeiro promove v1, depois v2 — ambos via bulk com id explícito.
-    const first = await workflowVersionsController.promoteBulk(orgId, wf.id, v1.version.id, [triggerId]);
+    const first = await workflowVersionsController.promoteBulk(orgId, wf.id, v1.version.id, [
+      triggerId,
+    ]);
     if ("error" in first) throw new Error(first.error);
-    const second = await workflowVersionsController.promoteBulk(orgId, wf.id, v2.version.id, [triggerId]);
+    const second = await workflowVersionsController.promoteBulk(orgId, wf.id, v2.version.id, [
+      triggerId,
+    ]);
     if ("error" in second) throw new Error(second.error);
 
     // Assert

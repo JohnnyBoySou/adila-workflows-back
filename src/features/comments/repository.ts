@@ -1,10 +1,6 @@
 import { and, asc, eq, isNull } from "drizzle-orm";
 import { db } from "../../db";
-import {
-  workflowComments,
-  type NewWorkflowComment,
-  type WorkflowComment,
-} from "../../db/schema";
+import { workflowComments, type NewWorkflowComment, type WorkflowComment } from "../../db/schema";
 
 export const commentsRepository = {
   /** Lista threads (raízes) ordenadas por criação asc, junto com replies. */

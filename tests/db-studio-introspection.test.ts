@@ -66,9 +66,7 @@ afterAll(async () => {
 describe("fetchPostgresSchema · relationships", () => {
   test("FK simples mapeia colunas, ref e ações referenciais", async () => {
     const schema = await fetchPostgresSchema(connId, url, { force: true });
-    const fk = schema.relationships.find(
-      (r) => r.schema === SCHEMA && r.table === "posts",
-    );
+    const fk = schema.relationships.find((r) => r.schema === SCHEMA && r.table === "posts");
     expect(fk).toBeDefined();
     expect(fk!.columns).toEqual(["author_id"]);
     expect(fk!.refSchema).toBe(SCHEMA);
@@ -93,9 +91,7 @@ describe("fetchPostgresSchema · relationships", () => {
 
   test("tabela referenciada também é introspectada com sua PK", async () => {
     const schema = await fetchPostgresSchema(connId, url, { force: true });
-    const authors = schema.tables.find(
-      (t) => t.schema === SCHEMA && t.name === "authors",
-    );
+    const authors = schema.tables.find((t) => t.schema === SCHEMA && t.name === "authors");
     expect(authors).toBeDefined();
     const pk = authors!.columns.find((c) => c.name === "id");
     expect(pk?.isPrimaryKey).toBe(true);

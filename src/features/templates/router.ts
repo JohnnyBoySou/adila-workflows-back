@@ -74,11 +74,9 @@ export const templatesRouter = new Elysia({ prefix: "/templates" })
   )
 
   // Lista as avaliações (nota + observação) de um template.
-  .get(
-    "/:id/ratings",
-    ({ params }) => templatesController.listRatings(params.id),
-    { params: templateIdParam },
-  )
+  .get("/:id/ratings", ({ params }) => templatesController.listRatings(params.id), {
+    params: templateIdParam,
+  })
 
   // Avalia um template: nota (1–5) + observação opcional. Gate de entitlement.
   .post(

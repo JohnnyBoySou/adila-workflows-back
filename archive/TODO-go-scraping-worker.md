@@ -58,6 +58,7 @@ workers-go/scraping/
 ```
 
 Dependências sugeridas (versões mais recentes na hora):
+
 - `github.com/redis/go-redis/v9`
 - `github.com/jackc/pgx/v5` (mesmo driver do Bun, conexão direta no Postgres)
 - `github.com/google/uuid`
@@ -73,23 +74,23 @@ em `internal/bullmq/consumer.go` reaproveitando o protocolo descrito em
 Pesquisar e validar contra os jobs reais que o Bun enfileira:
 
 - [ ] **Key layout**: `bull:{queueName}:` prefix (configurável via
-  `prefix` no Queue construtor — hoje usamos default; confirmar)
+      `prefix` no Queue construtor — hoje usamos default; confirmar)
 - [ ] **Estados**: `wait` (lista), `active` (lista), `completed` (set),
-  `failed` (set), `delayed` (zset). Fluxo: BRPOPLPUSH de `wait` → `active`,
-  ack via remoção de `active` + add em `completed`/`failed`
+      `failed` (set), `delayed` (zset). Fluxo: BRPOPLPUSH de `wait` → `active`,
+      ack via remoção de `active` + add em `completed`/`failed`
 - [ ] **Job payload**: `bull:{queue}:{jobId}` é Hash com `data` (JSON
-  serializado do nosso `WorkflowJob`), `opts`, `attemptsMade`, `timestamp`
+      serializado do nosso `WorkflowJob`), `opts`, `attemptsMade`, `timestamp`
 - [ ] **Lock**: lockKey `bull:{queue}:{jobId}:lock` com TTL renovado
-  enquanto processa (extender a cada N segundos via SETEX)
+      enquanto processa (extender a cada N segundos via SETEX)
 - [ ] **Failure**: ao errar, incrementar `attemptsMade`; se `attemptsMade <
-  opts.attempts`, recolocar em `wait` com delay (backoff); senão `failed`
+opts.attempts`, recolocar em `wait` com delay (backoff); senão `failed`
 - [ ] **Retry com backoff exponencial**: replicar a fórmula que o BullMQ
-  TS usa — `delay * 2^(attempts-1)`. Default no nosso queue: `delay: 2000`,
-  `attempts: 3`
+      TS usa — `delay * 2^(attempts-1)`. Default no nosso queue: `delay: 2000`,
+      `attempts: 3`
 - [ ] **QueueEvents**: o Bun pub/sub `bull:{queue}:events` com tipos
-  `completed`, `failed`, `progress`. Publicar pra manter
-  `job.waitUntilFinished()` funcionando do lado Bun (sub-workflow runner
-  do `scripts/worker.ts`)
+      `completed`, `failed`, `progress`. Publicar pra manter
+      `job.waitUntilFinished()` funcionando do lado Bun (sub-workflow runner
+      do `scripts/worker.ts`)
 
 **Risco**: se o protocolo desviar em algum detalhe, o `waitUntilFinished`
 do sub-workflow runner trava em timeout silencioso. Adicionar teste e2e:
@@ -104,16 +105,17 @@ Arquivo: `internal/runevents/publisher.go`
 Comportamento — copiar de `back/src/lib/run-events.ts`:
 
 - [ ] Buffer per-run com flush a cada 50ms ou em eventos terminais
-  (`workflow.started/finished/failed/cancelled`)
+      (`workflow.started/finished/failed/cancelled`)
 - [ ] Single `INSERT INTO workflow_run_events (...) VALUES (...), (...) RETURNING seq` via pgx
 - [ ] Single `PUBLISH run:{id}` com array JSON de eventos contendo `seq`
 - [ ] Drain no shutdown (signal `SIGTERM`/`SIGINT`)
 
 Validar end-to-end:
+
 - [ ] Front conectado via SSE recebe `id: <seq>` corretamente
 - [ ] Resume via `Last-Event-Id` funciona contra eventos publicados pelo Go
-  (o caminho de replay em `workflow-runs/router.ts:listByRunSinceSeq`
-  lê tudo do Postgres, então é agnóstico de quem inseriu)
+      (o caminho de replay em `workflow-runs/router.ts:listByRunSinceSeq`
+      lê tudo do Postgres, então é agnóstico de quem inseriu)
 
 ### 1.4 Cancel subscriber
 
@@ -121,9 +123,9 @@ Arquivo: `internal/cancel/subscriber.go`
 
 - [ ] `SUBSCRIBE run:{id}:cancel` ao iniciar o run
 - [ ] Flag `atomic.Bool` que o engine checa entre nós (mesmo modelo de
-  `cancelSub.isCancelled()` no `scripts/worker.ts`)
+      `cancelSub.isCancelled()` no `scripts/worker.ts`)
 - [ ] Checagem inicial síncrona contra `workflow_runs.cancel_requested`
-  (cobre cancel publicado antes de assinar)
+      (cobre cancel publicado antes de assinar)
 - [ ] Cleanup no defer
 
 ### 1.5 Handler `http_request`
@@ -131,19 +133,19 @@ Arquivo: `internal/cancel/subscriber.go`
 Espelhar `back/src/lib/engine/nodes/http_request.ts`:
 
 - [ ] Mesmas chaves de config (`method`, `url`, `headers`, `body`,
-  `query`, `timeoutMs`, `followRedirects`, `auth`, ...)
+      `query`, `timeoutMs`, `followRedirects`, `auth`, ...)
 - [ ] Resolver templating `{{ $node.x.output.y }}` — **decisão**: começar
-  por SUPORTAR APENAS resolução estática (sem templating Liquid/handlebars).
-  Workflows com templating caem na lane default (Bun) — adicionar
-  `pickLaneForDefinition` exception se necessário, ou aceitar que Go falha
-  com `UnrecoverableError` claro "templating not supported in go worker"
+      por SUPORTAR APENAS resolução estática (sem templating Liquid/handlebars).
+      Workflows com templating caem na lane default (Bun) — adicionar
+      `pickLaneForDefinition` exception se necessário, ou aceitar que Go falha
+      com `UnrecoverableError` claro "templating not supported in go worker"
 - [ ] Classificação de erro:
   - 5xx, timeout, conn refused, DNS → `RetryableError` (re-throw, BullMQ retenta)
   - 4xx, validação, URL inválida → equivalente `UnrecoverableError`
 - [ ] Output no mesmo shape `{ status, headers, body, durationMs }` que o
-  handler Bun (front e nós downstream não devem perceber diferença)
+      handler Bun (front e nós downstream não devem perceber diferença)
 - [ ] `context.Context` propagado com cancelamento amarrado ao
-  `cancelSub.flag` — request HTTP morre instantaneamente no cancel
+      `cancelSub.flag` — request HTTP morre instantaneamente no cancel
 
 ### 1.6 Engine mínimo
 
@@ -152,14 +154,14 @@ Espelhar `back/src/lib/engine/nodes/http_request.ts`:
 - [ ] Normaliza `definition` (mesmo JSON shape)
 - [ ] Acha start, percorre edges, executa handler do nó
 - [ ] Pré-grava `workflow_run_steps` (status=running), atualiza no fim
-  (success/failed) — mesmo schema do Bun
+      (success/failed) — mesmo schema do Bun
 - [ ] Chama `publisher.Enqueue(...)` para os mesmos eventos
-  (`workflow.started`, `node.started`, `node.finished`, `node.failed`,
-  `workflow.finished/failed/cancelled`)
+      (`workflow.started`, `node.started`, `node.finished`, `node.failed`,
+      `workflow.finished/failed/cancelled`)
 - [ ] **Restrição inicial**: se encontrar um node-type que não tem handler
-  em Go, falha com `UnrecoverableError` "node type X not supported by go
-  worker — route to default lane". Forçar todos os nós do workflow a
-  serem suportados, ou voltar pra lane Bun.
+      em Go, falha com `UnrecoverableError` "node type X not supported by go
+      worker — route to default lane". Forçar todos os nós do workflow a
+      serem suportados, ou voltar pra lane Bun.
 
 ### 1.7 Variáveis de ambiente
 
@@ -178,14 +180,14 @@ HTTP_MAX_RESPONSE_BYTES=10485760  # 10MB cap
 ### 1.8 Critérios de "PoC pronto"
 
 - [ ] Workflow `[start] → [http_request GET https://httpbin.org/json] → [end]`
-  roda end-to-end pelo Go
+      roda end-to-end pelo Go
 - [ ] Eventos chegam ao front via SSE com `seq` correto, sem duplicação
 - [ ] Cancel via API mata o request HTTP em menos de 100ms
 - [ ] Falha 5xx tenta 3x com backoff exponencial; falha 4xx falha imediato
 - [ ] Sub-workflow Bun chamando workflow que cai na lane scraping
-  (executado pelo Go) recebe `waitUntilFinished` corretamente
+      (executado pelo Go) recebe `waitUntilFinished` corretamente
 - [ ] `WORKFLOW_BUN_LANES=default,heavy` no Bun + Go rodando → lane
-  scraping consumida só pelo Go; sem dupla execução
+      scraping consumida só pelo Go; sem dupla execução
 
 ---
 
@@ -197,7 +199,7 @@ Prioridade por tráfego esperado:
 
 - [ ] `webhook_request` (alias do `http_request` no editor)
 - [ ] `rss_trigger` runtime (já roteado pra `scraping` — confirmar se
-  precisa de handler de execução além do dispatch via cron-scheduler)
+      precisa de handler de execução além do dispatch via cron-scheduler)
 - [ ] `html_parse` / `css_selector` (se existir; checar `nodes/index.ts`)
 
 ### 2.2 Templating
@@ -209,25 +211,25 @@ mais código por nada (parser, expression eval, error reporting).
 
 - [ ] Auditar quantos workflows reais usam templating em `http_request`
 - [ ] Se >20%, portar parser. Se <20%, manter exceção e adicionar
-  detecção em `pickLaneForDefinition` (varrer config dos nós em busca
-  de `{{`)
+      detecção em `pickLaneForDefinition` (varrer config dos nós em busca
+      de `{{`)
 
 ### 2.3 Métricas
 
 - [ ] Expor `/metrics` no Go com counters: `jobs_processed_total{lane,
-  status}`, `job_duration_seconds`, `http_requests_total{status_class}`,
-  `http_request_duration_seconds`
+status}`, `job_duration_seconds`, `http_requests_total{status_class}`,
+      `http_request_duration_seconds`
 - [ ] Endpoint `/health/queue` no Bun já agrega contadores BullMQ por
-  lane — não precisa duplicar lá. Só adicionar info de "worker count"
-  por lane se útil
+      lane — não precisa duplicar lá. Só adicionar info de "worker count"
+      por lane se útil
 
 ### 2.4 Connections / shared state
 
 - [ ] Pool pgx compartilhado, tamanho proporcional à concorrência
 - [ ] `http.Transport` global com `MaxIdleConnsPerHost` alto + keep-alive
-  (toda a graça do Go contra Bun aqui)
+      (toda a graça do Go contra Bun aqui)
 - [ ] Resolver DNS com cache (`github.com/rs/dnscache` ou similar) — em
-  fan-out massivo, lookup vira gargalo
+      fan-out massivo, lookup vira gargalo
 
 ---
 
@@ -238,15 +240,15 @@ mais código por nada (parser, expression eval, error reporting).
 - [ ] Dockerfile multi-stage (build → distroless)
 - [ ] Healthcheck endpoint (`/healthz` simples)
 - [ ] Manifest k8s/Railway com `WORKFLOW_BUN_LANES=default,heavy` no
-  serviço Bun e Go consumindo lane scraping com 2-4 réplicas
+      serviço Bun e Go consumindo lane scraping com 2-4 réplicas
 
 ### 3.2 Rollout seguro
 
 - [ ] **Etapa 1**: Go sobe mas com `WORKFLOW_BUN_LANES` ainda incluindo
-  `scraping` no Bun. Os dois competem pela fila — dá pra comparar
-  latências sem risco (perde-se 1 worker se um cair)
+      `scraping` no Bun. Os dois competem pela fila — dá pra comparar
+      latências sem risco (perde-se 1 worker se um cair)
 - [ ] **Etapa 2**: tirar `scraping` do `WORKFLOW_BUN_LANES`. Só Go
-  consome. Monitorar p95 e taxa de erro por algumas horas
+      consome. Monitorar p95 e taxa de erro por algumas horas
 - [ ] **Etapa 3**: subir réplicas Go conforme load
 
 ### 3.3 Rollback plan
@@ -267,7 +269,7 @@ migration nem perda de jobs in-flight (lock TTL libera em <30s).
   TS pra evitar drift. `quicktype` resolve isso — adicionar um step
   no `bun run build` que regenera `internal/types/gen.go`.
 - **Engine Go vira Source of Truth pra scraping?** Se a paridade for
-  100%, podemos *remover* `http_request.ts` do Bun para que workflows
+  100%, podemos _remover_ `http_request.ts` do Bun para que workflows
   scraping SEMPRE caiam no Go (mesmo na lane default, via redirect). Por
   enquanto: NÃO — manter duplicado, lane-routed.
 

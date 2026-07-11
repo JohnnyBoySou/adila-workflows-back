@@ -163,12 +163,7 @@ export const databaseConnectionsController = {
     return { connection: toSafe(created) };
   },
 
-  async update(
-    organizationId: string,
-    workflowId: string,
-    id: string,
-    body: UpdateConnectionBody,
-  ) {
+  async update(organizationId: string, workflowId: string, id: string, body: UpdateConnectionBody) {
     const existing = await databaseConnectionsRepository.findById(workflowId, id);
     if (!existing) return { error: "not_found" as const };
 
@@ -229,11 +224,7 @@ export const databaseConnectionsController = {
    * (opcional) aponta pra outro database do mesmo cluster — útil pra clusters
    * multi-db numa única connection.
    */
-  async schema(
-    workflowId: string,
-    id: string,
-    opts: { force?: boolean; database?: string } = {},
-  ) {
+  async schema(workflowId: string, id: string, opts: { force?: boolean; database?: string } = {}) {
     const row = await databaseConnectionsRepository.findById(workflowId, id);
     if (!row) return { error: "not_found" as const };
     // pgvector é Postgres — introspecção via information_schema funciona igual.

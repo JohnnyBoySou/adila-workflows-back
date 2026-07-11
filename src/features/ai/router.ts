@@ -75,7 +75,10 @@ export const aiRouter = new Elysia({ prefix: "/ai" })
         };
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        logger.warn({ userId: user.id, provider, model: body.model, err: msg }, "ai-preview failed");
+        logger.warn(
+          { userId: user.id, provider, model: body.model, err: msg },
+          "ai-preview failed",
+        );
         // 400 (não 500) — quase sempre é credencial faltando, modelo inválido
         // ou quota do provider. O front exibe a mensagem direto.
         return status(400, { error: "ai_call_failed", message: msg });

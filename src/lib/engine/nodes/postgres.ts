@@ -182,10 +182,7 @@ async function runOrmMode(
   };
 
   const helperKeys = Object.keys(helpers);
-  let fn: (
-    ctx: OrmContext,
-    ...helpers: unknown[]
-  ) => Promise<unknown> | unknown;
+  let fn: (ctx: OrmContext, ...helpers: unknown[]) => Promise<unknown> | unknown;
   try {
     fn = new Function(
       "ctx",
@@ -202,10 +199,7 @@ async function runOrmMode(
 
   let timer: ReturnType<typeof setTimeout> | undefined;
   const timeout = new Promise<never>((_, reject) => {
-    timer = setTimeout(
-      () => reject(new Error(`postgres: timeout após ${timeoutMs}ms`)),
-      timeoutMs,
-    );
+    timer = setTimeout(() => reject(new Error(`postgres: timeout após ${timeoutMs}ms`)), timeoutMs);
   });
 
   try {

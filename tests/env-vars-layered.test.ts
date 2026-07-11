@@ -139,10 +139,7 @@ describe("env vars em camadas (org + workflow)", () => {
       .select()
       .from(environmentVariables)
       .where(
-        and(
-          eq(environmentVariables.workflowId, wfA),
-          eq(environmentVariables.key, "API_TOKEN"),
-        ),
+        and(eq(environmentVariables.workflowId, wfA), eq(environmentVariables.key, "API_TOKEN")),
       )
       .limit(1);
     expect(stored?.value.startsWith("enc:v1:")).toBe(true);

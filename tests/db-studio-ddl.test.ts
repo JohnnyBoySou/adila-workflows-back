@@ -219,9 +219,9 @@ describe("buildDdl · drop_constraint", () => {
 
 describe("buildDdl · alter_column_type", () => {
   test("ALTER COLUMN TYPE simples", () => {
-    expect(buildDdl({ op: "alter_column_type", table: "t", column: "amount", type: "numeric(10,2)" })).toBe(
-      'ALTER TABLE "public"."t" ALTER COLUMN "amount" TYPE numeric(10,2)',
-    );
+    expect(
+      buildDdl({ op: "alter_column_type", table: "t", column: "amount", type: "numeric(10,2)" }),
+    ).toBe('ALTER TABLE "public"."t" ALTER COLUMN "amount" TYPE numeric(10,2)');
   });
 
   test("com cláusula USING", () => {

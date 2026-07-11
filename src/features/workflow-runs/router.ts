@@ -81,11 +81,7 @@ export const workflowRunsRouter = new Elysia({ prefix: "/workflows/:id/runs" })
   .get(
     "/node-durations",
     ({ organizationId, params, query }) =>
-      workflowRunStepsRepository.durationsByNode(
-        organizationId,
-        params.id,
-        query.runs ?? 50,
-      ),
+      workflowRunStepsRepository.durationsByNode(organizationId, params.id, query.runs ?? 50),
     {
       params: listRunsParams,
       query: t.Object({

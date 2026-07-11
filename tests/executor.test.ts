@@ -114,16 +114,8 @@ describe("normalizeDefinition", () => {
 
   test("descarta nós sem id ou type e edges malformadas", () => {
     const def = normalizeDefinition({
-      nodes: [
-        { id: "a", type: "start", config: {} },
-        { type: "noop", config: {} },
-        { id: "c" },
-      ],
-      edges: [
-        { from: "a", to: "b" },
-        { from: "a" },
-        { to: "b" },
-      ],
+      nodes: [{ id: "a", type: "start", config: {} }, { type: "noop", config: {} }, { id: "c" }],
+      edges: [{ from: "a", to: "b" }, { from: "a" }, { to: "b" }],
     });
     expect(def.nodes.map((n) => n.id)).toEqual(["a"]);
     expect(def.edges).toEqual([{ from: "a", to: "b", label: undefined }]);
@@ -365,9 +357,9 @@ describe("executeRun — falha de nó", () => {
       ],
     };
     const runId = await newRunId();
-    await expect(
-      executeRun({ runId, definition: def, input: {}, env: {} }),
-    ).rejects.toThrow("abortado de propósito");
+    await expect(executeRun({ runId, definition: def, input: {}, env: {} })).rejects.toThrow(
+      "abortado de propósito",
+    );
 
     const steps = await stepsOf(runId);
     const boom = steps.find((s) => s.nodeId === "boom");

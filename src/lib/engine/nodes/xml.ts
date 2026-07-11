@@ -104,7 +104,9 @@ export const xmlHandler: NodeHandler = async ({ node, context }) => {
 
   if (op === "build") {
     const root = typeof cfg.root === "string" && cfg.root ? cfg.root : "root";
-    return { output: { text: `<?xml version="1.0" encoding="UTF-8"?>${buildXml(root, cfg.data)}` } };
+    return {
+      output: { text: `<?xml version="1.0" encoding="UTF-8"?>${buildXml(root, cfg.data)}` },
+    };
   }
 
   throw new Error(`xml: operation "${String(op)}" não suportada`);

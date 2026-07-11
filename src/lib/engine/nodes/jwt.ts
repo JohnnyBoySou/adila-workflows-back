@@ -24,8 +24,7 @@ import type { NodeHandler } from "../types";
 export const jwtHandler: NodeHandler = async ({ node, context }) => {
   const cfg = renderTemplate(node.config, context) as Record<string, unknown>;
   const op = cfg.operation;
-  const alg =
-    cfg.algorithm === "HS384" || cfg.algorithm === "HS512" ? cfg.algorithm : "HS256";
+  const alg = cfg.algorithm === "HS384" || cfg.algorithm === "HS512" ? cfg.algorithm : "HS256";
 
   if (op === "decode") {
     if (typeof cfg.token !== "string") throw new Error("jwt.decode: config.token é obrigatório");

@@ -140,7 +140,10 @@ describe("idempotência de publish e backfill de definition_hash", () => {
     // Arrange: publica v1 (D1), edita o draft pra D2, publica v2 (D2).
     const d1 = { steps: ["a"] };
     const d2 = { steps: ["a", "b"] };
-    const wf = await workflowsController.create(orgId, userId, { name: "restore-draft", definition: d1 });
+    const wf = await workflowsController.create(orgId, userId, {
+      name: "restore-draft",
+      definition: d1,
+    });
     if ("error" in wf) throw new Error(wf.error);
     const v1 = await workflowVersionsController.publish(orgId, wf.workflow.id, userId, null);
     if ("error" in v1) throw new Error(v1.error);

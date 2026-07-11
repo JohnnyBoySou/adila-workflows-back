@@ -161,9 +161,7 @@ export const triggersController = {
 
     // Merge raso da config — patch parcial substitui chaves indicadas.
     const mergedConfig =
-      body.config !== undefined
-        ? { ...(existing.config ?? {}), ...body.config }
-        : undefined;
+      body.config !== undefined ? { ...(existing.config ?? {}), ...body.config } : undefined;
 
     const updated = await triggersRepository.update(organizationId, workflowId, id, {
       ...(body.name !== undefined && { name: body.name }),

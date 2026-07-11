@@ -66,10 +66,13 @@ export function rewriteExpr(value: string, nameToId: Map<string, string>): strin
   );
 
   // $node.NodeName.json.X  (sintaxe shorthand)
-  v = v.replaceAll(/\$node\.([A-Za-z_][\w]*)\.json\.([\w.[\]]+)/g, (match, name: string, path: string) => {
-    const id = nameToId.get(name);
-    return id ? `steps.${id}.${path}` : match;
-  });
+  v = v.replaceAll(
+    /\$node\.([A-Za-z_][\w]*)\.json\.([\w.[\]]+)/g,
+    (match, name: string, path: string) => {
+      const id = nameToId.get(name);
+      return id ? `steps.${id}.${path}` : match;
+    },
+  );
 
   // $input.item.json.X | $input.first().json.X | $input.last().json.X → input.X
   v = v.replaceAll(/\$input(?:\.item|\.first\(\)|\.last\(\))?\.json\.([\w.[\]]+)/g, "input.$1");
@@ -177,7 +180,9 @@ function translateSet({ params, nameToId }: Ctx): Params {
   const list = (params.assignments as Params | undefined)?.assignments;
   if (!Array.isArray(list)) {
     // Fallback legado: parâmetros chave-valor diretos em params.values
-    const values = (params.values as Params | undefined)?.string ?? (params.values as Params | undefined)?.number;
+    const values =
+      (params.values as Params | undefined)?.string ??
+      (params.values as Params | undefined)?.number;
     if (Array.isArray(values)) {
       const variables: Record<string, unknown> = {};
       for (const raw of values) {
@@ -742,7 +747,11 @@ function translateScheduleTrigger({ params }: Ctx): Params {
       return { cronExpression: `0 */${first.hoursInterval} * * *`, timezone: "UTC", _n8n: params };
     }
     if (first.field === "minutes" && typeof first.minutesInterval === "number") {
-      return { cronExpression: `*/${first.minutesInterval} * * * *`, timezone: "UTC", _n8n: params };
+      return {
+        cronExpression: `*/${first.minutesInterval} * * * *`,
+        timezone: "UTC",
+        _n8n: params,
+      };
     }
   }
   return { cronExpression: "0 * * * *", timezone: "UTC", _n8n: params };
@@ -918,7 +927,8 @@ function translateCsv({ params, nameToId }: Ctx): Params {
 
 function translatePdfExtract({ params, nameToId }: Ctx): Params {
   return {
-    binaryProperty: typeof params.binaryPropertyName === "string" ? params.binaryPropertyName : "data",
+    binaryProperty:
+      typeof params.binaryPropertyName === "string" ? params.binaryPropertyName : "data",
     operation: typeof params.operation === "string" ? params.operation : "pdf",
     source: rewriteDeep(params.url ?? "", nameToId),
     _n8n: params,
@@ -948,7 +958,8 @@ function translateCompression({ params, nameToId }: Ctx): Params {
   return {
     operation: typeof params.operation === "string" ? params.operation : "compress",
     format: typeof params.outputFormat === "string" ? params.outputFormat : "zip",
-    binaryProperty: typeof params.binaryPropertyName === "string" ? params.binaryPropertyName : "data",
+    binaryProperty:
+      typeof params.binaryPropertyName === "string" ? params.binaryPropertyName : "data",
     source: rewriteDeep(params.fileName ?? "", nameToId),
     _n8n: params,
   };

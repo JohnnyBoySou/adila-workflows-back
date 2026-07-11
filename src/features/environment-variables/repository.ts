@@ -135,7 +135,12 @@ export const environmentVariablesRepository = {
     return row ? decryptRow(row) : null;
   },
 
-  async remove(organizationId: string, environmentId: string, workflowId: string | null, id: string) {
+  async remove(
+    organizationId: string,
+    environmentId: string,
+    workflowId: string | null,
+    id: string,
+  ) {
     const [row] = await db
       .delete(environmentVariables)
       .where(

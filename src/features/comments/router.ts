@@ -1,12 +1,7 @@
 import { Elysia } from "elysia";
 import { requireOrganization } from "../../lib/auth-middleware";
 import { commentsController } from "./controller";
-import {
-  commentParams,
-  createCommentBody,
-  updateCommentBody,
-  workflowIdParams,
-} from "./schema";
+import { commentParams, createCommentBody, updateCommentBody, workflowIdParams } from "./schema";
 
 const ERROR_TO_STATUS: Record<string, number> = {
   not_found: 404,

@@ -57,11 +57,7 @@ export function intervalToMs(every: number, unit: IntervalUnit): number {
  * Limite mínimo: 1 segundo. Não trava aqui — a validação do `every >= 1` está
  * no schema TypeBox; intervalos curtos demais sobrecarregariam o BullMQ.
  */
-export async function upsertIntervalTrigger(
-  triggerId: string,
-  every: number,
-  unit: IntervalUnit,
-) {
+export async function upsertIntervalTrigger(triggerId: string, every: number, unit: IntervalUnit) {
   const ms = intervalToMs(every, unit);
   await cronSchedulerQueue.upsertJobScheduler(
     schedulerId(triggerId),

@@ -138,9 +138,7 @@ describe("diffDefinitions — nós", () => {
     const diff = diffDefinitions(from, to);
 
     // Assert
-    expect(diff.nodes.changed[0].fields).toEqual(
-      expect.arrayContaining(["type", "config.url"]),
-    );
+    expect(diff.nodes.changed[0].fields).toEqual(expect.arrayContaining(["type", "config.url"]));
   });
 
   test("nó idêntico NÃO aparece em changed", () => {
@@ -288,7 +286,10 @@ describe("diffDefinitions — defs vazias/malformadas", () => {
 
   test("def sem nodes/edges é tratada como vazia", () => {
     // Arrange
-    const from = { nodes: [{ id: "a", type: "start", config: {} }], edges: [{ from: "a", to: "b" }] };
+    const from = {
+      nodes: [{ id: "a", type: "start", config: {} }],
+      edges: [{ from: "a", to: "b" }],
+    };
     const to = {};
 
     // Act

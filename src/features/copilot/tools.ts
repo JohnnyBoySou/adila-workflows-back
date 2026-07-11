@@ -53,7 +53,7 @@ const proposeChangesSchema = jsonSchema<{
           id: {
             type: "string",
             description:
-              "Para update_node/delete_node: o id do nó existente. Para add_node: um id temporário curto (ex.: \"n1\") que pode ser referenciado em connect.from/to e near dentro da mesma proposta.",
+              'Para update_node/delete_node: o id do nó existente. Para add_node: um id temporário curto (ex.: "n1") que pode ser referenciado em connect.from/to e near dentro da mesma proposta.',
           },
           title: { type: "string", description: "Título do nó (add_node/update_node)." },
           config: {

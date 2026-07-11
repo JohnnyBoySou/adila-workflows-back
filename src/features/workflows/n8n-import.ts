@@ -340,8 +340,13 @@ export function importN8nWorkflow(raw: unknown): ImportResult | { error: string 
     skipped: 0,
     unsupportedTypes: [],
     pinDataKeys: wf.pinData && typeof wf.pinData === "object" ? Object.keys(wf.pinData).length : 0,
-    hasStaticData: !!wf.staticData && typeof wf.staticData === "object" && Object.keys(wf.staticData).length > 0,
-    hasErrorWorkflow: !!(wf.settings && typeof wf.settings.errorWorkflow === "string" && wf.settings.errorWorkflow),
+    hasStaticData:
+      !!wf.staticData && typeof wf.staticData === "object" && Object.keys(wf.staticData).length > 0,
+    hasErrorWorkflow: !!(
+      wf.settings &&
+      typeof wf.settings.errorWorkflow === "string" &&
+      wf.settings.errorWorkflow
+    ),
     tagCount: tagNames.length,
   };
   const unsupportedSet = new Set<string>();
@@ -505,12 +510,9 @@ export function importN8nWorkflow(raw: unknown): ImportResult | { error: string 
     const fromId = nameToId.get(sourceName);
     if (!fromId) continue;
     const sourceType = sourceTypeByName.get(sourceName) ?? "";
-    const isIfLike =
-      sourceType === "n8n-nodes-base.if" || sourceType === "n8n-nodes-base.filter";
+    const isIfLike = sourceType === "n8n-nodes-base.if" || sourceType === "n8n-nodes-base.filter";
     const isSwitch = sourceType === "n8n-nodes-base.switch";
-    const switchFallbackIdx = isSwitch
-      ? switchFallbackIdxByName.get(sourceName) ?? -1
-      : -1;
+    const switchFallbackIdx = isSwitch ? (switchFallbackIdxByName.get(sourceName) ?? -1) : -1;
     for (const [outputKind, branches] of Object.entries(outputs)) {
       if (!Array.isArray(branches)) continue;
       branches.forEach((branch, branchIdx) => {
@@ -555,9 +557,10 @@ export function importN8nWorkflow(raw: unknown): ImportResult | { error: string 
         Object.keys(wf.staticData as Record<string, unknown>).length > 0 && {
           staticData: wf.staticData as Record<string, unknown>,
         }),
-      ...(wf.settings && Object.keys(wf.settings).length > 0 && {
-        settings: wf.settings as Record<string, unknown>,
-      }),
+      ...(wf.settings &&
+        Object.keys(wf.settings).length > 0 && {
+          settings: wf.settings as Record<string, unknown>,
+        }),
       ...(tagNames.length > 0 && { tags: tagNames }),
       ...(typeof wf.versionId === "string" && { n8nVersionId: wf.versionId }),
     },

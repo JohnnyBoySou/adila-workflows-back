@@ -47,11 +47,7 @@ export const commentsController = {
       return { error: "root_requires_coords" };
     }
     if (isReply) {
-      const parent = await commentsRepository.findById(
-        organizationId,
-        workflowId,
-        input.parentId!,
-      );
+      const parent = await commentsRepository.findById(organizationId, workflowId, input.parentId!);
       if (!parent) return { error: "parent_not_found" };
       if (parent.parentId !== null) return { error: "no_nested_replies" };
     }

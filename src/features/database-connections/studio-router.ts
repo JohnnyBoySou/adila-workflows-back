@@ -86,7 +86,8 @@ export const databaseStudioRouter = new Elysia({
       try {
         return await listDatabases(conn);
       } catch (err) {
-        if (err instanceof StudioError) return status(studioStatus(err.code), { error: err.code, message: err.message });
+        if (err instanceof StudioError)
+          return status(studioStatus(err.code), { error: err.code, message: err.message });
         throw err;
       }
     },
@@ -99,7 +100,8 @@ export const databaseStudioRouter = new Elysia({
       try {
         return await browseRows(conn, body);
       } catch (err) {
-        if (err instanceof StudioError) return status(studioStatus(err.code), { error: err.code, message: err.message });
+        if (err instanceof StudioError)
+          return status(studioStatus(err.code), { error: err.code, message: err.message });
         throw err;
       }
     },
@@ -117,12 +119,18 @@ export const databaseStudioRouter = new Elysia({
           action: "database_studio.row_inserted",
           resourceType: "database_connection",
           resourceId: params.connectionId,
-          metadata: { workflowId: params.id, table: body.table, schema: body.schema ?? "public", database: body.database ?? null },
+          metadata: {
+            workflowId: params.id,
+            table: body.table,
+            schema: body.schema ?? "public",
+            database: body.database ?? null,
+          },
           request,
         });
         return status(201, row);
       } catch (err) {
-        if (err instanceof StudioError) return status(studioStatus(err.code), { error: err.code, message: err.message });
+        if (err instanceof StudioError)
+          return status(studioStatus(err.code), { error: err.code, message: err.message });
         throw err;
       }
     },
@@ -151,7 +159,8 @@ export const databaseStudioRouter = new Elysia({
         });
         return row;
       } catch (err) {
-        if (err instanceof StudioError) return status(studioStatus(err.code), { error: err.code, message: err.message });
+        if (err instanceof StudioError)
+          return status(studioStatus(err.code), { error: err.code, message: err.message });
         throw err;
       }
     },
@@ -169,12 +178,18 @@ export const databaseStudioRouter = new Elysia({
           action: "database_studio.row_deleted",
           resourceType: "database_connection",
           resourceId: params.connectionId,
-          metadata: { workflowId: params.id, table: body.table, schema: body.schema ?? "public", database: body.database ?? null },
+          metadata: {
+            workflowId: params.id,
+            table: body.table,
+            schema: body.schema ?? "public",
+            database: body.database ?? null,
+          },
           request,
         });
         return result;
       } catch (err) {
-        if (err instanceof StudioError) return status(studioStatus(err.code), { error: err.code, message: err.message });
+        if (err instanceof StudioError)
+          return status(studioStatus(err.code), { error: err.code, message: err.message });
         throw err;
       }
     },
@@ -192,12 +207,18 @@ export const databaseStudioRouter = new Elysia({
           action: "database_studio.ddl_executed",
           resourceType: "database_connection",
           resourceId: params.connectionId,
-          metadata: { workflowId: params.id, op: body.op, database: body.database ?? null, statement: snippet(result.statement) },
+          metadata: {
+            workflowId: params.id,
+            op: body.op,
+            database: body.database ?? null,
+            statement: snippet(result.statement),
+          },
           request,
         });
         return result;
       } catch (err) {
-        if (err instanceof StudioError) return status(studioStatus(err.code), { error: err.code, message: err.message });
+        if (err instanceof StudioError)
+          return status(studioStatus(err.code), { error: err.code, message: err.message });
         throw err;
       }
     },
@@ -215,12 +236,18 @@ export const databaseStudioRouter = new Elysia({
           action: "database_studio.query_executed",
           resourceType: "database_connection",
           resourceId: params.connectionId,
-          metadata: { workflowId: params.id, sql: snippet(body.sql), database: body.database ?? null, rowCount: result.rowCount },
+          metadata: {
+            workflowId: params.id,
+            sql: snippet(body.sql),
+            database: body.database ?? null,
+            rowCount: result.rowCount,
+          },
           request,
         });
         return result;
       } catch (err) {
-        if (err instanceof StudioError) return status(studioStatus(err.code), { error: err.code, message: err.message });
+        if (err instanceof StudioError)
+          return status(studioStatus(err.code), { error: err.code, message: err.message });
         throw err;
       }
     },

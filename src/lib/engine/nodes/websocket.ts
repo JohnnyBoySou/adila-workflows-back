@@ -55,8 +55,7 @@ export const websocketHandler: NodeHandler = async ({ node, context }) => {
 
     ws.on("open", () => {
       if (cfg.message !== undefined) {
-        const payload =
-          typeof cfg.message === "string" ? cfg.message : JSON.stringify(cfg.message);
+        const payload = typeof cfg.message === "string" ? cfg.message : JSON.stringify(cfg.message);
         ws.send(payload);
         sent = true;
       }

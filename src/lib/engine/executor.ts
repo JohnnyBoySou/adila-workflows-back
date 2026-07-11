@@ -157,10 +157,7 @@ function findStart(def: WorkflowDefinition): WorkflowNode | null {
  * nextLabel, queremos a aresta com aquele rótulo; se não existir, caímos
  * pra primeira sem label, e em último caso a primeira.
  */
-function pickLiveEdge(
-  outgoing: WorkflowEdge[],
-  label: string | undefined,
-): WorkflowEdge | null {
+function pickLiveEdge(outgoing: WorkflowEdge[], label: string | undefined): WorkflowEdge | null {
   if (outgoing.length === 0) return null;
   if (label) {
     const labeled = outgoing.find((e) => e.label === label);
@@ -190,11 +187,7 @@ function findBackEdges(def: WorkflowDefinition): Set<WorkflowEdge> {
   return back;
 }
 
-function reachable(
-  adj: Map<NodeId, WorkflowEdge[]>,
-  from: NodeId,
-  target: NodeId,
-): boolean {
+function reachable(adj: Map<NodeId, WorkflowEdge[]>, from: NodeId, target: NodeId): boolean {
   if (from === target) return true;
   const seen = new Set<NodeId>([from]);
   const queue: NodeId[] = [from];

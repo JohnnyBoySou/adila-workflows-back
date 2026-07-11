@@ -91,7 +91,10 @@ export function applyDatabase(connectionString: string, database?: string): stri
   try {
     url = new URL(connectionString);
   } catch {
-    throw new StudioError("invalid_connection_url", "connection string inválida pra troca de database");
+    throw new StudioError(
+      "invalid_connection_url",
+      "connection string inválida pra troca de database",
+    );
   }
   url.pathname = `/${database}`;
   return url.toString();
@@ -152,13 +155,7 @@ const ALLOWED_COLUMN_TYPES = new Set([
 ]);
 
 // ── Ações referenciais permitidas em FK (ON DELETE / ON UPDATE) ─────────
-const ALLOWED_FK_ACTIONS = new Set([
-  "NO ACTION",
-  "RESTRICT",
-  "CASCADE",
-  "SET NULL",
-  "SET DEFAULT",
-]);
+const ALLOWED_FK_ACTIONS = new Set(["NO ACTION", "RESTRICT", "CASCADE", "SET NULL", "SET DEFAULT"]);
 
 /** Valida e normaliza uma ação referencial de FK contra o allowlist. */
 export function assertFkAction(raw: string): string {
@@ -347,7 +344,13 @@ export async function browseRows(
 ): Promise<BrowseResult> {
   ensurePostgres(conn);
   const connectionString = applyDatabase(conn.connectionString, input.database);
-  const { table } = await resolveTable(conn, connectionString, input.database, input.schema, input.table);
+  const { table } = await resolveTable(
+    conn,
+    connectionString,
+    input.database,
+    input.schema,
+    input.table,
+  );
 
   const limit = Math.min(Math.max(1, Math.floor(input.limit ?? DEFAULT_ROW_LIMIT)), MAX_ROW_LIMIT);
   const offset = Math.max(0, Math.floor(input.offset ?? 0));
@@ -387,7 +390,13 @@ export async function insertRow(
 ): Promise<Record<string, unknown>> {
   ensurePostgres(conn);
   const connectionString = applyDatabase(conn.connectionString, input.database);
-  const { table } = await resolveTable(conn, connectionString, input.database, input.schema, input.table);
+  const { table } = await resolveTable(
+    conn,
+    connectionString,
+    input.database,
+    input.schema,
+    input.table,
+  );
 
   const entries = Object.entries(input.values ?? {});
   if (entries.length === 0) throw new StudioError("empty_values", "nenhum valor pra inserir");
@@ -426,7 +435,13 @@ export async function updateRow(
 ): Promise<Record<string, unknown>> {
   ensurePostgres(conn);
   const connectionString = applyDatabase(conn.connectionString, input.database);
-  const { table } = await resolveTable(conn, connectionString, input.database, input.schema, input.table);
+  const { table } = await resolveTable(
+    conn,
+    connectionString,
+    input.database,
+    input.schema,
+    input.table,
+  );
 
   const setEntries = Object.entries(input.set ?? {});
   const pkEntries = Object.entries(input.pk ?? {});
@@ -472,7 +487,13 @@ export async function deleteRow(
 ): Promise<{ deleted: number }> {
   ensurePostgres(conn);
   const connectionString = applyDatabase(conn.connectionString, input.database);
-  const { table } = await resolveTable(conn, connectionString, input.database, input.schema, input.table);
+  const { table } = await resolveTable(
+    conn,
+    connectionString,
+    input.database,
+    input.schema,
+    input.table,
+  );
 
   const pkEntries = Object.entries(input.pk ?? {});
   if (pkEntries.length === 0) {
@@ -510,13 +531,34 @@ export interface DdlColumnDef {
 // Toda variante carrega `database?` opcional — o database alvo no cluster
 // (omitido = database default da connection). Threaded em `runDdl`.
 export type DdlOp =
-  | { op: "create_table"; schema?: string; database?: string; table: string; columns: DdlColumnDef[] }
+  | {
+      op: "create_table";
+      schema?: string;
+      database?: string;
+      table: string;
+      columns: DdlColumnDef[];
+    }
   | { op: "drop_table"; schema?: string; database?: string; table: string }
   | { op: "rename_table"; schema?: string; database?: string; table: string; to: string }
   | { op: "add_column"; schema?: string; database?: string; table: string; column: DdlColumnDef }
   | { op: "drop_column"; schema?: string; database?: string; table: string; column: string }
-  | { op: "rename_column"; schema?: string; database?: string; table: string; column: string; to: string }
-  | { op: "create_index"; schema?: string; database?: string; table: string; columns: string[]; unique?: boolean; name?: string }
+  | {
+      op: "rename_column";
+      schema?: string;
+      database?: string;
+      table: string;
+      column: string;
+      to: string;
+    }
+  | {
+      op: "create_index";
+      schema?: string;
+      database?: string;
+      table: string;
+      columns: string[];
+      unique?: boolean;
+      name?: string;
+    }
   | { op: "drop_index"; schema?: string; database?: string; index: string }
   | {
       op: "add_foreign_key";
@@ -532,7 +574,15 @@ export type DdlOp =
       onDelete?: string;
     }
   | { op: "drop_constraint"; schema?: string; database?: string; table: string; name: string }
-  | { op: "alter_column_type"; schema?: string; database?: string; table: string; column: string; type: string; using?: string };
+  | {
+      op: "alter_column_type";
+      schema?: string;
+      database?: string;
+      table: string;
+      column: string;
+      type: string;
+      using?: string;
+    };
 
 /**
  * Defaults são o único ponto onde aceitamos SQL "cru" no DDL. Restringimos a
@@ -568,7 +618,8 @@ function renderColumnDef(def: DdlColumnDef): string {
   const parts = [qid(def.name, "coluna"), assertColumnType(def.type)];
   if (def.primaryKey) parts.push("PRIMARY KEY");
   if (def.nullable === false) parts.push("NOT NULL");
-  if (def.default != null && def.default !== "") parts.push(`DEFAULT ${assertDefault(def.default)}`);
+  if (def.default != null && def.default !== "")
+    parts.push(`DEFAULT ${assertDefault(def.default)}`);
   return parts.join(" ");
 }
 
@@ -614,7 +665,10 @@ export function buildDdl(op: DdlOp): string {
         throw new StudioError("empty_columns", "FK precisa de ao menos uma coluna referenciada");
       }
       if (op.columns.length !== op.refColumns.length) {
-        throw new StudioError("invalid_fk", "número de colunas da FK não bate com as referenciadas");
+        throw new StudioError(
+          "invalid_fk",
+          "número de colunas da FK não bate com as referenciadas",
+        );
       }
       const rel = qualified(op.schema ?? "public", op.table);
       const refRel = qualified(op.refSchema ?? op.schema ?? "public", op.refTable);
@@ -636,7 +690,10 @@ export function buildDdl(op: DdlOp): string {
     }
     default: {
       const _exhaustive: never = op;
-      throw new StudioError("invalid_op", `operação DDL desconhecida: ${JSON.stringify(_exhaustive)}`);
+      throw new StudioError(
+        "invalid_op",
+        `operação DDL desconhecida: ${JSON.stringify(_exhaustive)}`,
+      );
     }
   }
 }

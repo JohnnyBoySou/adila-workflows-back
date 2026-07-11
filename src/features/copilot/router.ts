@@ -57,7 +57,10 @@ export const copilotRouter = new Elysia({ prefix: "/copilot" })
     "/settings",
     async ({ organizationId, role, body, status }) => {
       if (role !== "owner" && role !== "admin") {
-        return status(403, { error: "forbidden", message: "Apenas owner/admin podem configurar a chave." });
+        return status(403, {
+          error: "forbidden",
+          message: "Apenas owner/admin podem configurar a chave.",
+        });
       }
       const row = await copilotRepository.upsertSettings(organizationId, {
         provider: body.provider,
@@ -141,7 +144,10 @@ export const copilotRouter = new Elysia({ prefix: "/copilot" })
       });
       if (!rl.allowed) {
         set.headers["Retry-After"] = String(rl.resetIn);
-        return status(429, { error: "rate_limited", message: "Muitas mensagens. Tente em instantes." });
+        return status(429, {
+          error: "rate_limited",
+          message: "Muitas mensagens. Tente em instantes.",
+        });
       }
 
       const settings = await copilotRepository.getSettings(organizationId);

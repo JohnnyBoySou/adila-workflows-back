@@ -52,17 +52,20 @@ export const urlToolsHandler: NodeHandler = async ({ node, context }) => {
   }
 
   if (op === "encode") {
-    if (typeof cfg.value !== "string") throw new Error("url_tools.encode: config.value é obrigatório");
+    if (typeof cfg.value !== "string")
+      throw new Error("url_tools.encode: config.value é obrigatório");
     return { output: { value: encodeURIComponent(cfg.value) } };
   }
 
   if (op === "decode") {
-    if (typeof cfg.value !== "string") throw new Error("url_tools.decode: config.value é obrigatório");
+    if (typeof cfg.value !== "string")
+      throw new Error("url_tools.decode: config.value é obrigatório");
     return { output: { value: decodeURIComponent(cfg.value) } };
   }
 
   if (op === "parse_query") {
-    const src = typeof cfg.value === "string" ? cfg.value : typeof cfg.url === "string" ? cfg.url : "";
+    const src =
+      typeof cfg.value === "string" ? cfg.value : typeof cfg.url === "string" ? cfg.url : "";
     const qs = src.includes("?") ? src.slice(src.indexOf("?") + 1) : src;
     const params = new URLSearchParams(qs);
     return { output: { query: Object.fromEntries(params.entries()) } };

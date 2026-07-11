@@ -36,12 +36,7 @@ export interface SchemaTable {
 }
 
 /** Ação referencial de uma FK (`ON DELETE` / `ON UPDATE`). */
-export type ForeignKeyAction =
-  | "NO ACTION"
-  | "RESTRICT"
-  | "CASCADE"
-  | "SET NULL"
-  | "SET DEFAULT";
+export type ForeignKeyAction = "NO ACTION" | "RESTRICT" | "CASCADE" | "SET NULL" | "SET DEFAULT";
 
 export interface SchemaForeignKey {
   /** Nome da constraint (usado pra dropar). */
@@ -68,11 +63,21 @@ export interface DatabaseSchema {
 // ── Mapeamento Postgres → tipo "lógico" ──────────────────────────────
 function mapJsType(pgType: string): SchemaColumn["jsType"] {
   const t = pgType.toLowerCase();
-  if (t.startsWith("int") || t === "bigint" || t === "smallint" || t === "real" || t === "double precision" || t === "numeric" || t === "decimal") return "number";
+  if (
+    t.startsWith("int") ||
+    t === "bigint" ||
+    t === "smallint" ||
+    t === "real" ||
+    t === "double precision" ||
+    t === "numeric" ||
+    t === "decimal"
+  )
+    return "number";
   if (t === "boolean" || t === "bool") return "boolean";
   if (t.startsWith("timestamp") || t === "date" || t === "time") return "date";
   if (t === "json" || t === "jsonb") return "json";
-  if (t === "text" || t.startsWith("varchar") || t.startsWith("char") || t === "uuid") return "string";
+  if (t === "text" || t.startsWith("varchar") || t.startsWith("char") || t === "uuid")
+    return "string";
   return "unknown";
 }
 

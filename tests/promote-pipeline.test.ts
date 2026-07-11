@@ -189,7 +189,12 @@ describe("pipeline publicar → promover → rollback → diff", () => {
     expect(t2After?.workflowVersionId).toBeNull();
 
     // Lote válido (sem triggerIds = todos) promove ambos.
-    const bulkOk = await workflowVersionsController.promoteBulk(orgId, wf.id, v1.version.id, undefined);
+    const bulkOk = await workflowVersionsController.promoteBulk(
+      orgId,
+      wf.id,
+      v1.version.id,
+      undefined,
+    );
     if ("error" in bulkOk) throw new Error(bulkOk.error);
     expect(bulkOk.promoted).toHaveLength(2);
     for (const p of bulkOk.promoted) {
