@@ -40,6 +40,19 @@ const EnvSchema = Type.Object({
   // emitida por `api.workflow.lai.ia.br`. Não setar em dev.
   AUTH_COOKIE_DOMAIN: Type.Optional(Type.String({ minLength: 1 })),
 
+  // ── Identity (adila.co) — provedor de identidade externo ──
+  // A auth é federada no serviço Identity: o front autentica lá e manda um JWT
+  // (curto, ~15min) como `Authorization: Bearer`; este back valida o token
+  // *stateless* contra o JWKS do Identity (sem round-trip). Ver lib/identity-auth.ts.
+  //
+  // Origem pública do Identity. Deriva o JWKS (`/api/auth/jwks`) e o issuer.
+  IDENTITY_URL: Type.String({ default: "https://identity.adila.co" }),
+  // `iss` esperado no token. O Identity assina com iss = sua BETTER_AUTH_URL,
+  // que é a própria origem pública — por padrão, igual a IDENTITY_URL.
+  IDENTITY_ISSUER: Type.Optional(Type.String({ minLength: 1 })),
+  // `aud` esperado (literal fixo no Identity).
+  IDENTITY_JWT_AUDIENCE: Type.String({ default: "adila" }),
+
   // Chave simétrica para AES-256-GCM (criptografia de secrets em repouso).
   // 32 bytes em base64. Gere com: openssl rand -base64 32
   ENCRYPTION_KEY: Type.String({ minLength: 1 }),

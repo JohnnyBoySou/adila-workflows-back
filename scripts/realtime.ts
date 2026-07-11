@@ -1,10 +1,14 @@
 import { Elysia, t } from "elysia";
 import { and, eq } from "drizzle-orm";
 import { env } from "../src/config/env";
-import { auth } from "../src/lib/auth";
+import {
+  authenticateToken,
+  bearerToken,
+  IdentityAuthError,
+  localMemberRole,
+} from "../src/lib/identity-auth";
 import { CollaborationGateway, type AwarenessEvent, type Presence } from "../src/lib/collab";
 import { db } from "../src/db";
-import { member } from "../src/db/auth-schema";
 import { workflows } from "../src/db/schema";
 import { collaborationRepository } from "../src/features/workflow-runs/collaboration-repository";
 
@@ -24,24 +28,41 @@ const sockets = new Map<
   }
 >();
 
-async function authorize(headers: Headers, workflowId: string) {
-  const result = await auth.api.getSession({ headers });
-  if (!result) return null;
-  const orgId = result.session.activeOrganizationId;
+/** Monta um `Headers` a partir do record de headers do upgrade WS. */
+function headersFromRecord(record: Record<string, string | undefined>): Headers {
+  const headers = new Headers();
+  for (const [key, value] of Object.entries(record)) {
+    if (typeof value === "string") headers.set(key, value);
+  }
+  return headers;
+}
+
+/**
+ * Autoriza o acesso ao room verificando o JWT do Identity (federado). O token
+ * chega no header `Authorization: Bearer` (endpoints HTTP) ou na query `?token=`
+ * (handshake WS — browser não seta header em WebSocket). Confere ainda que o
+ * workflow pertence à org ativa do token.
+ */
+async function authorize(token: string | null, workflowId: string) {
+  if (!token) return null;
+  let claims;
+  try {
+    claims = await authenticateToken(token);
+  } catch (error) {
+    if (error instanceof IdentityAuthError) return null;
+    throw error;
+  }
+  const orgId = claims.organizationId;
   if (!orgId) return null;
-  const [membership] = await db
-    .select({ role: member.role })
-    .from(member)
-    .where(and(eq(member.organizationId, orgId), eq(member.userId, result.user.id)))
-    .limit(1);
-  if (!membership) return null;
+  const role = claims.organizationRole ?? (await localMemberRole(orgId, claims.userId));
+  if (!role) return null;
   const [workflow] = await db
     .select({ id: workflows.id })
     .from(workflows)
     .where(and(eq(workflows.id, workflowId), eq(workflows.organizationId, orgId)))
     .limit(1);
   if (!workflow) return null;
-  return { userId: result.user.id, organizationId: orgId, role: membership.role };
+  return { userId: claims.userId, organizationId: orgId, role };
 }
 
 const app = new Elysia({ name: "realtime-gateway" })
@@ -49,7 +70,7 @@ const app = new Elysia({ name: "realtime-gateway" })
   .get(
     "/rooms/:workflowId/document",
     async ({ params, request, status }) => {
-      const authz = await authorize(request.headers, params.workflowId);
+      const authz = await authorize(bearerToken(request.headers), params.workflowId);
       if (!authz) return status(401, { error: "unauthorized" });
       const snapshot = await collaborationRepository.latestSnapshot(
         authz.organizationId,
@@ -72,7 +93,7 @@ const app = new Elysia({ name: "realtime-gateway" })
   .post(
     "/rooms/:workflowId/snapshot",
     async ({ params, request, body, status }) => {
-      const authz = await authorize(request.headers, params.workflowId);
+      const authz = await authorize(bearerToken(request.headers), params.workflowId);
       if (!authz) return status(401, { error: "unauthorized" });
       if (!(authz.role === "owner" || authz.role === "admin")) {
         return status(403, { error: "forbidden" });
@@ -103,6 +124,8 @@ const app = new Elysia({ name: "realtime-gateway" })
   )
   .ws("/ws/:workflowId", {
     params: t.Object({ workflowId: t.String() }),
+    // Token do Identity no handshake (browser não seta header em WebSocket).
+    query: t.Object({ token: t.Optional(t.String()) }),
     body: t.Object({
       type: t.String(),
       userId: t.String(),
@@ -115,16 +138,16 @@ const app = new Elysia({ name: "realtime-gateway" })
     }),
     async open(ws) {
       const workflowId = ws.data.params.workflowId;
+      // O JWT do Identity chega na query (`?token=`) — browsers não setam header
+      // no upgrade de WebSocket. O Bearer no header segue aceito (clientes não-browser).
+      const queryToken = ws.data.query?.token ?? null;
+      const identityToken = queryToken ?? bearerToken(headersFromRecord(ws.data.headers));
       console.log("[ws] open attempt", {
         workflowId,
-        hasCookie: Boolean(ws.data.headers.cookie),
+        hasToken: Boolean(identityToken),
         origin: ws.data.headers.origin,
       });
-      const authHeaders = new Headers();
-      for (const [k, v] of Object.entries(ws.data.headers)) {
-        if (typeof v === "string") authHeaders.set(k, v);
-      }
-      const authz = await authorize(authHeaders, workflowId);
+      const authz = await authorize(identityToken, workflowId);
       if (!authz) {
         console.log("[ws] unauthorized — closing", { workflowId });
         ws.send({ type: "error", error: "unauthorized" });
@@ -182,8 +205,10 @@ const app = new Elysia({ name: "realtime-gateway" })
 
       let event: AwarenessEvent | null = null;
       if (message.type === "user.joined") event = { type: "user.joined", workflowId, presence };
-      else if (message.type === "cursor.move") event = { type: "cursor.move", workflowId, presence };
-      else if (message.type === "node.selected") event = { type: "node.selected", workflowId, presence };
+      else if (message.type === "cursor.move")
+        event = { type: "cursor.move", workflowId, presence };
+      else if (message.type === "node.selected")
+        event = { type: "node.selected", workflowId, presence };
       else if (message.type === "viewport.changed") {
         event = { type: "viewport.changed", workflowId, presence };
       } else if (message.type === "yjs.update" && message.updateBase64) {
