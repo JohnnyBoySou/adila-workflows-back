@@ -1,8 +1,14 @@
 import { triggersRepository } from "../triggers/repository";
+import { workflowRunsRepository } from "../workflow-runs/repository";
 import { workflowsRepository } from "../workflows/repository";
 import { diffDefinitions, type DefinitionDiff } from "./diff";
 import { hashDefinition, workflowVersionsRepository } from "./repository";
 import type { PublishVersionBody } from "./schema";
+
+/** Postgres foreign-key violation (23503) — usado como rede contra a race do delete. */
+function isForeignKeyViolation(err: unknown): boolean {
+  return typeof err === "object" && err !== null && (err as { code?: string }).code === "23503";
+}
 
 export const workflowVersionsController = {
   async list(organizationId: string, workflowId: string) {
@@ -166,6 +172,58 @@ export const workflowVersionsController = {
     );
 
     return { promoted, version };
+  },
+
+  /**
+   * Remove uma versão publicada. Política Opção A: bloqueia enquanto a versão
+   * estiver referenciada. Duas fontes de referência, ambas checadas:
+   *
+   * - **Triggers** (`triggers.workflow_version_id`, FK `SET NULL`): deletar
+   *   despinaria os triggers silenciosamente. Força promover pra outra versão
+   *   antes de remover.
+   * - **Runs** (`workflow_runs.workflow_version_id`, FK `RESTRICT`): o snapshot
+   *   que de fato executou precisa continuar rastreável. Como todo run novo
+   *   preenche esse campo, na prática qualquer versão que já rodou é
+   *   indeletável — o que é o comportamento desejado (auditoria imutável).
+   *
+   * Versões são imutáveis e baratas; não há ganho em removê-las além de
+   * limpar timeline. Preservar a auditoria vale mais do que o delete solto.
+   *
+   * O delete ainda é guardado por try/catch de FK (23503) como rede contra a
+   * race entre a checagem e o delete (ex.: um run gravado nesse intervalo).
+   */
+  async remove(organizationId: string, workflowId: string, versionId: string) {
+    const version = await workflowVersionsRepository.findById(
+      organizationId,
+      workflowId,
+      versionId,
+    );
+    if (!version) return { error: "version_not_found" as const };
+
+    const [triggers, runs] = await Promise.all([
+      triggersRepository.countByVersion(versionId),
+      workflowRunsRepository.countByVersion(versionId),
+    ]);
+    if (triggers > 0 || runs > 0) {
+      return { error: "version_in_use" as const, refs: { triggers, runs } };
+    }
+
+    try {
+      const deleted = await workflowVersionsRepository.remove(workflowId, versionId);
+      if (!deleted) return { error: "version_not_found" as const };
+      return { deleted };
+    } catch (err) {
+      // Race: algo passou a referenciar a versão entre a checagem e o delete.
+      // Re-conta pra devolver o breakdown atual em vez de estourar 500.
+      if (isForeignKeyViolation(err)) {
+        const [triggersNow, runsNow] = await Promise.all([
+          triggersRepository.countByVersion(versionId),
+          workflowRunsRepository.countByVersion(versionId),
+        ]);
+        return { error: "version_in_use" as const, refs: { triggers: triggersNow, runs: runsNow } };
+      }
+      throw err;
+    }
   },
 
   /**

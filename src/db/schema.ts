@@ -280,6 +280,14 @@ export const workflowRunSteps = pgTable("workflow_run_steps", {
   startedAt: timestamp("started_at", { withTimezone: true }),
   finishedAt: timestamp("finished_at", { withTimezone: true }),
   durationMs: integer("duration_ms"),
+  // Consumo de tokens dos nós de IA (ai_chat, ai_agent, embeddings). NULL pra
+  // nós que não consomem LLM. `model` guarda o id do modelo (ex.: "claude-sonnet-4-6")
+  // pra o custo ser calculado no read a partir da tabela de preço — assim
+  // reajuste de preço vale retroativo, sem congelar valor no banco.
+  inputTokens: integer("input_tokens"),
+  outputTokens: integer("output_tokens"),
+  totalTokens: integer("total_tokens"),
+  model: text("model"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 

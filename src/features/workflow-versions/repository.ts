@@ -111,6 +111,23 @@ export const workflowVersionsRepository = {
     return row ?? null;
   },
 
+  /**
+   * Remove uma versão. Escopo por `workflowId` — a checagem de org já foi
+   * feita pelo caller via `findById` (join com workflows). Devolve a linha
+   * removida (id/version/name) ou null se nada casou.
+   */
+  async remove(workflowId: string, id: string) {
+    const [row] = await db
+      .delete(workflowVersions)
+      .where(and(eq(workflowVersions.id, id), eq(workflowVersions.workflowId, workflowId)))
+      .returning({
+        id: workflowVersions.id,
+        version: workflowVersions.version,
+        name: workflowVersions.name,
+      });
+    return row ?? null;
+  },
+
   async create(data: Omit<NewWorkflowVersion, "version" | "definitionHash">) {
     const [row] = await db
       .insert(workflowVersions)

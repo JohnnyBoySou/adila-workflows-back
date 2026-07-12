@@ -22,17 +22,12 @@ import { workflowRunsRouter } from "./features/workflow-runs/router";
 import { workflowVersionsRouter } from "./features/workflow-versions/router";
 import { workflowNodesRouter } from "./features/workflows/nodes-router";
 import { workflowsRouter } from "./features/workflows/router";
-import { auth } from "./lib/auth";
 import { httpLogger } from "./lib/http-logger";
 import { logger } from "./lib/logger";
-import { rateLimit } from "./lib/rate-limit";
 
 const corsOrigins = env.CORS_ORIGINS.split(",")
   .map((o) => o.trim())
   .filter(Boolean);
-
-// Endpoints de auth com brute-force óbvio — limitamos por IP.
-const AUTH_RATE_LIMITED_PATHS = new Set(["/api/auth/sign-up/email", "/api/auth/sign-in/email"]);
 
 const app = new Elysia()
   // CORS antes de tudo — precisa de credentials:true pra cookie de sessão viajar.
@@ -66,26 +61,9 @@ const app = new Elysia()
       },
     }),
   )
-  // Better Auth expõe todas as rotas em /api/auth/* — repassamos o Request nativo.
-  .all("/api/auth/*", async ({ request, server, status, set }) => {
-    const url = new URL(request.url);
-    if (AUTH_RATE_LIMITED_PATHS.has(url.pathname)) {
-      const ip =
-        request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-        server?.requestIP(request)?.address ||
-        "unknown";
-      const limit = await rateLimit({
-        key: `auth:${url.pathname}:${ip}`,
-        limit: 10,
-        windowSeconds: 60,
-      });
-      if (!limit.allowed) {
-        set.headers["Retry-After"] = String(limit.resetIn);
-        return status(429, { error: "rate_limited" });
-      }
-    }
-    return auth.handler(request);
-  })
+  // Auth é federada no Identity (identity.adila.co): o back valida o JWT via
+  // JWKS (ver src/lib/identity-auth.ts + auth-middleware.ts). Não há provedor
+  // de identidade local — nenhuma rota /api/auth/* aqui.
   .get("/", () => "Hello Elysia")
   .use(healthRouter)
   .use(foldersRouter)

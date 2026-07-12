@@ -2,7 +2,7 @@ import { Elysia } from "elysia";
 import { authenticateRequest, IdentityAuthError, localMemberRole } from "./identity-auth";
 
 /**
- * Roles do plugin organization do Better Auth (espelhados do Identity).
+ * Roles de organização espelhados do Identity (claim `activeOrganizationRole`).
  * - owner: criador, pode tudo (inclusive deletar a org)
  * - admin: pode gerenciar membros e recursos
  * - member: leitura + disparar runs

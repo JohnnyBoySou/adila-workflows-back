@@ -28,18 +28,6 @@ const EnvSchema = Type.Object({
   REDIS_URL: Type.String({ default: "redis://127.0.0.1:6379" }),
   WORKFLOW_WORKER_CONCURRENCY: Type.Number({ default: 20 }),
 
-  // Obrigatório no servidor HTTP; o worker não carrega `lib/auth` e por
-  // isso roda sem essa variável. A checagem dura mora em `lib/auth.ts`.
-  BETTER_AUTH_SECRET: Type.Optional(Type.String({ minLength: 1 })),
-  BETTER_AUTH_URL: Type.String({ default: "http://localhost:3000" }),
-
-  // Domínio para cookies cross-subdomain (ex.: ".workflow.lai.ia.br").
-  // Quando setado, o cookie de sessão é emitido com Domain=<valor>, fazendo
-  // o browser enviar a sessão para *.workflow.lai.ia.br — necessário para
-  // o serviço realtime em `realtime.workflow.lai.ia.br` reconhecer a sessão
-  // emitida por `api.workflow.lai.ia.br`. Não setar em dev.
-  AUTH_COOKIE_DOMAIN: Type.Optional(Type.String({ minLength: 1 })),
-
   // ── Identity (adila.co) — provedor de identidade externo ──
   // A auth é federada no serviço Identity: o front autentica lá e manda um JWT
   // (curto, ~15min) como `Authorization: Bearer`; este back valida o token
@@ -47,8 +35,8 @@ const EnvSchema = Type.Object({
   //
   // Origem pública do Identity. Deriva o JWKS (`/api/auth/jwks`) e o issuer.
   IDENTITY_URL: Type.String({ default: "https://identity.adila.co" }),
-  // `iss` esperado no token. O Identity assina com iss = sua BETTER_AUTH_URL,
-  // que é a própria origem pública — por padrão, igual a IDENTITY_URL.
+  // `iss` esperado no token. O Identity assina com iss = sua própria origem
+  // pública — por padrão, igual a IDENTITY_URL.
   IDENTITY_ISSUER: Type.Optional(Type.String({ minLength: 1 })),
   // `aud` esperado (literal fixo no Identity).
   IDENTITY_JWT_AUDIENCE: Type.String({ default: "adila" }),
@@ -57,8 +45,8 @@ const EnvSchema = Type.Object({
   // 32 bytes em base64. Gere com: openssl rand -base64 32
   ENCRYPTION_KEY: Type.String({ minLength: 1 }),
 
-  // Origens permitidas para CORS + trustedOrigins do Better Auth.
-  // Aceita uma lista separada por vírgula. Em dev, default cobre o Vite (5173).
+  // Origens permitidas para CORS. Aceita uma lista separada por vírgula.
+  // Em dev, default cobre o Vite (5173).
   CORS_ORIGINS: Type.String({ default: "http://localhost:5173" }),
 
   // URL pública do front (links em e-mails). Se omitido, usa a primeira origem de CORS_ORIGINS.

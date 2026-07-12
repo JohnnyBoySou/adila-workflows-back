@@ -4,6 +4,7 @@ import { workflowRunsRepository } from "../workflow-runs/repository";
 import { workflowVersionsController } from "../workflow-versions/controller";
 import { workflowVersionsRepository } from "../workflow-versions/repository";
 import { pickLaneForDefinition, workflowQueues } from "../../lib/queue";
+import { summarizeWorkflowChanges } from "./audit-changes";
 import { importN8nWorkflow } from "./n8n-import";
 import { workflowsRepository } from "./repository";
 import type {
@@ -57,6 +58,10 @@ export const workflowsController = {
       const folder = await foldersRepository.findById(organizationId, body.folderId);
       if (!folder) return { error: "folder_not_found" as const };
     }
+    // Snapshot antes do update pra o audit log saber exatamente o que mudou.
+    const before = await workflowsRepository.findById(organizationId, id);
+    if (!before) return { error: "not_found" as const };
+
     const workflow = await workflowsRepository.update(organizationId, id, {
       ...(body.name !== undefined && { name: body.name }),
       ...(body.description !== undefined && { description: body.description }),
@@ -65,7 +70,9 @@ export const workflowsController = {
       ...(body.definition !== undefined && { definition: body.definition }),
     });
     if (!workflow) return { error: "not_found" as const };
-    return { workflow };
+
+    const changes = summarizeWorkflowChanges(before, workflow, body);
+    return { workflow, changes };
   },
 
   remove(organizationId: string, id: string) {

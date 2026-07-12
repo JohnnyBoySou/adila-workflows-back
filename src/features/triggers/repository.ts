@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, count, eq, inArray } from "drizzle-orm";
 import { db } from "../../db";
 import { triggers, type NewTrigger, type TriggerType } from "../../db/schema";
 
@@ -160,5 +160,18 @@ export const triggersRepository = {
       )
       .returning({ id: triggers.id, type: triggers.type });
     return row ?? null;
+  },
+
+  /**
+   * Quantos triggers fixam (pin) uma versão específica. Usado pela política
+   * de delete de versão: bloquear a remoção enquanto houver trigger apontando
+   * pra ela (senão o `ON DELETE SET NULL` despinparia triggers silenciosamente).
+   */
+  async countByVersion(workflowVersionId: string): Promise<number> {
+    const [row] = await db
+      .select({ value: count() })
+      .from(triggers)
+      .where(eq(triggers.workflowVersionId, workflowVersionId));
+    return row?.value ?? 0;
   },
 };

@@ -152,6 +152,39 @@ export const workflowVersionsRouter = new Elysia({
     { params: workflowVersionParams, beforeHandle: requireRole("owner", "admin") },
   )
 
+  .delete(
+    "/:versionId",
+    async ({ organizationId, user, params, status, request }) => {
+      const result = await workflowVersionsController.remove(
+        organizationId,
+        params.id,
+        params.versionId,
+      );
+      if ("error" in result) {
+        // 409 Conflict: a versão existe mas está fixada por triggers.
+        if (result.error === "version_in_use") {
+          return status(409, { error: result.error, refs: result.refs });
+        }
+        return status(404, { error: result.error });
+      }
+      await auditLog({
+        organizationId,
+        actorUserId: user.id,
+        action: "workflow_version.deleted",
+        resourceType: "workflow_version",
+        resourceId: result.deleted.id,
+        metadata: {
+          workflowId: params.id,
+          version: result.deleted.version,
+          name: result.deleted.name,
+        },
+        request,
+      });
+      return { id: result.deleted.id, version: result.deleted.version };
+    },
+    { params: workflowVersionParams, beforeHandle: requireRole("owner", "admin") },
+  )
+
   .post(
     "/:versionId/promote",
     async ({ organizationId, user, params, body, status, request }) => {

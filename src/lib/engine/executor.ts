@@ -26,6 +26,7 @@ import { env } from "../../config/env";
 import { db } from "../../db";
 import { workflowRunSteps } from "../../db/schema";
 import { nodeHandlers } from "./nodes";
+import { extractTokenUsage } from "./token-usage";
 import {
   nodeTypes,
   TRIGGER_NODE_TYPES,
@@ -424,9 +425,20 @@ export async function executeRun(args: RunExecutionInput): Promise<RunExecutionR
       if ("vars" in result && result.vars) Object.assign(ctx.vars, result.vars);
 
       const durationMs = finishedAt.getTime() - startedAt.getTime();
+      // Consumo de tokens (nós de IA). NULL pros demais — não polui a coluna.
+      const usage = extractTokenUsage(result.output, node.config);
       await db
         .update(workflowRunSteps)
-        .set({ status: "success", output: result.output, finishedAt, durationMs })
+        .set({
+          status: "success",
+          output: result.output,
+          finishedAt,
+          durationMs,
+          inputTokens: usage?.inputTokens ?? null,
+          outputTokens: usage?.outputTokens ?? null,
+          totalTokens: usage?.totalTokens ?? null,
+          model: usage?.model ?? null,
+        })
         .where(eqStepId(stepRow!.id));
 
       await emitStep(args.onStepEvent, {

@@ -1,6 +1,7 @@
 import { Elysia } from "elysia";
 import { requireOrganization, requireRole } from "../../lib/auth-middleware";
 import { auditLog } from "../audit-logs/service";
+import { hasAuditableChange } from "./audit-changes";
 import { workflowVersionsController } from "../workflow-versions/controller";
 import { workflowsController } from "./controller";
 import {
@@ -82,17 +83,27 @@ export const workflowsRouter = new Elysia({ prefix: "/workflows" })
       if ("error" in result) {
         return status(result.error === "not_found" ? 404 : 400, { error: result.error });
       }
-      // Patch pode trazer a `definition` inteira; logamos só o conjunto de chaves
-      // alteradas pra evitar payload enorme.
-      await auditLog({
-        organizationId,
-        actorUserId: user.id,
-        action: "workflow.updated",
-        resourceType: "workflow",
-        resourceId: result.workflow.id,
-        metadata: { changedKeys: Object.keys(body) },
-        request,
-      });
+      // Grava o diff detalhado (o que mudou), não só as chaves do body. Só valores
+      // seguros: config de nó vira lista de paths, nunca o valor (pode ter segredo).
+      // Um PATCH que só reposiciona nós no canvas não gera linha de audit.
+      if (hasAuditableChange(result.changes)) {
+        await auditLog({
+          organizationId,
+          actorUserId: user.id,
+          action: "workflow.updated",
+          resourceType: "workflow",
+          resourceId: result.workflow.id,
+          metadata: {
+            changedKeys: Object.keys(body),
+            fields: result.changes.fields,
+            descriptionChanged: result.changes.descriptionChanged,
+            ...(result.changes.definitionDiff && {
+              definitionDiff: result.changes.definitionDiff,
+            }),
+          },
+          request,
+        });
+      }
       return result.workflow;
     },
     { params: workflowIdParam, body: updateWorkflowBody, beforeHandle: adminOnly },

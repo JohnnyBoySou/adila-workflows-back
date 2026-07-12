@@ -199,7 +199,13 @@ em modo `name`, precisa migrar os dados.
 
 ---
 
-### 6. Política de delete de versão
+### 6. Política de delete de versão ✅ FEITO (Opção A)
+
+> Implementado em 2026-07-11. Endpoint `DELETE /workflows/:id/versions/:versionId`
+> exposto com a Opção A: bloqueia se a versão estiver fixada por qualquer
+> trigger (HTTP 409 `version_in_use` + `refs`), senão remove e grava audit
+> `workflow_version.deleted`. Cobertura: `tests/version-delete.test.ts`.
+> Refs: `triggersRepository.countByVersion`, `workflowVersionsController.remove`.
 
 Hoje a tabela `triggers.workflow_version_id` tem `ON DELETE SET NULL`. Isso
 significa: deletar uma versão pinada por triggers **silenciosamente despinpina
@@ -356,7 +362,7 @@ Cada item é uma sessão isolada. Marcar conforme completar:
 - [ ] **(3)** Endpoint `POST /versions/:vid/restore`
 - [ ] **(4)** Endpoint `POST /workflows/:id/promote` (bulk)
 - [ ] **(5)** Script `scripts/migrate-connection-refs.ts` (com `--dry-run`)
-- [ ] **(6)** Política de delete de versão (bloquear se referenciada)
+- [x] **(6)** Política de delete de versão (bloquear se referenciada) — Opção A
 - [ ] **(7)** `PATCH /versions/:vid` pra renomear
 - [ ] **(8)** Index `triggers_workflow_version_id_idx`
 - [ ] **(9)** Comentário documentando `ensureLatest` em `workflows/controller.ts`

@@ -6,6 +6,7 @@ import { subscribeToRun } from "../../lib/run-events";
 import { auditLog } from "../audit-logs/service";
 import { workflowsController } from "../workflows/controller";
 import { workflowRunsController } from "./controller";
+import { workflowCostSummary } from "./cost";
 import { workflowRunEventsRepository } from "./events-repository";
 import { workflowRunsRepository } from "./repository";
 import { workflowRunStepsRepository } from "./steps-repository";
@@ -82,6 +83,20 @@ export const workflowRunsRouter = new Elysia({ prefix: "/workflows/:id/runs" })
     "/node-durations",
     ({ organizationId, params, query }) =>
       workflowRunStepsRepository.durationsByNode(organizationId, params.id, query.runs ?? 50),
+    {
+      params: listRunsParams,
+      query: t.Object({
+        runs: t.Optional(t.Numeric({ minimum: 1, maximum: 500, default: 50 })),
+      }),
+    },
+  )
+
+  // Custo/consumo de IA agregado por modelo nos últimos N runs. Tokens vêm dos
+  // steps; o custo em USD é calculado a partir da tabela de preço no read.
+  .get(
+    "/cost",
+    ({ organizationId, params, query }) =>
+      workflowCostSummary(organizationId, params.id, query.runs ?? 50),
     {
       params: listRunsParams,
       query: t.Object({

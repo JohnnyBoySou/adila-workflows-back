@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq } from "drizzle-orm";
 import { db } from "../../db";
 import { workflowRuns, type NewWorkflowRun, type WorkflowRunStatus } from "../../db/schema";
 
@@ -59,6 +59,20 @@ export const workflowRunsRepository = {
       .where(eq(workflowRuns.id, id))
       .returning();
     return row ?? null;
+  },
+
+  /**
+   * Quantos runs executaram uma versão específica. Usado pela política de
+   * delete de versão: `workflow_runs.workflow_version_id` tem FK `RESTRICT`,
+   * então uma versão com histórico de run não pode ser removida (o snapshot
+   * imutável que rodou precisa continuar rastreável).
+   */
+  async countByVersion(workflowVersionId: string): Promise<number> {
+    const [row] = await db
+      .select({ value: count() })
+      .from(workflowRuns)
+      .where(eq(workflowRuns.workflowVersionId, workflowVersionId));
+    return row?.value ?? 0;
   },
 
   /** Marca início — usado pelo worker assim que o job começa. */
