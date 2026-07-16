@@ -57,7 +57,9 @@ describe("json node", () => {
   });
 
   test("parse aceita escalares JSON", async () => {
-    expect(await run(jsonHandler, "json", { operation: "parse", value: "42" })).toEqual({ data: 42 });
+    expect(await run(jsonHandler, "json", { operation: "parse", value: "42" })).toEqual({
+      data: 42,
+    });
   });
 
   test("parse com JSON inválido lança erro prefixado", async () => {
@@ -220,11 +222,17 @@ describe("xml node", () => {
 
   test("build gera XML com prolog e escapa entidades", async () => {
     const out = await run(xmlHandler, "xml", { operation: "build", data: { a: 1, b: "x&y" } });
-    expect(out.text).toBe('<?xml version="1.0" encoding="UTF-8"?><root><a>1</a><b>x&amp;y</b></root>');
+    expect(out.text).toBe(
+      '<?xml version="1.0" encoding="UTF-8"?><root><a>1</a><b>x&amp;y</b></root>',
+    );
   });
 
   test("build usa `root` customizado e fecha tag vazia para null", async () => {
-    const out = await run(xmlHandler, "xml", { operation: "build", root: "doc", data: { a: null } });
+    const out = await run(xmlHandler, "xml", {
+      operation: "build",
+      root: "doc",
+      data: { a: null },
+    });
     expect(out.text).toBe('<?xml version="1.0" encoding="UTF-8"?><doc><a/></doc>');
   });
 
@@ -421,7 +429,8 @@ describe("markdown node", () => {
 // ---------------------------------------------------------------- html_extract
 
 describe("html_extract node", () => {
-  const HTML = '<div id="main"><p class="c">um</p><p class="c">dois</p><a href="http://x">l</a></div>';
+  const HTML =
+    '<div id="main"><p class="c">um</p><p class="c">dois</p><a href="http://x">l</a></div>';
 
   test("seletor por tag devolve o innerText do primeiro match", async () => {
     const out = await run(htmlExtractHandler, "html_extract", { value: HTML, selector: "p" });
@@ -613,7 +622,10 @@ describe("text_manipulation node", () => {
 
   test("length conta os caracteres", async () => {
     expect(
-      await run(textManipulationHandler, "text_manipulation", { operation: "length", value: "abc" }),
+      await run(textManipulationHandler, "text_manipulation", {
+        operation: "length",
+        value: "abc",
+      }),
     ).toEqual({ length: 3 });
   });
 
@@ -962,12 +974,12 @@ describe("math node", () => {
   });
 
   test("caracteres fora da allowlist são rejeitados (bloqueia escape)", async () => {
-    await expect(
-      run(mathHandler, "math", { expression: "1; process.exit()" }),
-    ).rejects.toThrow(/caracteres não permitidos/);
-    await expect(
-      run(mathHandler, "math", { expression: "globalThis['x']" }),
-    ).rejects.toThrow(/caracteres não permitidos/);
+    await expect(run(mathHandler, "math", { expression: "1; process.exit()" })).rejects.toThrow(
+      /caracteres não permitidos/,
+    );
+    await expect(run(mathHandler, "math", { expression: "globalThis['x']" })).rejects.toThrow(
+      /caracteres não permitidos/,
+    );
   });
 
   test("identificador desconhecido é rejeitado", async () => {
@@ -976,25 +988,47 @@ describe("math node", () => {
     );
   });
 
-  // BUG (ver relatório): funções/constantes de Math passam na allowlist mas não
-  // existem no escopo do `new Function` — só o objeto `Math` é injetado, e o
-  // identificador "Math" não está na allowlist. Logo nenhuma das duas formas
-  // funciona. Os testes abaixo fixam o comportamento ATUAL, não o desejado.
-  test("BUG: função de Math sem prefixo passa na allowlist mas falha em runtime", async () => {
-    await expect(run(mathHandler, "math", { expression: "sqrt(16)" })).rejects.toThrow(
-      /math: sqrt is not defined/,
-    );
+  // Regressão: os nomes de Math usados na expressão passavam na allowlist mas
+  // não eram ligados ao escopo do `new Function` (só o objeto `Math` era
+  // injetado), enquanto a forma `Math.x` esbarrava na própria allowlist —
+  // as duas formas se bloqueavam mutuamente e o node só fazia aritmética.
+  test("função de Math sem prefixo resolve", async () => {
+    expect(await run(mathHandler, "math", { expression: "sqrt(16)" })).toEqual({ value: 4 });
   });
 
-  test("BUG: constante de Math sem prefixo também falha em runtime", async () => {
-    await expect(run(mathHandler, "math", { expression: "PI * 2" })).rejects.toThrow(
-      /math: PI is not defined/,
-    );
+  test("constante de Math sem prefixo resolve", async () => {
+    expect(await run(mathHandler, "math", { expression: "PI * 2" })).toEqual({
+      value: Math.PI * 2,
+    });
   });
 
-  test("BUG: forma prefixada Math.sqrt() é barrada pela allowlist", async () => {
-    await expect(run(mathHandler, "math", { expression: "Math.sqrt(16)" })).rejects.toThrow(
-      /identificador "Math" não permitido/,
+  test("forma prefixada Math.sqrt() resolve", async () => {
+    expect(await run(mathHandler, "math", { expression: "Math.sqrt(16)" })).toEqual({ value: 4 });
+  });
+
+  test("o exemplo do docblock funciona: sqrt(a*a + b*b) com vars", async () => {
+    const out = await run(mathHandler, "math", {
+      expression: "sqrt(a*a + b*b)",
+      vars: { a: 3, b: 4 },
+    });
+    expect(out).toEqual({ value: 5 });
+  });
+
+  test("função de Math combina com vars no mesmo escopo", async () => {
+    const out = await run(mathHandler, "math", { expression: "max(a, 10)", vars: { a: 3 } });
+    expect(out).toEqual({ value: 10 });
+  });
+
+  test("var homônima sombreia o membro de Math", async () => {
+    // `vars` tem precedência: `sqrt` aqui é o número 9, não a função.
+    await expect(
+      run(mathHandler, "math", { expression: "sqrt(x)", vars: { sqrt: 9, x: 2 } }),
+    ).rejects.toThrow(/sqrt is not a function/);
+  });
+
+  test("identificador fora de Math e de vars continua bloqueado", async () => {
+    await expect(run(mathHandler, "math", { expression: "fetch(1)" })).rejects.toThrow(
+      /identificador "fetch" não permitido/,
     );
   });
 });

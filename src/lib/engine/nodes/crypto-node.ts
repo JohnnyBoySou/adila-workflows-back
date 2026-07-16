@@ -19,6 +19,12 @@ import type { NodeHandler } from "../types";
 const HASH_ALGOS = new Set(["md5", "sha1", "sha256", "sha512"]);
 const HEX_OR_BASE64 = new Set(["hex", "base64"]);
 
+/** Encoding de saída: default "hex"; valor inválido também cai em "hex". */
+function resolveEncoding(raw: unknown): "hex" | "base64" {
+  const enc = String(raw ?? "hex");
+  return HEX_OR_BASE64.has(enc) ? (enc as "hex" | "base64") : "hex";
+}
+
 export const cryptoHandler: NodeHandler = async ({ node, context }) => {
   const cfg = renderTemplate(node.config, context) as Record<string, unknown>;
   const op = cfg.operation;
@@ -27,14 +33,8 @@ export const cryptoHandler: NodeHandler = async ({ node, context }) => {
     const algo = String(cfg.algorithm ?? "sha256");
     if (!HASH_ALGOS.has(algo)) throw new Error(`crypto hash: algoritmo "${algo}" não suportado`);
     const value = String(cfg.value ?? "");
-    const enc = HEX_OR_BASE64.has(String(cfg.encoding ?? "hex")) ? (cfg.encoding as string) : "hex";
-    return {
-      output: {
-        digest: createHash(algo)
-          .update(value)
-          .digest(enc as "hex" | "base64"),
-      },
-    };
+    const enc = resolveEncoding(cfg.encoding);
+    return { output: { digest: createHash(algo).update(value).digest(enc) } };
   }
 
   if (op === "hmac") {
@@ -45,14 +45,8 @@ export const cryptoHandler: NodeHandler = async ({ node, context }) => {
     if (typeof secret !== "string" || !secret) {
       throw new Error("crypto hmac: `secret` é obrigatório");
     }
-    const enc = HEX_OR_BASE64.has(String(cfg.encoding ?? "hex")) ? (cfg.encoding as string) : "hex";
-    return {
-      output: {
-        digest: createHmac(algo, secret)
-          .update(value)
-          .digest(enc as "hex" | "base64"),
-      },
-    };
+    const enc = resolveEncoding(cfg.encoding);
+    return { output: { digest: createHmac(algo, secret).update(value).digest(enc) } };
   }
 
   if (op === "uuid") {
@@ -63,7 +57,7 @@ export const cryptoHandler: NodeHandler = async ({ node, context }) => {
     const bytesRaw = Number(cfg.bytes);
     const bytes =
       Number.isFinite(bytesRaw) && bytesRaw > 0 ? Math.min(Math.floor(bytesRaw), 256) : 16;
-    const enc = HEX_OR_BASE64.has(String(cfg.encoding ?? "hex")) ? (cfg.encoding as string) : "hex";
+    const enc = resolveEncoding(cfg.encoding);
     const buf = new Uint8Array(bytes);
     crypto.getRandomValues(buf);
     const value =

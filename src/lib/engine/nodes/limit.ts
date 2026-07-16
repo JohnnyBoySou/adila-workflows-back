@@ -14,6 +14,10 @@ export const limitHandler: NodeHandler = async ({ node, context }) => {
   const items = Array.isArray(cfg.items) ? cfg.items : [];
   const countRaw = Number(cfg.count);
   const count = Number.isFinite(countRaw) && countRaw >= 0 ? Math.floor(countRaw) : 0;
-  const out = cfg.from === "end" ? items.slice(-count) : items.slice(0, count);
+  // `slice(-0)` é `slice(0)` e devolveria a lista inteira — count 0 precisa
+  // de curto-circuito pra manter o "mantém N itens" honesto nas duas pontas.
+  let out: unknown[];
+  if (count === 0) out = [];
+  else out = cfg.from === "end" ? items.slice(-count) : items.slice(0, count);
   return { output: { items: out, length: out.length } };
 };

@@ -22,7 +22,9 @@ export const telegramSendHandler: NodeHandler = async ({ node, context }) => {
   if (typeof token !== "string" || !token) {
     throw new Error("telegram_send: config.botToken é obrigatório");
   }
-  if (typeof chatId !== "string" && typeof chatId !== "number") {
+  // Número passa direto; string precisa ter conteúdo — "" só falharia lá na
+  // Bot API, como `chat not found`.
+  if ((typeof chatId !== "string" || !chatId) && typeof chatId !== "number") {
     throw new Error("telegram_send: config.chatId é obrigatório");
   }
   if (typeof text !== "string" || !text) {

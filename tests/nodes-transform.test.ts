@@ -14,7 +14,12 @@ import { sortHandler } from "../src/lib/engine/nodes/sort";
 import { splitInBatchesHandler } from "../src/lib/engine/nodes/split-in-batches";
 import { splitOutHandler } from "../src/lib/engine/nodes/split-out";
 import { uuidHandler } from "../src/lib/engine/nodes/uuid";
-import type { ExecutionContext, NodeHandler, NodeType, WorkflowNode } from "../src/lib/engine/types";
+import type {
+  ExecutionContext,
+  NodeHandler,
+  NodeType,
+  WorkflowNode,
+} from "../src/lib/engine/types";
 
 /**
  * Testes dos nós de transformação de dados do engine.
@@ -223,11 +228,26 @@ describe("limit", () => {
     expect(res.output).toEqual({ items: [], length: 0 });
   });
 
-  test("BUG conhecido: count 0 com from 'end' devolve TODOS os itens (slice(-0))", async () => {
-    // `items.slice(-0)` === `items.slice(0)` → o array inteiro, e não vazio.
-    // Teste fixa o comportamento ATUAL (src/lib/engine/nodes/limit.ts:17).
+  // Regressão: `slice(-0)` é `slice(0)` e devolvia a lista inteira — o oposto
+  // do esperado. count 0 tem curto-circuito nas duas direções.
+  test("count 0 com from 'end' devolve lista vazia", async () => {
     const res = await run(limitHandler, "limit", { items: [1, 2, 3], count: 0, from: "end" });
-    expect(res.output).toEqual({ items: [1, 2, 3], length: 3 });
+    expect(res.output).toEqual({ items: [], length: 0 });
+  });
+
+  test("count não-numérico com from 'end' vira 0 e devolve lista vazia", async () => {
+    const res = await run(limitHandler, "limit", { items: [1, 2, 3], count: "abc", from: "end" });
+    expect(res.output).toEqual({ items: [], length: 0 });
+  });
+
+  test("count negativo com from 'end' vira 0 e devolve lista vazia", async () => {
+    const res = await run(limitHandler, "limit", { items: [1, 2, 3], count: -1, from: "end" });
+    expect(res.output).toEqual({ items: [], length: 0 });
+  });
+
+  test("from 'end' com count válido ainda mantém os últimos N", async () => {
+    const res = await run(limitHandler, "limit", { items: [1, 2, 3], count: 2, from: "end" });
+    expect(res.output).toEqual({ items: [2, 3], length: 2 });
   });
 
   test("items ausente vira array vazio", async () => {
@@ -303,7 +323,11 @@ describe("remove_duplicates", () => {
 
   test("field aceita dot-path aninhado", async () => {
     const res = await run(removeDuplicatesHandler, "remove_duplicates", {
-      items: [{ user: { email: "x@y.z" } }, { user: { email: "x@y.z" } }, { user: { email: "a@b.c" } }],
+      items: [
+        { user: { email: "x@y.z" } },
+        { user: { email: "x@y.z" } },
+        { user: { email: "a@b.c" } },
+      ],
       field: "user.email",
     });
     expect(res.output.length).toBe(2);
@@ -764,14 +788,14 @@ describe("split_in_batches", () => {
   });
 
   test("array acima de 10.000 itens lança erro", async () => {
-    const items = new Array(10_001).fill(0);
+    const items = Array.from({ length: 10_001 }, () => 0);
     await expect(run(splitInBatchesHandler, "split_in_batches", { items })).rejects.toThrow(
       /excede o limite 10000/i,
     );
   });
 
   test("exatamente 10.000 itens é aceito", async () => {
-    const items = new Array(10_000).fill(0);
+    const items = Array.from({ length: 10_000 }, () => 0);
     const res = await run(splitInBatchesHandler, "split_in_batches", { items });
     expect(res.output.total).toBe(10_000);
   });
@@ -956,16 +980,36 @@ describe("item_lists", () => {
 
   test("filter gt / gte / lt / lte comparam numericamente", async () => {
     const items = [1, 2, 3];
-    const gt = await run(itemListsHandler, "item_lists", { operation: "filter", items, op: "gt", value: 2 });
+    const gt = await run(itemListsHandler, "item_lists", {
+      operation: "filter",
+      items,
+      op: "gt",
+      value: 2,
+    });
     expect(gt.output.items).toEqual([3]);
 
-    const gte = await run(itemListsHandler, "item_lists", { operation: "filter", items, op: "gte", value: 2 });
+    const gte = await run(itemListsHandler, "item_lists", {
+      operation: "filter",
+      items,
+      op: "gte",
+      value: 2,
+    });
     expect(gte.output.items).toEqual([2, 3]);
 
-    const lt = await run(itemListsHandler, "item_lists", { operation: "filter", items, op: "lt", value: 2 });
+    const lt = await run(itemListsHandler, "item_lists", {
+      operation: "filter",
+      items,
+      op: "lt",
+      value: 2,
+    });
     expect(lt.output.items).toEqual([1]);
 
-    const lte = await run(itemListsHandler, "item_lists", { operation: "filter", items, op: "lte", value: 2 });
+    const lte = await run(itemListsHandler, "item_lists", {
+      operation: "filter",
+      items,
+      op: "lte",
+      value: 2,
+    });
     expect(lte.output.items).toEqual([1, 2]);
   });
 
@@ -981,10 +1025,18 @@ describe("item_lists", () => {
 
   test("filter truthy/falsy são unários (ignoram value)", async () => {
     const items = [0, 1, "", "x", null];
-    const truthy = await run(itemListsHandler, "item_lists", { operation: "filter", items, op: "truthy" });
+    const truthy = await run(itemListsHandler, "item_lists", {
+      operation: "filter",
+      items,
+      op: "truthy",
+    });
     expect(truthy.output.items).toEqual([1, "x"]);
 
-    const falsy = await run(itemListsHandler, "item_lists", { operation: "filter", items, op: "falsy" });
+    const falsy = await run(itemListsHandler, "item_lists", {
+      operation: "filter",
+      items,
+      op: "falsy",
+    });
     expect(falsy.output.items).toEqual([0, "", null]);
   });
 
@@ -1181,10 +1233,18 @@ describe("aggregate", () => {
   });
 
   test("min/max de array vazio devolvem 0 (não ±Infinity)", async () => {
-    const min = await run(aggregateHandler, "aggregate", { operation: "min", items: [], field: "v" });
+    const min = await run(aggregateHandler, "aggregate", {
+      operation: "min",
+      items: [],
+      field: "v",
+    });
     expect(min.output).toEqual({ min: 0 });
 
-    const max = await run(aggregateHandler, "aggregate", { operation: "max", items: [], field: "v" });
+    const max = await run(aggregateHandler, "aggregate", {
+      operation: "max",
+      items: [],
+      field: "v",
+    });
     expect(max.output).toEqual({ max: 0 });
   });
 
@@ -1435,8 +1495,15 @@ describe("filter — modo n8n (single item)", () => {
   });
 
   test("prev não-objeto resulta em output só com _filter", async () => {
-    const res = await run(filterHandler, "filter", { left: 1, op: "truthy" }, ctx({ prev: undefined }));
-    expect(res.output).toEqual({ _filter: { passed: true, op: "truthy", left: 1, right: undefined } });
+    const res = await run(
+      filterHandler,
+      "filter",
+      { left: 1, op: "truthy" },
+      ctx({ prev: undefined }),
+    );
+    expect(res.output).toEqual({
+      _filter: { passed: true, op: "truthy", left: 1, right: undefined },
+    });
   });
 
   test("truthy trata objeto/array vazio como falso (diferente do JS puro)", async () => {

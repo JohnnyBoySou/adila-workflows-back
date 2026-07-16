@@ -78,7 +78,9 @@ describe("rewriteExpr — $json → prev", () => {
   });
 
   test("múltiplas ocorrências na mesma string são todas reescritas", () => {
-    expect(rewriteExpr("={{ $json.a }}-{{ $json.b }}", nameMap())).toBe("{{ prev.a }}-{{ prev.b }}");
+    expect(rewriteExpr("={{ $json.a }}-{{ $json.b }}", nameMap())).toBe(
+      "{{ prev.a }}-{{ prev.b }}",
+    );
   });
 });
 
@@ -109,7 +111,7 @@ describe("rewriteExpr — referências a outros nós → steps.<id>", () => {
     );
   });
 
-  test("`$node[\"Nome\"].json.X` (sintaxe legada) resolve pro id", () => {
+  test('`$node["Nome"].json.X` (sintaxe legada) resolve pro id', () => {
     expect(rewriteExpr('={{ $node["Buscar Cliente"].json.cpf }}', nameMap(names))).toBe(
       "{{ steps.node-abc.cpf }}",
     );
@@ -301,7 +303,9 @@ describe("tradutores — triggers", () => {
   });
 
   test("schedule_trigger por hoursInterval gera cron equivalente", () => {
-    const cfg = tr("schedule_trigger", { rule: { interval: [{ field: "hours", hoursInterval: 6 }] } });
+    const cfg = tr("schedule_trigger", {
+      rule: { interval: [{ field: "hours", hoursInterval: 6 }] },
+    });
     expect(cfg.cronExpression).toBe("0 */6 * * *");
   });
 
@@ -373,7 +377,11 @@ describe("tradutores — triggers", () => {
   });
 
   test("form_trigger sem campos devolve lista vazia", () => {
-    expect(tr("form_trigger", {})).toMatchObject({ formTitle: "", formDescription: "", fields: [] });
+    expect(tr("form_trigger", {})).toMatchObject({
+      formTitle: "",
+      formDescription: "",
+      fields: [],
+    });
   });
 });
 
@@ -400,7 +408,12 @@ describe("tradutores — if / filter", () => {
     const cfg = tr("if", params);
 
     // Assert
-    expect(cfg).toMatchObject({ left: "{{ prev.total }}", op: "gt", right: 100, dataType: "number" });
+    expect(cfg).toMatchObject({
+      left: "{{ prev.total }}",
+      op: "gt",
+      right: 100,
+      dataType: "number",
+    });
   });
 
   test("if v2 mapeia os operadores textuais do n8n pra enum interna", () => {
@@ -425,7 +438,9 @@ describe("tradutores — if / filter", () => {
 
   test("if v2 com operador desconhecido cai em `eq`", () => {
     const cfg = tr("if", {
-      conditions: { conditions: [{ leftValue: "a", rightValue: "b", operator: { operation: "xyz" } }] },
+      conditions: {
+        conditions: [{ leftValue: "a", rightValue: "b", operator: { operation: "xyz" } }],
+      },
     });
     expect(cfg.op).toBe("eq");
   });
@@ -452,7 +467,9 @@ describe("tradutores — if / filter", () => {
   test("if v1 (conditions.string[]) traduz value1/value2/operation com dataType", () => {
     // Arrange: shape legado v1.
     const params = {
-      conditions: { string: [{ value1: "={{ $json.nome }}", operation: "contains", value2: "ada" }] },
+      conditions: {
+        string: [{ value1: "={{ $json.nome }}", operation: "contains", value2: "ada" }],
+      },
     };
 
     // Act
@@ -490,7 +507,9 @@ describe("tradutores — if / filter", () => {
     // Arrange
     const params = {
       conditions: {
-        conditions: [{ leftValue: "={{ $json.ativo }}", rightValue: true, operator: { operation: "equals" } }],
+        conditions: [
+          { leftValue: "={{ $json.ativo }}", rightValue: true, operator: { operation: "equals" } },
+        ],
       },
     };
 
@@ -508,14 +527,22 @@ describe("tradutores — switch", () => {
           {
             conditions: {
               conditions: [
-                { leftValue: "={{ $json.status }}", rightValue: "pago", operator: { operation: "equals" } },
+                {
+                  leftValue: "={{ $json.status }}",
+                  rightValue: "pago",
+                  operator: { operation: "equals" },
+                },
               ],
             },
           },
           {
             conditions: {
               conditions: [
-                { leftValue: "={{ $json.status }}", rightValue: "falhou", operator: { operation: "equals" } },
+                {
+                  leftValue: "={{ $json.status }}",
+                  rightValue: "falhou",
+                  operator: { operation: "equals" },
+                },
               ],
             },
           },
@@ -613,7 +640,9 @@ describe("tradutores — merge / split / batches / execute", () => {
   });
 
   test("execute_workflow com workflowId string", () => {
-    expect(tr("execute_workflow", { workflowId: "wf-123" })).toMatchObject({ workflowId: "wf-123" });
+    expect(tr("execute_workflow", { workflowId: "wf-123" })).toMatchObject({
+      workflowId: "wf-123",
+    });
   });
 
   test("execute_workflow com workflowId resource locator ({ value })", () => {
@@ -712,9 +741,9 @@ describe("tradutores — set / edit_fields", () => {
   });
 
   test("set legado só com values.number[] também é traduzido", () => {
-    expect(tr("set_variable", { values: { number: [{ name: "qtd", value: 7 }] } }).variables).toEqual(
-      { qtd: 7 },
-    );
+    expect(
+      tr("set_variable", { values: { number: [{ name: "qtd", value: 7 }] } }).variables,
+    ).toEqual({ qtd: 7 });
   });
 
   test("BUG CONHECIDO: set legado com string[] E number[] descarta os números", () => {
@@ -834,7 +863,7 @@ describe("tradutores — respond_to_webhook", () => {
     // Arrange: shape real do respondToWebhook.
     const params = {
       respondWith: "json",
-      responseBody: '={{ JSON.stringify({ ok: true, id: $json.id }) }}',
+      responseBody: "={{ JSON.stringify({ ok: true, id: $json.id }) }}",
       options: {
         responseCode: 201,
         responseHeaders: { entries: [{ name: "X-Req", value: "={{ $json.reqId }}" }] },
@@ -874,9 +903,9 @@ describe("tradutores — respond_to_webhook", () => {
 
 describe("tradutores — websocket", () => {
   test("traduz url/operation/message", () => {
-    expect(tr("websocket", { url: "wss://x", operation: "send", message: "={{ $json.m }}" })).toMatchObject(
-      { url: "wss://x", operation: "send", message: "{{ prev.m }}" },
-    );
+    expect(
+      tr("websocket", { url: "wss://x", operation: "send", message: "={{ $json.m }}" }),
+    ).toMatchObject({ url: "wss://x", operation: "send", message: "{{ prev.m }}" });
   });
 
   test("operation default é send", () => {
@@ -923,7 +952,11 @@ describe("tradutores — postgres / redis", () => {
 
   test("redis monta args a partir de key/list/channel + value", () => {
     // Act
-    const cfg = tr("redis", { operation: "set", key: "={{ $json.chave }}", value: "={{ $json.v }}" });
+    const cfg = tr("redis", {
+      operation: "set",
+      key: "={{ $json.chave }}",
+      value: "={{ $json.v }}",
+    });
 
     // Assert
     expect(cfg.connectionRef).toBe("default_redis");
@@ -1176,14 +1209,18 @@ describe("tradutores — embeddings / vector_store / chat_memory / document_load
 
 describe("tradutores — date_time", () => {
   test("format monta value + format", () => {
-    expect(tr("date_time", { action: "formatDate", value: "={{ $json.criadoEm }}", format: "DD/MM/YYYY" })).toEqual(
-      {
-        operation: "format",
-        value: "{{ prev.criadoEm }}",
+    expect(
+      tr("date_time", {
+        action: "formatDate",
+        value: "={{ $json.criadoEm }}",
         format: "DD/MM/YYYY",
-        _n8n: { action: "formatDate", value: "={{ $json.criadoEm }}", format: "DD/MM/YYYY" },
-      },
-    );
+      }),
+    ).toEqual({
+      operation: "format",
+      value: "{{ prev.criadoEm }}",
+      format: "DD/MM/YYYY",
+      _n8n: { action: "formatDate", value: "={{ $json.criadoEm }}", format: "DD/MM/YYYY" },
+    });
   });
 
   test("format sem `format` usa o padrão YYYY-MM-DD HH:mm:ss", () => {
@@ -1199,9 +1236,9 @@ describe("tradutores — date_time", () => {
   });
 
   test("subtract vira `add` com amount NEGATIVO", () => {
-    expect(tr("date_time", { action: "subtract", value: "x", amount: 3, unit: "days" })).toMatchObject(
-      { operation: "add", amount: -3, unit: "days" },
-    );
+    expect(
+      tr("date_time", { action: "subtract", value: "x", amount: 3, unit: "days" }),
+    ).toMatchObject({ operation: "add", amount: -3, unit: "days" });
   });
 
   test("diff mapeia from/to (e aceita startDate/endDate)", () => {
@@ -1210,9 +1247,9 @@ describe("tradutores — date_time", () => {
       from: "a",
       to: "b",
     });
-    expect(tr("date_time", { action: "getTimeBetweenDates", startDate: "a", endDate: "b" })).toMatchObject(
-      { operation: "diff", from: "a", to: "b" },
-    );
+    expect(
+      tr("date_time", { action: "getTimeBetweenDates", startDate: "a", endDate: "b" }),
+    ).toMatchObject({ operation: "diff", from: "a", to: "b" });
   });
 
   test("parse só carrega value", () => {
@@ -1234,7 +1271,12 @@ describe("tradutores — date_time", () => {
 describe("tradutores — crypto", () => {
   test("hash traduz algoritmo/valor/encoding em minúsculas", () => {
     // Act
-    const cfg = tr("crypto", { action: "hash", type: "SHA256", value: "={{ $json.senha }}", encoding: "HEX" });
+    const cfg = tr("crypto", {
+      action: "hash",
+      type: "SHA256",
+      value: "={{ $json.senha }}",
+      encoding: "HEX",
+    });
 
     // Assert
     expect(cfg).toMatchObject({
@@ -1254,9 +1296,9 @@ describe("tradutores — crypto", () => {
   });
 
   test("hmac carrega secret", () => {
-    expect(tr("crypto", { action: "hmac", type: "sha512", value: "v", secret: "={{ $json.s }}" })).toMatchObject(
-      { operation: "hmac", algorithm: "sha512", secret: "{{ prev.s }}" },
-    );
+    expect(
+      tr("crypto", { action: "hmac", type: "sha512", value: "v", secret: "={{ $json.s }}" }),
+    ).toMatchObject({ operation: "hmac", algorithm: "sha512", secret: "{{ prev.s }}" });
   });
 
   test("generate type=uuid vira operation uuid", () => {
@@ -1264,7 +1306,9 @@ describe("tradutores — crypto", () => {
   });
 
   test("generate de outro tipo vira operation random", () => {
-    expect(tr("crypto", { action: "generate", type: "ascii" })).toMatchObject({ operation: "random" });
+    expect(tr("crypto", { action: "generate", type: "ascii" })).toMatchObject({
+      operation: "random",
+    });
   });
 });
 
@@ -1281,9 +1325,9 @@ describe("tradutores — item_lists / aggregate", () => {
   });
 
   test("sort mapeia field e order descending → desc", () => {
-    expect(tr("item_lists", { operation: "sort", fieldName: "preco", order: "descending" })).toMatchObject(
-      { operation: "sort", field: "preco", order: "desc" },
-    );
+    expect(
+      tr("item_lists", { operation: "sort", fieldName: "preco", order: "descending" }),
+    ).toMatchObject({ operation: "sort", field: "preco", order: "desc" });
   });
 
   test("sortItems (alias legado) também vira sort com order asc default", () => {
@@ -1326,7 +1370,9 @@ describe("tradutores — item_lists / aggregate", () => {
 describe("tradutores — sort / limit / remove_duplicates / rename_keys / compare_datasets", () => {
   test("sort lê sortFieldsUi.sortField[0]", () => {
     // Arrange: shape real do n8n-nodes-base.sort.
-    const params = { sortFieldsUi: { sortField: [{ fieldName: "criadoEm", order: "descending" }] } };
+    const params = {
+      sortFieldsUi: { sortField: [{ fieldName: "criadoEm", order: "descending" }] },
+    };
 
     // Act / Assert
     expect(tr("sort", params)).toMatchObject({ field: "criadoEm", order: "desc" });
@@ -1450,9 +1496,9 @@ describe("tradutores — comunicação", () => {
   });
 
   test("slack_webhook traduz resource/channel/text", () => {
-    expect(tr("slack_webhook", { resource: "message", channel: "#geral", text: "={{ $json.msg }}" })).toMatchObject(
-      { resource: "message", channel: "#geral", text: "{{ prev.msg }}" },
-    );
+    expect(
+      tr("slack_webhook", { resource: "message", channel: "#geral", text: "={{ $json.msg }}" }),
+    ).toMatchObject({ resource: "message", channel: "#geral", text: "{{ prev.msg }}" });
   });
 
   test("slack_webhook aceita channelId e `message`, com resource default", () => {
@@ -1464,9 +1510,9 @@ describe("tradutores — comunicação", () => {
   });
 
   test("discord_webhook traduz webhookUri → webhookUrl", () => {
-    expect(tr("discord_webhook", { webhookUri: "https://discord/x", text: "={{ $json.t }}" })).toMatchObject(
-      { webhookUrl: "https://discord/x", content: "{{ prev.t }}" },
-    );
+    expect(
+      tr("discord_webhook", { webhookUri: "https://discord/x", text: "={{ $json.t }}" }),
+    ).toMatchObject({ webhookUrl: "https://discord/x", content: "{{ prev.t }}" });
   });
 
   test("discord_webhook aceita webhookUrl/content diretos", () => {
@@ -1553,7 +1599,10 @@ describe("tradutores — parsers e formatos", () => {
       mode: "stringify",
       input: "{{ prev.obj }}",
     });
-    expect(tr("json", { mode: "parse", string: "{}" })).toMatchObject({ mode: "parse", input: "{}" });
+    expect(tr("json", { mode: "parse", string: "{}" })).toMatchObject({
+      mode: "parse",
+      input: "{}",
+    });
   });
 
   test("csv default é fromFile", () => {
@@ -1576,15 +1625,15 @@ describe("tradutores — parsers e formatos", () => {
   });
 
   test("pdf_extract traduz binaryPropertyName e url", () => {
-    expect(tr("pdf_extract", { binaryPropertyName: "arquivo", url: "={{ $json.url }}" })).toMatchObject(
-      { binaryProperty: "arquivo", source: "{{ prev.url }}" },
-    );
+    expect(
+      tr("pdf_extract", { binaryPropertyName: "arquivo", url: "={{ $json.url }}" }),
+    ).toMatchObject({ binaryProperty: "arquivo", source: "{{ prev.url }}" });
   });
 
   test("template traduz template e data", () => {
-    expect(tr("template", { template: "Olá ={{ $json.nome }}", data: { a: "={{ $json.a }}" } })).toMatchObject(
-      { template: "Olá ={{ prev.nome }}", data: { a: "{{ prev.a }}" } },
-    );
+    expect(
+      tr("template", { template: "Olá ={{ $json.nome }}", data: { a: "={{ $json.a }}" } }),
+    ).toMatchObject({ template: "Olá ={{ prev.nome }}", data: { a: "{{ prev.a }}" } });
   });
 
   test("template sem params devolve vazios", () => {
@@ -1642,7 +1691,11 @@ describe("tradutores — arquivos / cloud", () => {
 
   test("compression traduz outputFormat e fileName", () => {
     expect(
-      tr("compression", { operation: "decompress", outputFormat: "gzip", fileName: "={{ $json.f }}" }),
+      tr("compression", {
+        operation: "decompress",
+        outputFormat: "gzip",
+        fileName: "={{ $json.f }}",
+      }),
     ).toMatchObject({ operation: "decompress", format: "gzip", source: "{{ prev.f }}" });
   });
 });
@@ -1653,9 +1706,14 @@ describe("tradutores — arquivos / cloud", () => {
 
 describe("tradutores — utilitários simples", () => {
   test("jwt traduz token/secret/payload com defaults", () => {
-    expect(tr("jwt", { token: "={{ $json.token }}", secret: "={{ $env.JWT_SECRET }}" })).toMatchObject(
-      { operation: "verify", token: "{{ prev.token }}", secret: "{{ env.JWT_SECRET }}", payload: {} },
-    );
+    expect(
+      tr("jwt", { token: "={{ $json.token }}", secret: "={{ $env.JWT_SECRET }}" }),
+    ).toMatchObject({
+      operation: "verify",
+      token: "{{ prev.token }}",
+      secret: "{{ env.JWT_SECRET }}",
+      payload: {},
+    });
   });
 
   test("jwt operation=sign é preservada", () => {
@@ -1733,6 +1791,11 @@ function imported(raw: unknown): ImportResult {
   return res;
 }
 
+/** Lê `config._editor`, que é `unknown` dentro de `WorkflowNode["config"]`. */
+function editorOf(node: { config: Record<string, unknown> }): Record<string, unknown> {
+  return node.config._editor as Record<string, unknown>;
+}
+
 /** Constrói um workflow n8n mínimo válido. */
 function wf(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return { name: "Meu Workflow", nodes: [], connections: {}, ...overrides };
@@ -1761,9 +1824,7 @@ describe("importN8nWorkflow — validação de payload", () => {
   });
 
   test("`name` só com espaços também cai no default", () => {
-    expect((imported({ name: "   ", nodes: [] })).name).toBe(
-      "Workflow importado do n8n",
-    );
+    expect(imported({ name: "   ", nodes: [] }).name).toBe("Workflow importado do n8n");
   });
 
   test("envelope `{ workflows: [...] }` usa o primeiro workflow", () => {
@@ -2127,7 +2188,7 @@ describe("importN8nWorkflow — edges", () => {
       { from: "sw", to: "x", label: "0" },
       { from: "sw", to: "y", label: "1" },
       { from: "sw", to: "z", label: "default" },
-    ] as unknown as Array<{ to: string; label?: string }>);
+    ]);
   });
 
   test("switch SEM fallbackOutput extra numera todos os ramos", () => {
@@ -2155,7 +2216,9 @@ describe("importN8nWorkflow — edges", () => {
         { id: "m", name: "Modelo", type: "@n8n/n8n-nodes-langchain.lmChatOpenAi", parameters: {} },
         { id: "a", name: "Agente", type: "@n8n/n8n-nodes-langchain.agent", parameters: {} },
       ],
-      connections: { Modelo: { ai_languageModel: [[{ node: "Agente", type: "ai_languageModel" }]] } },
+      connections: {
+        Modelo: { ai_languageModel: [[{ node: "Agente", type: "ai_languageModel" }]] },
+      },
     });
 
     // Act
@@ -2233,8 +2296,8 @@ describe("importN8nWorkflow — normalização de posições", () => {
     const res = imported(payload);
 
     // Assert: layout relativo preservado, origem normalizada.
-    expect(res.definition.nodes[0].config._editor.position).toEqual({ x: 0, y: 0 });
-    expect(res.definition.nodes[1].config._editor.position).toEqual({ x: 200, y: 200 });
+    expect(editorOf(res.definition.nodes[0]).position).toEqual({ x: 0, y: 0 });
+    expect(editorOf(res.definition.nodes[1]).position).toEqual({ x: 200, y: 200 });
   });
 
   test("offsets X e Y são calculados independentemente (mínimo de cada eixo)", () => {
@@ -2246,8 +2309,8 @@ describe("importN8nWorkflow — normalização de posições", () => {
     });
     const res = imported(payload);
     // offsetX=100, offsetY=300.
-    expect(res.definition.nodes[0].config._editor.position).toEqual({ x: 0, y: 600 });
-    expect(res.definition.nodes[1].config._editor.position).toEqual({ x: 400, y: 0 });
+    expect(editorOf(res.definition.nodes[0]).position).toEqual({ x: 0, y: 600 });
+    expect(editorOf(res.definition.nodes[1]).position).toEqual({ x: 400, y: 0 });
   });
 
   test("posições negativas também são normalizadas", () => {
@@ -2258,8 +2321,8 @@ describe("importN8nWorkflow — normalização de posições", () => {
       ],
     });
     const res = imported(payload);
-    expect(res.definition.nodes[0].config._editor.position).toEqual({ x: 0, y: 0 });
-    expect(res.definition.nodes[1].config._editor.position).toEqual({ x: 200, y: 0 });
+    expect(editorOf(res.definition.nodes[0]).position).toEqual({ x: 0, y: 0 });
+    expect(editorOf(res.definition.nodes[1]).position).toEqual({ x: 200, y: 0 });
   });
 
   test("nó sem `position` cai em (0,0)", () => {
@@ -2267,7 +2330,7 @@ describe("importN8nWorkflow — normalização de posições", () => {
       nodes: [{ id: "a", name: "A", type: "n8n-nodes-base.noOp", parameters: {} }],
     });
     const res = imported(payload);
-    expect(res.definition.nodes[0].config._editor.position).toEqual({ x: 0, y: 0 });
+    expect(editorOf(res.definition.nodes[0]).position).toEqual({ x: 0, y: 0 });
   });
 });
 
@@ -2312,7 +2375,11 @@ describe("importN8nWorkflow — pinData / staticData / settings / tags", () => {
 
   test("settings são preservadas e errorWorkflow é sinalizado", () => {
     // Arrange
-    const settings = { executionOrder: "v1", timezone: "America/Sao_Paulo", errorWorkflow: "wf-err" };
+    const settings = {
+      executionOrder: "v1",
+      timezone: "America/Sao_Paulo",
+      errorWorkflow: "wf-err",
+    };
 
     // Act
     const res = imported(wf({ settings }));
@@ -2490,9 +2557,7 @@ describe("importN8nWorkflow — workflow realista ponta a ponta", () => {
     ]);
 
     // Assert — posições normalizadas (offset [1000, 400])
-    expect(
-      (res.definition.nodes[0].config._editor as { position: unknown }).position,
-    ).toEqual({ x: 0, y: 100 });
+    expect(editorOf(res.definition.nodes[0]).position).toEqual({ x: 0, y: 100 });
   });
 
   test("workflow com nós de IA (agent + modelo + memória) mapeia portas LangChain", () => {

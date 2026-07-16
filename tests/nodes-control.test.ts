@@ -235,7 +235,9 @@ describe("template — aliases n8n e fallback cross-prefix", () => {
 
   test("vars.X sem fallback cross-prefix (não vira prev/input)", () => {
     // `vars.` não está na lista de PREFIXES do crossPrefixes, então não há fallback.
-    expect(renderTemplate("{{ vars.v }}", ctx({ prev: { v: 1 }, input: { v: 2 } }))).toBeUndefined();
+    expect(
+      renderTemplate("{{ vars.v }}", ctx({ prev: { v: 1 }, input: { v: 2 } })),
+    ).toBeUndefined();
   });
 });
 
@@ -270,7 +272,9 @@ describe("if — operadores de igualdade", () => {
   });
 
   test("eq com dataType boolean coage string 'true'", async () => {
-    expect(await ifLabel({ left: "true", op: "eq", right: true, dataType: "boolean" })).toBe("true");
+    expect(await ifLabel({ left: "true", op: "eq", right: true, dataType: "boolean" })).toBe(
+      "true",
+    );
   });
 
   test("neq verdadeiro", async () => {
@@ -540,7 +544,9 @@ describe("if — operadores de data", () => {
   });
 
   test("isBefore falso quando depois", async () => {
-    expect(await ifLabel({ left: "2024-01-03", op: "isBefore", right: "2024-01-02" })).toBe("false");
+    expect(await ifLabel({ left: "2024-01-03", op: "isBefore", right: "2024-01-02" })).toBe(
+      "false",
+    );
   });
 
   test("isAfterOrEqual verdadeiro quando igual", async () => {
@@ -746,7 +752,9 @@ describe("switch — formato novo (rules) por operador", () => {
   });
 
   test("contains", async () => {
-    const res = await runSwitch({ rules: [rule({ op: "contains", left: "olá mundo", right: "mundo" })] });
+    const res = await runSwitch({
+      rules: [rule({ op: "contains", left: "olá mundo", right: "mundo" })],
+    });
     expect(res.nextLabel).toBe("L");
   });
 
@@ -756,12 +764,16 @@ describe("switch — formato novo (rules) por operador", () => {
   });
 
   test("startsWith", async () => {
-    const res = await runSwitch({ rules: [rule({ op: "startsWith", left: "adila", right: "adi" })] });
+    const res = await runSwitch({
+      rules: [rule({ op: "startsWith", left: "adila", right: "adi" })],
+    });
     expect(res.nextLabel).toBe("L");
   });
 
   test("endsWith", async () => {
-    const res = await runSwitch({ rules: [rule({ op: "endsWith", left: "a.pdf", right: ".pdf" })] });
+    const res = await runSwitch({
+      rules: [rule({ op: "endsWith", left: "a.pdf", right: ".pdf" })],
+    });
     expect(res.nextLabel).toBe("L");
   });
 
@@ -1010,7 +1022,10 @@ describe("transform — mode object", () => {
   test("`prev.` NÃO é prefixo de path — precisa de {{ }}", async () => {
     const literal = await runTransform({ mapping: { x: "prev.v" } }, ctx({ prev: { v: 1 } }));
     expect(literal.output).toEqual({ x: "prev.v" });
-    const template = await runTransform({ mapping: { x: "{{ prev.v }}" } }, ctx({ prev: { v: 1 } }));
+    const template = await runTransform(
+      { mapping: { x: "{{ prev.v }}" } },
+      ctx({ prev: { v: 1 } }),
+    );
     expect(template.output).toEqual({ x: 1 });
   });
 
@@ -1129,11 +1144,15 @@ describe("set_variable — modo single", () => {
   });
 
   test("name vazio lança", async () => {
-    await expect(runSetVar({ name: "", value: 1 })).rejects.toThrow(/informe `name` ou `variables`/);
+    await expect(runSetVar({ name: "", value: 1 })).rejects.toThrow(
+      /informe `name` ou `variables`/,
+    );
   });
 
   test("name não-string lança", async () => {
-    await expect(runSetVar({ name: 42, value: 1 })).rejects.toThrow(/informe `name` ou `variables`/);
+    await expect(runSetVar({ name: 42, value: 1 })).rejects.toThrow(
+      /informe `name` ou `variables`/,
+    );
   });
 });
 
@@ -1246,6 +1265,19 @@ async function runStop(config: Record<string, unknown>, context: ExecutionContex
   return stopAndErrorHandler({ node: node("stop_and_error", config), context });
 }
 
+/** Roda o stop_and_error esperando que lance, e devolve o erro capturado. */
+async function catchStop(
+  config: Record<string, unknown>,
+  context: ExecutionContext = ctx(),
+): Promise<Error & { details?: unknown }> {
+  try {
+    await runStop(config, context);
+  } catch (e) {
+    return e as Error & { details?: unknown };
+  }
+  throw new Error("esperava que stop_and_error lançasse, mas ele resolveu");
+}
+
 describe("stop_and_error", () => {
   test("lança erro com a mensagem configurada", async () => {
     await expect(runStop({ message: "pedido inválido" })).rejects.toThrow("pedido inválido");
@@ -1270,25 +1302,26 @@ describe("stop_and_error", () => {
   });
 
   test("details é anexado ao erro", async () => {
-    const err = await runStop({ message: "x", details: { campo: "cpf" } }).catch(
-      (e: unknown) => e as Error & { details?: unknown },
-    );
+    const err = await catchStop({ message: "x", details: { campo: "cpf" } });
     expect(err.message).toBe("x");
     expect(err.details).toEqual({ campo: "cpf" });
   });
 
   test("details é templatável", async () => {
-    const err = await runStop(
+    const err = await catchStop(
       { message: "x", details: { id: "{{ input.id }}" } },
       ctx({ input: { id: 9 } }),
-    ).catch((e: unknown) => e as Error & { details?: unknown });
+    );
     expect(err.details).toEqual({ id: 9 });
   });
 
+  test("details não-objeto é ignorado", async () => {
+    const err = await catchStop({ message: "x", details: "texto" });
+    expect(err.details).toBeUndefined();
+  });
+
   test("sem details o erro não ganha a propriedade", async () => {
-    const err = await runStop({ message: "x" }).catch(
-      (e: unknown) => e as Error & { details?: unknown },
-    );
+    const err = await catchStop({ message: "x" });
     expect(err.details).toBeUndefined();
   });
 });
@@ -1299,7 +1332,11 @@ describe("stop_and_error", () => {
 
 async function runRespond(config: Record<string, unknown>, context: ExecutionContext = ctx()) {
   const res = await respondToWebhookHandler({ node: node("respond_to_webhook", config), context });
-  return res.output.__webhookResponse as { status: number; headers: Record<string, string>; body: unknown };
+  return res.output.__webhookResponse as {
+    status: number;
+    headers: Record<string, string>;
+    body: unknown;
+  };
 }
 
 describe("respond_to_webhook", () => {
@@ -1384,18 +1421,14 @@ const SHA256_HELLO = "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e7304336293
 
 describe("crypto — hash", () => {
   /**
-   * BUG (crypto-node.ts:30 e :48): quando `encoding` é OMITIDO da config, a
-   * ternária devolve `cfg.encoding` — que é `undefined` — em vez do "hex"
-   * default que a condição acabou de calcular. `digest(undefined)` devolve um
-   * Buffer, não string, e o Buffer vai cru pro output do step (e daí pro JSONB
-   * de workflow_run_steps). Só acontece com `encoding` ausente: valor válido
-   * ("hex"/"base64") e valor inválido ("rot13" → cai no literal "hex") ambos
-   * produzem string. Os testes abaixo travam o comportamento ATUAL.
+   * Regressão: a ternária devolvia `cfg.encoding` cru em vez do "hex" que a
+   * própria condição calculava com `??`. Com `encoding` ausente — o default
+   * documentado — `digest(undefined)` devolvia Buffer, que ia cru pro output
+   * do step e pro JSONB de workflow_run_steps.
    */
-  test("BUG: sem encoding explícito o digest sai como Buffer, não string", async () => {
+  test("sem encoding explícito o digest sai como string hex", async () => {
     const res = await runCrypto({ operation: "hash", value: "hello" });
-    expect(Buffer.isBuffer(res.output.digest)).toBe(true);
-    expect((res.output.digest as Buffer).toString("hex")).toBe(SHA256_HELLO);
+    expect(res.output.digest).toBe(SHA256_HELLO);
   });
 
   test("sha256 com encoding hex explícito", async () => {
@@ -1471,16 +1504,26 @@ describe("crypto — hmac", () => {
       operation: "hmac",
       value: "hello",
       secret: TEST_SECRET,
+      encoding: "hex",
     });
     expect(res.output.digest).toBe(
       "a8bbce6b50ddf3561e585d4ccb813e91fc2a00994ab032435163327386d5280f",
     );
   });
 
+  test("hmac sem encoding explícito também sai como string hex", async () => {
+    const res = await runCrypto({ operation: "hmac", value: "hello", secret: TEST_SECRET });
+    expect(res.output.digest).toBe(
+      "a8bbce6b50ddf3561e585d4ccb813e91fc2a00994ab032435163327386d5280f",
+    );
+  });
+
   test("hmac é determinístico e muda com o segredo", async () => {
-    const a = await runCrypto({ operation: "hmac", value: "x", secret: "s1" });
-    const b = await runCrypto({ operation: "hmac", value: "x", secret: "s2" });
-    const a2 = await runCrypto({ operation: "hmac", value: "x", secret: "s1" });
+    const run = (secret: string) =>
+      runCrypto({ operation: "hmac", value: "x", secret, encoding: "hex" });
+    const a = await run("s1");
+    const b = await run("s2");
+    const a2 = await run("s1");
     expect(a.output.digest).toBe(a2.output.digest as string);
     expect(a.output.digest).not.toBe(b.output.digest as string);
   });
@@ -1501,6 +1544,7 @@ describe("crypto — hmac", () => {
       algorithm: "sha512",
       value: "x",
       secret: TEST_SECRET,
+      encoding: "hex",
     });
     expect(String(res.output.digest)).toHaveLength(128);
   });
@@ -1988,7 +2032,7 @@ describe("compression — validação", () => {
 describe("triggers passthrough — ecoam o input no shape do próprio trigger", () => {
   const payload = { a: 1, nested: { b: 2 } };
 
-  const casos: Array<[string, NodeType, (typeof scheduleTriggerHandler), string]> = [
+  const casos: Array<[string, NodeType, typeof scheduleTriggerHandler, string]> = [
     ["schedule_trigger", "schedule_trigger", scheduleTriggerHandler, "input"],
     ["interval_trigger", "interval_trigger", intervalTriggerHandler, "input"],
     ["email_trigger", "email_trigger", emailTriggerHandler, "email"],
@@ -2078,10 +2122,7 @@ describe("token-usage — extractTokenUsage", () => {
   });
 
   test("shape embeddings ({ tokens }) conta como input, sem output", () => {
-    const res = extractTokenUsage(
-      { usage: { tokens: 7 }, model: "text-embedding-3-small" },
-      {},
-    );
+    const res = extractTokenUsage({ usage: { tokens: 7 }, model: "text-embedding-3-small" }, {});
     expect(res).toEqual({
       inputTokens: 7,
       outputTokens: null,
@@ -2167,7 +2208,10 @@ describe("token-usage — extractTokenUsage", () => {
   });
 
   test("totalTokens explícito não é recalculado", () => {
-    const res = extractTokenUsage({ usage: { inputTokens: 1, outputTokens: 1, totalTokens: 99 } }, {});
+    const res = extractTokenUsage(
+      { usage: { inputTokens: 1, outputTokens: 1, totalTokens: 99 } },
+      {},
+    );
     expect(res?.totalTokens).toBe(99);
   });
 });
